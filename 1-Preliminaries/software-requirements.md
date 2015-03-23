@@ -4,7 +4,7 @@ You will need the following software at each stage of my process:
 
 1. Preliminaries: rudimentary knowledge of GitHub.com
 
-2. Obtain: an ftp client and a large disk on which to store the raw data
+2. Obtain: an ftp client and a large disk on which to store the raw data. You need a relatively full-featured ftp client, like LFTP on Linux, or FileZilla on Windows/Mac.
 
 3. Unpack: R with some packages installed for manipulating the raw data stored as zip files
 
