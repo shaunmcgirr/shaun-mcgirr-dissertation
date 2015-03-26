@@ -33,4 +33,6 @@ Assuming you have the software requirements installed from step 1, these instruc
   * If using LFTP, check your target download location is correct (see step above), then change to the 94fz directory with `cd 94fz/` and download Moskva with `mirror Moskva/`
   * After a few hours, check the copy/mirror is still happening in your FTP client, and check progress to completion by monitoring the size of your Moskva directory on the target machine. You'll know how to do this in Windows/Mac, but if on Linux navigate to your target directory (`cd ~/data/zakupki/YYYY-MM-DD/zakupki-YYYY-MM-DD-raw-data/`) and type `du -sh *` to return a list of subdirectories and their sizes. Moskva should be at least 6.0G (as at March 2015).
 
-
+6. Download the rest of the data.
+  * You could either proceed region by region ([here's a list of the 'federal subjects' of Russia](http://en.wikipedia.org/wiki/List_of_federal_subjects_of_Russia)), or try to mirror the whole thing.
+  * When it's done, you'll have about 70GB of zipped-up XML files, arranged by region.
