@@ -13,6 +13,7 @@
 # setwd('~/data/zakupki/2015-03-23/zakupki-2015-03-23-consolidated-data')
 setwd('~/data/test02output')
 
+
 ############################################
 # 2. Gather parameters about the job ahead #
 ############################################
@@ -38,5 +39,5 @@ region.processed <- ("Moskva")
 
 data.consolidated.notifications.filename <- paste(region.processed,"notifications","df","RData", sep=".")
 
-load(data.consolidated.notifications.filename)
+data.consolidated.notifications <- load(data.consolidated.notifications.filename)
 
