@@ -3,7 +3,7 @@
 # Goals of this script are:
 #   - Obtain list of regions which have completed step 3 (unpack)
 #   - Process these to create measures to test my theory
-#   - Profit!!
+#   - Profit!!!
 
 ###################
 # 1. Housekeeping #
