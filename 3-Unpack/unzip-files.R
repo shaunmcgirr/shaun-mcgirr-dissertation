@@ -68,25 +68,4 @@ current_region <- as.character(regions_list[r])
   }
 }
 
-
-contracts_unzipped_directory <- dir.create(paste(data_unzipped_directory, current_region, "/contracts", sep=""), recursive=TRUE)
-
-
-
-
-
-
-notifications_unzipped_directory <- dir.create(paste(data_unzipped_directory, current_region, "/notifications", sep=""), recursive=TRUE)
-contracts_target_directory <- dir.create(paste(data_unzipped_directory, current_region, "/placement_result", sep=""), recursive=TRUE)
-contracts_target_ directory <- dir.create(paste(data_unzipped_directory, current_region, "/plans", sep=""), recursive=TRUE)
-dir.create(paste(data_unzipped_directory, current_region, "/protocols", sep=""), recursive=TRUE)
-
-
-
-
-region.processed <- ("Moskva")
-
-data.consolidated.notifications.filename <- paste(region.processed,"notifications","df","RData", sep=".")
-
-data.consolidated.notifications <- load(data.consolidated.notifications.filename)
-
+# ENDS
