@@ -79,8 +79,17 @@ y <- xml_ns(document_to_parse)
 c <- xml_find_all(document_to_parse, "//oos:customer/oos:regNum/text()", xml_ns(document_to_parse)) # 43
 c <- xml_find_all(document_to_parse, "//oos:regNum", xml_ns(document_to_parse)) # 86 (all elements)
 c <- xml_find_all(document_to_parse, "/export[@xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"]/contract/oos:regNum/text()", xml_ns(document_to_parse)) # 86 (all elements)
-c <- xml_find_all(document_to_parse, "/*/*/oos:regNum", xml_ns(document_to_parse)) # 43 (contract)
-c <- xml_find_all(document_to_parse, "/*/*/*/oos:regNum", xml_ns(document_to_parse)) # 43 (customer)
+
+## BINGO BINGO BINGO BINGO BINGO!
+## BASED ON THIS, WILL REALLY WANT TO PARSE PRODUCTS OUT IN TO SEPARATE TABLE (or just take first)
+contract_regNum <- xml_find_all(document_to_parse, "/*/*/oos:regNum", xml_ns(document_to_parse)) # 43 (contract)
+customer_regNum <- xml_find_all(document_to_parse, "/*/*/oos:customer/oos:regNum", xml_ns(document_to_parse)) # 43 (customer regNum string is subset of contract regNum string)
+products_product <- xml_find_all(document_to_parse, "/*/*/oos:products/oos:product", xml_ns(document_to_parse)) # 59 products across 43 contracts, which are multiples?
+products_product_first_only <- xml_find_all(document_to_parse, "/*/*/oos:products/oos:product[1]", xml_ns(document_to_parse)) # 43
+products_product_multiples_only <- xml_find_all(document_to_parse, "/*/*/oos:products[count(oos:product)=2]", xml_ns(document_to_parse)) # Returns 4!
+
+
+
 c <- xml_find_all(document_to_parse, "//oos:id", xml_ns(document_to_parse)) # 43 (all docs)
 c <- xml_find_all(document_to_parse, "/*", xml_ns(document_to_parse)) # 3556 nodes
 c <- xml_find_all(document_to_parse, "contract", xml_ns(document_to_parse)) # no nodes called contract
