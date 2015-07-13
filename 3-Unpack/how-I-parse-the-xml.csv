@@ -1,0 +1,21 @@
+DocumentType,OutputTable,XMLFieldLocation,ExampleValue,StoreAs,VariableName
+contracts,contracts_<region>,/*/d1:contract/oos:id,"""2845""",integer,ContractID
+contracts,contracts_<region>,/*/d1:contract/oos:regNum,"""0176100001811000002""",character,ContractRegNum
+contracts,contracts_<region>,/*/d1:contract/oos:publishDate,"""2011-01-14T18:50:27Z""",date,ContractPublishDate
+contracts,contracts_<region>,/*/d1:contract/oos:signDate,"""2011-01-12""",date,ContractSignDate
+contracts,contracts_<region>,/*/d1:contract/oos:versionNumber,"""0""",integer,ContractVersionNumber
+contracts,contracts_<region>,/*/d1:contract/oos:foundation/oos:singleCustomer,"""true""",factor,ContractSingleCustomer
+contracts,contracts_<region>,/*/d1:contract/oos:customer/oos:regNum,"""01761000018""",character,ContractCustomerRegNum
+contracts,contracts_<region>,/*/d1:contract/oos:customer/oos:fullName,"""??????????? ?????????? ??????""",character,ContractCustomerFullName
+contracts,contracts_<region>,/*/d1:contract/oos:customer/oos:inn,"""0105020117""",character,ContractCustomerINN
+contracts,contracts_<region>,/*/d1:contract/oos:customer/oos:kpp,"""010501001""",character,ContractCustomerKPP
+contracts,contracts_<region>,/*/d1:contract/oos:customer/oos:tofk,"""7600""",factor,ContractCustomerTOFK
+contracts,contracts_<region>,/*/d1:contract/oos:price,"""217632""",number,ContractPrice
+contracts,contracts_<region>,/*/d1:contract/oos:currency/oos:code,"""RUB""",factor,ContractCurrencyCode
+contracts,contracts_<region>,/*/d1:contract/oos:execution/oos:month,"""12""",number,ContractExecutionMonth
+contracts,contracts_<region>,/*/d1:contract/oos:execution/oos:year,"""2011""",number,ContractExecutionYear
+contracts,contracts_<region>,/*/d1:contract/oos:finances/oos:financeSource,"""?????????? ?????????""",factor,ContractFinanceSource
+contracts,contracts_<region>,/*/d1:contract/oos:finances/oos:budget/oos:code,"""99010001""",factor,ContractFinanceBudgetCode
+contracts,contracts_<region>,/*/d1:contract/oos:finances/oos:budget/oos:name,"""??????????? ??????""",factor,ContractFinanceBudgetName
+,,,,,
+,contracts_finances_<region>,/d1:contract/oos:finances/oos:financeSource,"""?????????? ?????????""",factor,ContractFinance

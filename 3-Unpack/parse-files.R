@@ -30,9 +30,36 @@ regions_number <- length(regions_list)
 # 3. Define functions to process each region #
 ##############################################
 
+# Define a function to create a list of fields to parse
+# for (f in 1:document_types_number){
+#   document_type <- as.character(document_types[f])
+#   fields_to_parse <- (parsing_configuration$XMLFieldLocation[parsing_configuration$DocumentType==document_type])
+# }
+
+
+# Define a function that will extract what we need from each XML field (the set of XML fields is defined by the metadata file)
+#extract_xml_node <- function(XMLFieldLocation, StoreAs, VariableName){
+#test_list <- vector('list', 1)
+test_list <- list('vector', 1)
+extract_xml_node <- function(XMLFieldLocation, VariableName){
+  print(paste("Extracting field ", XMLFieldLocation, sep=""))
+  test_list[[1]] <- as_list(xml_text(xml_find_all(document_to_parse, XMLFieldLocation, namespace)))
+  print(xml_text(xml_find_all(document_to_parse, XMLFieldLocation, namespace)))
+}
+
+extract_xml_node("/*/d1:contract/oos:regNum", "ContractRegNum")
+
+
+# Define a function that will join up all the data extracted from a single XML file and store it safely
+save_extracted_xml <- function(OutputTable, Y, Z){
+  
+}
+
+
+
 # Define a function to do all the hard work parsing, taking two inputs: type of document and region
 
-parse_files <- function(document_type, current_region){
+parse_files_old <- function(document_type, current_region){
   from_directory <- paste(data_unzipped_directory, current_region, "/", document_type, sep="")
   to_directory <- paste(data_parsed_directory, current_region, "/", document_type, sep="")
   dir.create(to_directory)
@@ -46,14 +73,53 @@ parse_files <- function(document_type, current_region){
   }
 }
 
+parse_files <- function(document_type, current_region){
+  from_directory <- paste(data_unzipped_directory, current_region, "/", document_type, sep="") # loads source directory
+  to_directory <- paste(data_parsed_directory, current_region, "/", document_type, sep="") # loads target directory
+  dir.create(to_directory)
+  fields_to_parse <- (parsing_configuration$XMLFieldLocation[parsing_configuration$DocumentType==document_type]) # loads fields from configuration
+  fields_to_parse_length <- length(fields_to_parse)
+  files_list <- as.list(list.files(path=from_directory, pattern="xml$", recursive=TRUE, full.names=TRUE))
+  files_list_length <- length(files_list)
+  for (l in 1:files_list_length){
+    # All the action goes here (call separate functions here as necessary)
+    document_to_parse <- read_xml(as.character(files_list[l]))
+    namespace <- xml_ns(document_to_parse)
+    for (f in 1:fields_to_parse_length){
+      extract_xml_node(fields_to_parse[f])
+    }
+    print(paste(l, " of ", files_list_length, " files parsed", sep=""))
+  }
+}
 
-################################################
-# 4. Loop over regions to process them in turn #
-################################################
 
-# List of document types to process
-document_types <- as.list(c("contracts", "notifications", "protocols")) # only interested in these docs
+#########################################################################
+# 4. Load and parse a configuration file that tells the code what to do #
+#########################################################################
+
+# Option 1: use the 'xlsx' package, which depends on java, which may require the code below be uncommented to run
+# install.packages('xlsx') 
+# if (Sys.getenv("JAVA_HOME")!="")
+#   Sys.setenv(JAVA_HOME="")
+# library(rJava)
+library(xlsx)
+parsing_configuration <- na.omit(read.xlsx(file="3-Unpack/how-I-parse-the-xml.xlsx", 1, stringsAsFactors=FALSE))
+
+# Option 2: save your metadata file as a csv (outside R) and load that directly with no need to deal with rJava/xlsx difficulties
+# This is riskier as Russian characters in the "example" column may not display well on Windows
+# parse_configuration <- read.csv(file="3-Unpack/how-I-parse-the-xml.csv", stringsAsFactors=FALSE)
+
+# What documents does the configuration file tell us to parse?
+document_types <- as.list(unique(parsing_configuration$DocumentType))
 document_types_number <- length(document_types)
+
+# Loop over the document types to generate a list of fields to be parsed
+
+
+
+################################################
+# 5. Loop over regions to process them in turn #
+################################################
 
 # List of regions from 2. above is called here, looped through by region, then documents loop inside
 for (r in 1:1){
@@ -71,38 +137,57 @@ current_region <- as.character(regions_list[r])
 
 document_to_parse <- read_xml(as.character(files_list[1]))
 # install.packages('xml2')
-library(xml2)
+# library(xml2)
 t <- as_list(document_to_parse)
 s <- xml_structure(document_to_parse)
 p <- xml_contents(document_to_parse)
 y <- xml_ns(document_to_parse)
+c <- xml_find_all(document_to_parse, "/*", xml_ns(document_to_parse)) # 3556 nodes in whole document
 c <- xml_find_all(document_to_parse, "//oos:customer/oos:regNum/text()", xml_ns(document_to_parse)) # 43
 c <- xml_find_all(document_to_parse, "//oos:regNum", xml_ns(document_to_parse)) # 86 (all elements)
 c <- xml_find_all(document_to_parse, "/export[@xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"]/contract/oos:regNum/text()", xml_ns(document_to_parse)) # 86 (all elements)
 
 ## BINGO BINGO BINGO BINGO BINGO!
 ## BASED ON THIS, WILL REALLY WANT TO PARSE PRODUCTS OUT IN TO SEPARATE TABLE (or just take first)
-contract_regNum <- xml_find_all(document_to_parse, "/*/*/oos:regNum", xml_ns(document_to_parse)) # 43 (contract)
-customer_regNum <- xml_find_all(document_to_parse, "/*/*/oos:customer/oos:regNum", xml_ns(document_to_parse)) # 43 (customer regNum string is subset of contract regNum string)
-products_product <- xml_find_all(document_to_parse, "/*/*/oos:products/oos:product", xml_ns(document_to_parse)) # 59 products across 43 contracts, which are multiples?
-products_product_first_only <- xml_find_all(document_to_parse, "/*/*/oos:products/oos:product[1]", xml_ns(document_to_parse)) # 43
-products_product_multiples_only <- xml_find_all(document_to_parse, "/*/*/oos:products[count(oos:product)=2]", xml_ns(document_to_parse)) # Returns 4!
+y <- xml_ns(document_to_parse)
+contract_regNum <- xml_find_all(document_to_parse, "/*/d1:contract/oos:regNum", y) # 43 (contract)
+customer_regNum <- xml_find_all(document_to_parse, "/*/d1:contract/oos:customer/oos:regNum", y) # 43 (customer regNum string is subset of contract regNum string)
+products_product <- xml_find_all(document_to_parse, "/*/d1:contract/oos:products/oos:product", y) # 59 products across 43 contracts, which are multiples?
+products_product_first_only <- xml_find_all(document_to_parse, "/*/d1:contract/oos:products/oos:product[1]", y) # 43
+products_product_multiples_only <- xml_find_all(document_to_parse, "/*/d1:contract/oos:products[count(oos:product)=2]", y) # Returns 4!
+
+# Basic joining
+contract_regNum_text <- (xml_text(xml_find_all(document_to_parse, "/*/d1:contract/oos:regNum", y))) # working, produces character vector
+customer_regNum_text <- (xml_text(xml_find_all(document_to_parse, "/*/d1:contract/oos:customer/oos:regNum", y))) # working, produces character vector
+document_vectors_together_manual <- cbind(contract_regNum_text, customer_regNum_text)
+
+# Try preallocation
+document_vectors_list <- vector(mode="list", length=2)
+document_vectors_list[[1]] <- data.frame(contract_regNum_text)
+document_vectors_list[[2]] <- data.frame(customer_regNum_text)
+document_vectors_together_preallocated <- data.frame(document_vectors_list)
 
 
+# Try two documents, preallocated
+documents_collated_vector <- vector(mode="list", length=2)
 
-c <- xml_find_all(document_to_parse, "//oos:id", xml_ns(document_to_parse)) # 43 (all docs)
-c <- xml_find_all(document_to_parse, "/*", xml_ns(document_to_parse)) # 3556 nodes
-c <- xml_find_all(document_to_parse, "contract", xml_ns(document_to_parse)) # no nodes called contract
-xml_path(xml_find_one(document_to_parse, "*[local-name='contract']", xml_ns(document_to_parse)))
-xml_parent(xml_parent(xml_children(document_to_parse)[[2]]))
-(xml_parent(xml_children(document_to_parse)[[2]]))
-((xml_children(document_to_parse)[[1]])) # So "contract" is just a row, not really treated as a node
+document_vectors_list_one <- vector(mode="list", length=2)
+document_vectors_list_one[[1]] <- data.frame(contract_regNum_text)
+document_vectors_list_one[[2]] <- data.frame(customer_regNum_text)
+document_one_collated <- data.frame(document_vectors_list_one)
+documents_collated_vector[[1]] <- document_one_collated
+
+document_vectors_list_two <- vector(mode="list", length=2)
+document_vectors_list_two[[1]] <- data.frame(contract_regNum_text)
+document_vectors_list_two[[2]] <- data.frame(customer_regNum_text)
+document_two_collated <- data.frame(document_vectors_list_two)
+documents_collated_vector[[2]] <- document_two_collated
+
+# Combine all documents
+documents_collated_together <- rbindlist(documents_collated_vector)
 
 
-
-
-
-xml_attrs(document_to_parse)
+# Or pre-construct the data frame from configuration?
 
 
 # Need to traverse by contracts, then within that send other data off to different data frames

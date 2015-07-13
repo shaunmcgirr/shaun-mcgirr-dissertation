@@ -4,6 +4,7 @@
 # First download your data according to instructions here: https://github.com/shaunmcgirr/shaun-mcgirr-dissertation/blob/master/2-Obtain/download-raw-procurement-data.md
 
 # Packages should generally be loaded in the individual scripts during development, then migrated here
+library(xml2)
 library(magrittr)
 library(plyr)
 library(dplyr) # Always load last!
