@@ -41,14 +41,19 @@ regions_number <- length(regions_list)
 #extract_xml_node <- function(XMLFieldLocation, StoreAs, VariableName){
 #test_list <- vector('list', 1)
 test_list <- list('vector', 1)
-extract_xml_node <- function(XMLFieldLocation, VariableName){
+extract_xml_node <- function(XMLFieldLocation){
   print(paste("Extracting field ", XMLFieldLocation, sep=""))
-  test_list[[1]] <- as_list(xml_text(xml_find_all(document_to_parse, XMLFieldLocation, namespace)))
-  print(xml_text(xml_find_all(document_to_parse, XMLFieldLocation, namespace)))
-}
+  fields_parsed_into_list <- vector(mode="list", length=fields_to_parse_length) # Preallocate this vector
+  test <- (xml_text(xml_find_all(document_to_parse, XMLFieldLocation, namespace)))
+  fields_parsed_into_list[[f]] <- data.frame(test)
+  #print(xml_text(xml_find_all(document_to_parse, XMLFieldLocation, namespace)))
+} # Probably need to write a big messy function that works, then abstract later
 
-extract_xml_node("/*/d1:contract/oos:regNum", "ContractRegNum")
+#document_vectors_list[[2]] <- data.frame(customer_regNum_text)
+#document_vectors_together_preallocated <- data.frame(document_vectors_list)
 
+#extract_xml_node("/*/d1:contract/oos:regNum", "ContractRegNum")
+extract_xml_node("/*/d1:contract/oos:regNum")
 
 # Define a function that will join up all the data extracted from a single XML file and store it safely
 save_extracted_xml <- function(OutputTable, Y, Z){
@@ -58,21 +63,6 @@ save_extracted_xml <- function(OutputTable, Y, Z){
 
 
 # Define a function to do all the hard work parsing, taking two inputs: type of document and region
-
-parse_files_old <- function(document_type, current_region){
-  from_directory <- paste(data_unzipped_directory, current_region, "/", document_type, sep="")
-  to_directory <- paste(data_parsed_directory, current_region, "/", document_type, sep="")
-  dir.create(to_directory)
-  files_list <- as.list(list.files(path=from_directory, pattern="xml$", recursive=TRUE, full.names=TRUE))
-  files_list_length <- length(files_list)
-  for (l in 1:files_list_length){
-    # Old way (brute force)
-    temp <- xmlToList(as.character(files_list[l]), addAttributes=T)
-    df <- ldply(temp, .fun=function(x) {data.frame(t(unlist(x)))})    
-    print(paste(l, " of ", files_list_length, " files parsed", sep=""))
-  }
-}
-
 parse_files <- function(document_type, current_region){
   from_directory <- paste(data_unzipped_directory, current_region, "/", document_type, sep="") # loads source directory
   to_directory <- paste(data_parsed_directory, current_region, "/", document_type, sep="") # loads target directory
@@ -81,13 +71,20 @@ parse_files <- function(document_type, current_region){
   fields_to_parse_length <- length(fields_to_parse)
   files_list <- as.list(list.files(path=from_directory, pattern="xml$", recursive=TRUE, full.names=TRUE))
   files_list_length <- length(files_list)
+  documents_parsed_into_list <- vector(mode="list", length=files_list_length) # Preallocate this vector
   for (l in 1:files_list_length){
     # All the action goes here (call separate functions here as necessary)
     document_to_parse <- read_xml(as.character(files_list[l]))
     namespace <- xml_ns(document_to_parse)
+    fields_parsed_into_list <- vector(mode="list", length=fields_to_parse_length) # Preallocate this!
     for (f in 1:fields_to_parse_length){
-      extract_xml_node(fields_to_parse[f])
+      # extract_xml_node(fields_to_parse[f]) Come back here later once it is clear what this should do
+      print(paste("Extracting field ", fields_to_parse[f], sep=""))
+      test <- (xml_text(xml_find_all(document_to_parse, fields_to_parse[f], namespace)))
+      fields_parsed_into_list[[f]] <- data.frame(test)
+      #fields_parsed_into_list[[f]]
     }
+    documents_parsed_into_list[[l]] <- (fields_parsed_into_list) # Overwriting first entry over and over?
     print(paste(l, " of ", files_list_length, " files parsed", sep=""))
   }
 }
@@ -185,7 +182,7 @@ documents_collated_vector[[2]] <- document_two_collated
 
 # Combine all documents
 documents_collated_together <- rbindlist(documents_collated_vector)
-
+# Memory management: http://stackoverflow.com/questions/20689650/how-to-append-rows-to-an-r-data-frame
 
 # Or pre-construct the data frame from configuration?
 
