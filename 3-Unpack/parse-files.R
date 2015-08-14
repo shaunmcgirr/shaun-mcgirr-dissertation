@@ -118,6 +118,7 @@ parse_files <- function(document_type, current_region){
   output_matrix_command <- paste(output_matrix_name, "<- do.call(\"rbind\", files_parsed_into_list)", sep="")
   eval(parse(text=output_matrix_command))
   write.csv(Adygeja_Resp_contracts_parsed, file="3-Unpack/Adygeja_Resp_contracts_parsed.csv", row.names=FALSE)
+  save(Moskva_contracts_parsed, file="3-Unpack/Moskva_contracts_parsed.rda")
   
     #fields_parsed_into_list <- vector(mode="list", length=fields_to_parse_length) # Preallocate this!
     for (f in 1:fields_to_parse_length){
