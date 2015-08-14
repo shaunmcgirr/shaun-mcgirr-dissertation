@@ -38,7 +38,7 @@ regions_number <- length(regions_list)
 unzip_files <- function(document_type, current_region){
   from_directory <- paste(data_raw_directory, current_region, "/", document_type, sep="")
   to_directory <- paste(data_unzipped_directory, current_region, "/", document_type, sep="")
-  dir.create(to_directory)  
+  dir.create(to_directory, recursive=TRUE)  
   files_list <- as.list(list.files(path=from_directory, pattern="zip$", recursive=TRUE, full.names=TRUE))
   files_list_length <- length(files_list)
   for (l in 1:files_list_length){
