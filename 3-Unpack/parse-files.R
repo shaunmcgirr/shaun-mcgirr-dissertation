@@ -74,27 +74,44 @@ parse_files <- function(document_type, current_region){
   dir.create(path=to_directory)
   fields_to_parse <- (parsing_configuration$XMLFieldLocation[parsing_configuration$DocumentType==document_type]) # loads fields from configuration
   fields_to_parse_length <- length(fields_to_parse)
+  variable_names <- parsing_configuration$VariableName[parsing_configuration$DocumentType==document_type]
   files_list <- as.list(list.files(path=from_directory, pattern="xml$", recursive=TRUE, full.names=TRUE))
   files_list_length <- length(files_list) 
-  documents_parsed_into_list <- vector(mode="list", length=files_list_length) # Preallocate this vector at its maximum possible length (number of files to parse)
-  data_frame_preallocated <- data.frame(matrix(NA, nrow=))
+  files_parsed_into_list <- vector(mode="list", length=files_list_length) # Preallocate this vector at its maximum possible length (number of files to parse)
+  #data_frame_preallocated <- data.frame(matrix(NA, nrow=))
   for (l in 1:files_list_length){
     # All the action goes here (call separate functions here as necessary)
-    document_to_parse <- read_xml(as.character(files_list[l]))
-    namespace <- xml_ns(document_to_parse)
+    file_to_parse <- read_xml(as.character(files_list[l]))
+      namespace <- xml_ns(file_to_parse)
+    documents_in_this_file_list <- (xml_find_all(file_to_parse, fields_to_parse[1], namespace)) #Reference <oos:id> by position in config file
+      documents_in_this_file_list_length <- length(documents_in_this_file_list)
+    for(d in 1:documents_in_this_file_list_length){
+      document_to_parse <- xml_children(file_to_parse)[[d]]
+      for (f in 1:fields_to_parse_length){
+        xml_text(xml_find_all(document_to_parse, "oos:id", namespace))
+      
+    }
     
-    fields_parsed_into_list <- vector(mode="list", length=fields_to_parse_length) # Preallocate this!
+    #fields_parsed_into_list <- vector(mode="list", length=fields_to_parse_length) # Preallocate this!
     for (f in 1:fields_to_parse_length){
+      fields_by_document_matrix <- matrix(NA, nrow=documents_in_this_file_list_length, ncol=fields_to_parse_length)
+        dimnames(fields_by_document_matrix) <- list(NULL, variable_names)
       #tmp <- extract_xml_node(fields_to_parse[f]) #Come back here later once it is clear what this should do
       #print(paste("Extracting field ", fields_to_parse[f], sep=""))
-      tmp <- (xml_text(xml_find_all(document_to_parse, fields_to_parse[f], namespace)))
-      if(length(tmp)>0) fields_parsed_into_list[[f]] <- data.frame(tmp)
+      tmp_index <- (xml_text(xml_find_all(file_to_parse, fields_to_parse[1], namespace))) # Always index the variable by the id variable
+        tmp_variable <- (xml_text(xml_find_all(file_to_parse, fields_to_parse[f], namespace)))
+      # Need to grab them in the same pass, not in separate passes or it defeats the purpose
+      doc <- xml_children(file_to_parse)[[1]]
+      doc <- xml_children(file_to_parse)[[2]]
+        tmp_combined <- cbind(tmp_index, tmp_variable)
+      fields_by_document_matrix[, f] <- tmp_combined[, 2] # Replace the preallocated column with the variable extracted from XML
+      #if(length(tmp)>0) fields_parsed_into_list[[f]] <- data.frame(tmp)
       #fields_parsed_into_list[[f]] <- data.frame(tmp)
       #fields_parsed_into_list[[f]]
       #Put together a named data frame here?
     }
-    documents_parsed_into_list[[l]] <- (fields_parsed_into_list) # Overwriting first entry over and over?
-    documents_parsed_into_list <- documents_parsed_into_list[lapply(documents_parsed_into_list,length)>0] # Trim off zero-length lists
+    documents_parsed_into_list[[l]] <- (fields_by_document_matrix) # Place the constructed matrix in to a list for safekeeping
+    #documents_parsed_into_list <- documents_parsed_into_list[lapply(documents_parsed_into_list,length)>0] # Trim off zero-length lists
     print(paste(l, " of ", files_list_length, " files parsed", sep=""))
     #save(documents_parsed_into_list, file="3-Unpack/test_output.rda")
     #write.xlsx(documents_parsed_into_list, file="3-Unpack/test_output.xlsx") # Works but varnames lost
