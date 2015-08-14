@@ -6,10 +6,16 @@
 # Packages should generally be loaded in the individual scripts during development, then migrated here
 #install.packages('xml2')
 #install.packages('magrittr')
+#install.packages('rJava') # You may strike problems here depending on your operating system. If so,
+                           # Google is your friend! If running linux, install rJava from terminal
+                           # instead with: sudo apt-get install r-cran-rjava
+#install.packages('xlsx')
 #install.packages('plyr')
 #install.packages('dplyr')
 library(xml2)
 library(magrittr)
+library(rJava)
+library(xlsx)
 library(plyr)
 library(dplyr) # Always load last!
 
