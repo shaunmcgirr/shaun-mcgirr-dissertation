@@ -68,7 +68,8 @@ save_extracted_xml <- function(OutputTable, Y, Z){
 # 4. Parsing fills them in
 
 # Preamble during testing of function below
-r <- 48 # 48th in list is Moscow
+r <- 1
+#r <- 48 # 48th in list is Moscow
 current_region <- as.character(regions_list[r])
 if (Sys.getenv("JAVA_HOME")!="")
   Sys.setenv(JAVA_HOME="")
@@ -89,9 +90,8 @@ parse_files <- function(document_type, current_region){
   variable_names <- parsing_configuration$VariableName[parsing_configuration$DocumentType==document_type]
   files_list <- as.list(list.files(path=from_directory, pattern="xml$", recursive=TRUE, full.names=TRUE))
   files_list_length <- length(files_list) 
-  document_id_field <- paste("/*/d1:", "contract", "/oos:id", sep="")
+  document_id_field <- paste("/*/d1:", "notificationEF", "/oos:id", sep="")
   files_parsed_into_list <- vector(mode="list", length=files_list_length) # Preallocate this vector at its maximum possible length (number of files to parse)
-  #data_frame_preallocated <- data.frame(matrix(NA, nrow=))
   for (l in 1:files_list_length){
     # All the action goes here (call separate functions here as necessary)
     file_to_parse <- read_xml(as.character(files_list[l]))
@@ -113,38 +113,18 @@ parse_files <- function(document_type, current_region){
       }
     } else {fields_by_document_matrix <- NA}
     files_parsed_into_list[[l]] <- fields_by_document_matrix
+    print(paste(l, " of ", files_list_length, " files parsed", sep=""))
   }  
   output_matrix_name <- paste(current_region, document_type, "parsed", sep="_")
   output_matrix_command <- paste(output_matrix_name, "<- do.call(\"rbind\", files_parsed_into_list)", sep="")
   eval(parse(text=output_matrix_command))
+} # Function ends here
+
+
   write.csv(Adygeja_Resp_contracts_parsed, file="3-Unpack/Adygeja_Resp_contracts_parsed.csv", row.names=FALSE)
   save(Moskva_contracts_parsed, file="3-Unpack/Moskva_contracts_parsed.rda")
   
-    #fields_parsed_into_list <- vector(mode="list", length=fields_to_parse_length) # Preallocate this!
-    for (f in 1:fields_to_parse_length){
-      fields_by_document_matrix <- matrix(NA, nrow=documents_in_this_file_list_length, ncol=fields_to_parse_length)
-        dimnames(fields_by_document_matrix) <- list(NULL, variable_names)
-      #tmp <- extract_xml_node(fields_to_parse[f]) #Come back here later once it is clear what this should do
-      #print(paste("Extracting field ", fields_to_parse[f], sep=""))
-      tmp_index <- (xml_text(xml_find_all(file_to_parse, fields_to_parse[1], namespace))) # Always index the variable by the id variable
-        tmp_variable <- (xml_text(xml_find_all(file_to_parse, fields_to_parse[f], namespace)))
-      # Need to grab them in the same pass, not in separate passes or it defeats the purpose
-      doc <- xml_children(file_to_parse)[[1]]
-      doc <- xml_children(file_to_parse)[[2]]
-        tmp_combined <- cbind(tmp_index, tmp_variable)
-      fields_by_document_matrix[, f] <- tmp_combined[, 2] # Replace the preallocated column with the variable extracted from XML
-      #if(length(tmp)>0) fields_parsed_into_list[[f]] <- data.frame(tmp)
-      #fields_parsed_into_list[[f]] <- data.frame(tmp)
-      #fields_parsed_into_list[[f]]
-      #Put together a named data frame here?
-    }
-    documents_parsed_into_list[[l]] <- (fields_by_document_matrix) # Place the constructed matrix in to a list for safekeeping
-    #documents_parsed_into_list <- documents_parsed_into_list[lapply(documents_parsed_into_list,length)>0] # Trim off zero-length lists
-    print(paste(l, " of ", files_list_length, " files parsed", sep=""))
-    #save(documents_parsed_into_list, file="3-Unpack/test_output.rda")
-    #write.xlsx(documents_parsed_into_list, file="3-Unpack/test_output.xlsx") # Works but varnames lost
-  }
-}
+
 
 
 #########################################################################
