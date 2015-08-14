@@ -37,114 +37,34 @@ regions_number <- length(regions_list)
 # }
 
 
-# Define a function that will extract what we need from each XML field (the set of XML fields is defined by the metadata file)
-#extract_xml_node <- function(XMLFieldLocation, StoreAs, VariableName){
-#test_list <- vector('list', 1)
-test_list <- list('vector', 1)
-extract_xml_node <- function(XMLFieldLocation){
-  print(paste("Extracting field ", XMLFieldLocation, sep=""))
-  fields_parsed_into_list <- vector(mode="list", length=fields_to_parse_length) # Preallocate this vector
-  test <- (xml_text(xml_find_all(document_to_parse, XMLFieldLocation, namespace)))
-  fields_parsed_into_list[[f]] <- data.frame(test)
-  #print(xml_text(xml_find_all(document_to_parse, XMLFieldLocation, namespace)))
-} # Probably need to write a big messy function that works, then abstract later
-
-#document_vectors_list[[2]] <- data.frame(customer_regNum_text)
-#document_vectors_together_preallocated <- data.frame(document_vectors_list)
-
-#extract_xml_node("/*/d1:contract/oos:regNum", "ContractRegNum")
-extract_xml_node("/*/d1:contract/oos:regNum")
-
-# Define a function that will join up all the data extracted from a single XML file and store it safely
-save_extracted_xml <- function(OutputTable, Y, Z){
-  
-}
-
-
-# Better general approach
-# 1. List of parsed files
-# 2. Elements in list are matrices
-# 3. Matrix is preallocated with NAs (Columns = fields_to_parse_length, Rows = number of separate documents in the file)
-# 4. Parsing fills them in
-
-# Define a function to do all the hard work parsing, taking two inputs: type of document and region
-parse_files <- function(document_type, current_region){
-  from_directory <- paste(data_unzipped_directory, current_region, "/", document_type, sep="") # loads source directory
-  to_directory <- paste(data_parsed_directory, current_region, "/", document_type, sep="") # loads target directory
-  dir.create(path=to_directory)
-  fields_to_parse <- (parsing_configuration$XMLFieldLocation[parsing_configuration$DocumentType==document_type]) # loads fields from configuration
-  fields_to_parse_length <- length(fields_to_parse)
-  files_list <- as.list(list.files(path=from_directory, pattern="xml$", recursive=TRUE, full.names=TRUE))
-  files_list_length <- length(files_list) 
-  documents_parsed_into_list <- vector(mode="list", length=files_list_length) # Preallocate this vector at its maximum possible length (number of files to parse)
-  data_frame_preallocated <- data.frame(matrix(NA, nrow=))
-  for (l in 1:files_list_length){
-    # All the action goes here (call separate functions here as necessary)
-    document_to_parse <- read_xml(as.character(files_list[l]))
-    namespace <- xml_ns(document_to_parse)
-    
-    fields_parsed_into_list <- vector(mode="list", length=fields_to_parse_length) # Preallocate this!
-    for (f in 1:fields_to_parse_length){
-      #tmp <- extract_xml_node(fields_to_parse[f]) #Come back here later once it is clear what this should do
-      #print(paste("Extracting field ", fields_to_parse[f], sep=""))
-      tmp <- (xml_text(xml_find_all(document_to_parse, fields_to_parse[f], namespace)))
-      if(length(tmp)>0) fields_parsed_into_list[[f]] <- data.frame(tmp)
-      #fields_parsed_into_list[[f]] <- data.frame(tmp)
-      #fields_parsed_into_list[[f]]
-      #Put together a named data frame here?
-    }
-    documents_parsed_into_list[[l]] <- (fields_parsed_into_list) # Overwriting first entry over and over?
-    documents_parsed_into_list <- documents_parsed_into_list[lapply(documents_parsed_into_list,length)>0] # Trim off zero-length lists
-    print(paste(l, " of ", files_list_length, " files parsed", sep=""))
-    #save(documents_parsed_into_list, file="3-Unpack/test_output.rda")
-    #write.xlsx(documents_parsed_into_list, file="3-Unpack/test_output.xlsx") # Works but varnames lost
-  }
-}
-
 
 #########################################################################
 # 4. Load and parse a configuration file that tells the code what to do #
 #########################################################################
 
-# Option 1: use the 'xlsx' package, which depends on java, which may require the code below be uncommented to run
-# install.packages('xlsx') 
-if (Sys.getenv("JAVA_HOME")!="")
-  Sys.setenv(JAVA_HOME="")
-# library(rJava)
-library(xlsx)
-parsing_configuration <- na.omit(read.xlsx(file="3-Unpack/how-I-parse-the-xml.xlsx", 1, stringsAsFactors=FALSE))
-
-# Option 2: save your metadata file as a csv (outside R) and load that directly with no need to deal with rJava/xlsx difficulties
-# This is riskier as Russian characters in the "example" column may not display well on Windows
-# parse_configuration <- read.csv(file="3-Unpack/how-I-parse-the-xml.csv", stringsAsFactors=FALSE)
-
-# What documents does the configuration file tell us to parse?
-document_types <- as.list(unique(parsing_configuration$DocumentType))
-document_types_number <- length(document_types)
-
-# Loop over the document types to generate a list of fields to be parsed
-
-# Good ideas here for "big bang" approach
-# http://stackoverflow.com/questions/18538772/parsing-irregular-xml-in-r
-# http://stackoverflow.com/questions/12421668/import-all-fields-and-subfields-of-xml-as-dataframe
-# http://stackoverflow.com/questions/22643580/combine-values-in-huge-xml-files
 
 
 
 ################################################
-# 5. Loop over regions to process them in turn #
+# 5. SCRATCHPAD #
 ################################################
 
-# List of regions from 2. above is called here, looped through by region, then documents loop inside
-for (r in 1:1){
+# Follow Chris Albon's method http://chrisalbon.com/rstats/import-xml.html
+r <- 1
 current_region <- as.character(regions_list[r])
+from_directory <- paste(data_unzipped_directory, current_region, "/", document_type, sep="") # loads source directory
+to_directory <- paste(data_parsed_directory, current_region, "/", document_type, sep="") # loads target directory
+files_list <- as.list(list.files(path=from_directory, pattern="xml$", recursive=TRUE, full.names=TRUE))
+files_list_length <- length(files_list) 
 
-  for (d in 1:1){
-    document_type <- as.character(document_types[d])
-    print(paste("Processing ", document_type, " documents from ", current_region, sep=""))
-    parse_files(document_type, current_region)
-  }
-}
+library(XML)
+xmlfile <- xmlTreeParse(as.character(files_list[1]))
+xmltop <- xmlRoot(xmlfile)
+plantcat <- xmlSApply(xmltop, function(x) xmlSApply(x, xmlValue))
+plantcat_df <- data.frame(t(plantcat),row.names=NULL)
+
+
+
 
 # NOTES: snap! read_xml can look inside a zip file
 # Maybe parse out all the contract-level in one file, organisation in another, products, suppliers
