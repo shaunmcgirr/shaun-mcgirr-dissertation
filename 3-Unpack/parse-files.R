@@ -79,7 +79,7 @@ parsing_configuration <- na.omit(read.xlsx(xlsxFile="3-Unpack/how-I-parse-the-xm
 l <- 1
 d <- 1
 f <- 1
-document_type <- "contracts"
+document_type <- "notifications"
 
 # Define a function to do all the hard work parsing, taking two inputs: type of document and region
 parse_files <- function(document_type, current_region){
@@ -91,7 +91,7 @@ parse_files <- function(document_type, current_region){
   variable_names <- parsing_configuration$VariableName[parsing_configuration$DocumentType==document_type]
   files_list <- as.list(list.files(path=from_directory, pattern="xml$", recursive=TRUE, full.names=TRUE))
   files_list_length <- length(files_list) 
-  document_id_field <- paste("/*/d1:", "notificationEF", "/oos:id", sep="")
+  document_id_field <- "/*/*/oos:id"
   files_parsed_into_list <- vector(mode="list", length=files_list_length) # Preallocate this vector at its maximum possible length (number of files to parse)
   for (l in 1:files_list_length){
     # All the action goes here (call separate functions here as necessary)
@@ -117,28 +117,20 @@ parse_files <- function(document_type, current_region){
     print(paste(l, " of ", files_list_length, " files parsed", sep=""))
   }  
   output_matrix_name <- paste(current_region, document_type, "parsed", sep="_")
-  output_matrix_command <- paste(output_matrix_name, "<- do.call(\"rbind\", files_parsed_into_list)", sep="")
-  eval(parse(text=output_matrix_command))
+  output_matrix_generate_command <- paste(output_matrix_name, "<- do.call(\"rbind\", files_parsed_into_list)", sep="")
+  eval(parse(text=output_matrix_generate_command))
+  output_matrix_file_name <- paste(to_directory, "/", output_matrix_name, ".rda", sep="")
+  output_matrix_save_command <- paste("save(", output_matrix_name, ", file=\"", 
+                                      output_matrix_file_name, "\")", sep="")
+  eval(parse(text=output_matrix_save_command))
 } # Function ends here
-
-
-  write.csv(Adygeja_Resp_contracts_parsed, file="3-Unpack/Adygeja_Resp_contracts_parsed.csv", row.names=FALSE)
-  save(Moskva_contracts_parsed, file="3-Unpack/Moskva_contracts_parsed.rda")
-  
-
 
 
 #########################################################################
 # 4. Load and parse a configuration file that tells the code what to do #
 #########################################################################
 
-# Option 1: use the 'xlsx' package, which depends on java, which may require the code below be uncommented to run
-# install.packages('xlsx') 
-if (Sys.getenv("JAVA_HOME")!="")
-  Sys.setenv(JAVA_HOME="")
-# library(rJava)
-library(xlsx)
-parsing_configuration <- na.omit(read.xlsx(file="3-Unpack/how-I-parse-the-xml.xlsx", 1, stringsAsFactors=FALSE))
+parsing_configuration <- na.omit(read.xlsx(xlsxFile="3-Unpack/how-I-parse-the-xml.xlsx", 1))
 
 # Option 2: save your metadata file as a csv (outside R) and load that directly with no need to deal with rJava/xlsx difficulties
 # This is riskier as Russian characters in the "example" column may not display well on Windows
@@ -162,10 +154,10 @@ document_types_number <- length(document_types)
 ################################################
 
 # List of regions from 2. above is called here, looped through by region, then documents loop inside
-for (r in 1:1){
+for (r in 1:regions_number){
 current_region <- as.character(regions_list[r])
 
-  for (d in 1:1){
+  for (d in 1:document_types_number){
     document_type <- as.character(document_types[d])
     print(paste("Processing ", document_type, " documents from ", current_region, sep=""))
     parse_files(document_type, current_region)
