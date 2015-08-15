@@ -73,8 +73,9 @@ r <- 1
 current_region <- as.character(regions_list[r])
 if (Sys.getenv("JAVA_HOME")!="")
   Sys.setenv(JAVA_HOME="")
-library(xlsx)
-parsing_configuration <- na.omit(read.xlsx(file="3-Unpack/how-I-parse-the-xml.xlsx", 1, stringsAsFactors=FALSE))
+#library(xlsx)
+#parsing_configuration <- na.omit(read.xlsx(file="3-Unpack/how-I-parse-the-xml.xlsx", 1, stringsAsFactors=FALSE))
+parsing_configuration <- na.omit(read.xlsx(xlsxFile="3-Unpack/how-I-parse-the-xml.xlsx", 1))
 l <- 1
 d <- 1
 f <- 1

@@ -10,12 +10,14 @@
                            # Google is your friend! If running linux, install rJava from terminal
                            # instead with: sudo apt-get install r-cran-rjava
 #install.packages('xlsx')
+#install.packages('openxlsx')
 #install.packages('plyr')
 #install.packages('dplyr')
 library(xml2)
 library(magrittr)
-library(rJava)
-library(xlsx)
+# library(rJava) # rJava and xlsx deprecated over openxlsx below
+# library(xlsx) # rJava and xlsx deprecated over openxlsx below
+library(openxlsx)
 library(plyr)
 library(dplyr) # Always load last!
 
