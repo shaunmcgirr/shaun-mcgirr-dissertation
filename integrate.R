@@ -24,6 +24,7 @@ library(dplyr) # Always load last!
 #----- 2. Set parameters -----
 # The scripts run below will assume data is available in this directory, named according to the pattern described in section 1 above, eg E:/Data/zakupki/2015-06-13/zakupki-2015-06-13-raw-data
 #data_directory <- "E:/Data/zakupki/"
+#data_directory <- "~/data/zakupki/"
 data_directory <- "~/data-ssd/zakupki/"
 data_download_date <- "2015-06-13"
 
