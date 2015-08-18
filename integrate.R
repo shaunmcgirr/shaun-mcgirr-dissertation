@@ -24,8 +24,8 @@ library(dplyr) # Always load last!
 #----- 2. Set parameters -----
 # The scripts run below will assume data is available in this directory, named according to the pattern described in section 1 above, eg E:/Data/zakupki/2015-06-13/zakupki-2015-06-13-raw-data
 #data_directory <- "E:/Data/zakupki/" # When running off external HDD on laptop
-#data_directory <- "~/data/zakupki/" # When running on internal laptop HDD
-data_directory <- "/media/ext3tb/Data/zakupki/" # When running off external HDD on server
+data_directory <- "~/data/zakupki/" # When running on internal laptop HDD
+#data_directory <- "/media/ext3tb/Data/zakupki/" # When running off external HDD on server
 #data_directory <- "~/data-ssd/zakupki/" # When running on internal server HDD
 data_download_date <- "2015-06-13"
 
