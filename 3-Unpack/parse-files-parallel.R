@@ -81,7 +81,7 @@ document_type <- "notifications"
 
 # Parallelising it (most logical to parallelise the document processing as file loads not intensive)
 library(doParallel)
-registerDoParallel(2)
+registerDoParallel()
 #cl <- makeCluster(4)
 library(foreach)
 
@@ -100,8 +100,11 @@ parse_files_parallel <- function(document_type, current_region){
   files_parsed_into_list <- vector(mode="list", length=files_list_length) # Preallocate this vector at its maximum possible length (number of files to parse)
 #  for (l in 1:files_list_length){
 test_parallel_start_time <- Sys.time()
+#writeLines(c(""), "log.txt")
 test <-  foreach (l = 1:files_list_length, .combine=rbind, .packages=c("xml2"), .verbose=F) %dopar% {
     # All the action goes here (call separate functions here as necessary)
+#  sink("log.txt", append=TRUE)  
+#  cat(paste("Starting iteration",iteration,"\n")) 
     file_to_parse <- read_xml(as.character(files_list[l]))
       namespace <- xml_ns(file_to_parse)
     documents_in_this_file_list <- (xml_find_all(file_to_parse, document_id_field,
@@ -127,6 +130,7 @@ test <-  foreach (l = 1:files_list_length, .combine=rbind, .packages=c("xml2"), 
   }  
 test_parallel_duration <- (Sys.time() - test_parallel_start_time)
 print(test_parallel_duration)
+stopImplicitCluster()
 
   output_matrix_name <- paste(current_region, document_type, "parsed", sep="_")
   output_matrix_generate_command <- paste(output_matrix_name, "<- do.call(\"rbind\", files_parsed_into_list)", sep="")
