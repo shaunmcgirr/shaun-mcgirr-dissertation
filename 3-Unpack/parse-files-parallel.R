@@ -71,18 +71,23 @@ save_extracted_xml <- function(OutputTable, Y, Z){
 r <- 1
 #r <- 48 # 48th in list is Moscow
 current_region <- as.character(regions_list[r])
-if (Sys.getenv("JAVA_HOME")!="")
-  Sys.setenv(JAVA_HOME="")
 #library(xlsx)
 #parsing_configuration <- na.omit(read.xlsx(file="3-Unpack/how-I-parse-the-xml.xlsx", 1, stringsAsFactors=FALSE))
 parsing_configuration <- na.omit(read.xlsx(xlsxFile="3-Unpack/how-I-parse-the-xml.xlsx", 1))
-l <- 1
+l <- 2
 d <- 1
 f <- 1
 document_type <- "notifications"
 
+# Parallelising it (most logical to parallelise the document processing as file loads not intensive)
+library(doParallel)
+registerDoParallel(2)
+#cl <- makeCluster(4)
+library(foreach)
+
+
 # Define a function to do all the hard work parsing, taking two inputs: type of document and region
-parse_files <- function(document_type, current_region){
+parse_files_parallel <- function(document_type, current_region){
   from_directory <- paste(data_unzipped_directory, current_region, "/", document_type, sep="") # loads source directory
   to_directory <- paste(data_parsed_directory, current_region, "/", document_type, sep="") # loads target directory
   dir.create(to_directory, recursive=TRUE)
@@ -106,8 +111,12 @@ parse_files <- function(document_type, current_region){
     dimnames(fields_by_document_matrix) <- list(NULL, variable_names)
     for(d in 1:documents_in_this_file_list_length){
       document_to_parse <- xml_children(file_to_parse)[[d]]
-      for (f in 1:fields_to_parse_length){
+      #for (f in 1:fields_to_parse_length){
+      foreach(f = 1:fields_to_parse_length, .packages=c("xml2"), .verbose=F) %dopar% {
         variable_temporary <- xml_text(xml_find_all(document_to_parse, fields_to_parse[f], namespace))
+        #print(variable_temporary)
+        #if(length(variable_temporary) > 0){fields_by_document_matrix[[d]] <- variable_temporary} else{
+         # fields_by_document_matrix[[d]] <- NA}
         if(length(variable_temporary) > 0){fields_by_document_matrix[d, f] <- variable_temporary} else{
           fields_by_document_matrix[d, f] <- NA}
         }
@@ -154,6 +163,7 @@ document_types_number <- length(document_types)
 ################################################
 
 # List of regions from 2. above is called here, looped through by region, then documents loop inside
+non_parallel_start_time <- Sys.time()
 for (r in 1:regions_number){
 current_region <- as.character(regions_list[r])
 
@@ -163,6 +173,23 @@ current_region <- as.character(regions_list[r])
     parse_files(document_type, current_region)
   }
 }
+non_parallel_duration <- (Sys.time() - non_parallel_start_time)
+print(non_parallel_duration)
+
+# Same thing but parallelised
+parallel_start_time <- Sys.time()
+for (r in 1:regions_number){
+  current_region <- as.character(regions_list[r])
+  
+  for (d in 1:document_types_number){
+    document_type <- as.character(document_types[d])
+    print(paste("Processing ", document_type, " documents from ", current_region, sep=""))
+    parse_files_parallel(document_type, current_region)
+  }
+}
+parallel_duration <- (Sys.time() - parallel_start_time)
+print(parallel_duration)
+
 
 # NOTES: snap! read_xml can look inside a zip file
 # Maybe parse out all the contract-level in one file, organisation in another, products, suppliers
