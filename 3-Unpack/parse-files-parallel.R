@@ -98,7 +98,9 @@ parse_files_parallel <- function(document_type, current_region){
   files_list_length <- length(files_list) 
   document_id_field <- "/*/*/oos:id"
   files_parsed_into_list <- vector(mode="list", length=files_list_length) # Preallocate this vector at its maximum possible length (number of files to parse)
-  for (l in 1:files_list_length){
+#  for (l in 1:files_list_length){
+test_parallel_start_time <- Sys.time()
+test <-  foreach (l = 1:files_list_length, .combine=rbind, .packages=c("xml2"), .verbose=F) %dopar% {
     # All the action goes here (call separate functions here as necessary)
     file_to_parse <- read_xml(as.character(files_list[l]))
       namespace <- xml_ns(file_to_parse)
@@ -110,21 +112,22 @@ parse_files_parallel <- function(document_type, current_region){
                                         ncol=fields_to_parse_length)
     dimnames(fields_by_document_matrix) <- list(NULL, variable_names)
     for(d in 1:documents_in_this_file_list_length){
+#     foreach(d = 1:documents_in_this_file_list_length, .packages=c("xml2"), .verbose=T) %dopar% {
       document_to_parse <- xml_children(file_to_parse)[[d]]
-      #for (f in 1:fields_to_parse_length){
-      foreach(f = 1:fields_to_parse_length, .packages=c("xml2"), .verbose=F) %dopar% {
+      for (f in 1:fields_to_parse_length){
+#       foreach(f = 1:fields_to_parse_length, .packages=c("xml2"), .verbose=F) %do% { # Parallelising at field level was slower!
         variable_temporary <- xml_text(xml_find_all(document_to_parse, fields_to_parse[f], namespace))
-        #print(variable_temporary)
-        #if(length(variable_temporary) > 0){fields_by_document_matrix[[d]] <- variable_temporary} else{
-         # fields_by_document_matrix[[d]] <- NA}
         if(length(variable_temporary) > 0){fields_by_document_matrix[d, f] <- variable_temporary} else{
           fields_by_document_matrix[d, f] <- NA}
         }
       }
     } else {fields_by_document_matrix <- NA}
     files_parsed_into_list[[l]] <- fields_by_document_matrix
-    print(paste(l, " of ", files_list_length, " files parsed", sep=""))
+    #print(paste(l, " of ", files_list_length, " files parsed", sep=""))
   }  
+test_parallel_duration <- (Sys.time() - test_parallel_start_time)
+print(test_parallel_duration)
+
   output_matrix_name <- paste(current_region, document_type, "parsed", sep="_")
   output_matrix_generate_command <- paste(output_matrix_name, "<- do.call(\"rbind\", files_parsed_into_list)", sep="")
   eval(parse(text=output_matrix_generate_command))
