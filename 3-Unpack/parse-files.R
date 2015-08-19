@@ -93,6 +93,7 @@ parse_files <- function(document_type, current_region){
   files_list_length <- length(files_list) 
   document_id_field <- "/*/*/oos:id"
   files_parsed_into_list <- vector(mode="list", length=files_list_length) # Preallocate this vector at its maximum possible length (number of files to parse)
+test_non_parallel_start_time <- Sys.time()
   for (l in 1:files_list_length){
     # All the action goes here (call separate functions here as necessary)
     file_to_parse <- read_xml(as.character(files_list[l]))
@@ -116,6 +117,9 @@ parse_files <- function(document_type, current_region){
     files_parsed_into_list[[l]] <- fields_by_document_matrix
     print(paste(l, " of ", files_list_length, " files parsed", sep=""))
   }  
+test_non_parallel_duration <- (Sys.time() - test_non_parallel_start_time)
+print(test_non_parallel_duration)
+
   output_matrix_name <- paste(current_region, document_type, "parsed", sep="_")
   output_matrix_generate_command <- paste(output_matrix_name, "<- do.call(\"rbind\", files_parsed_into_list)", sep="")
   eval(parse(text=output_matrix_generate_command))
