@@ -25,7 +25,6 @@ regions_list <- as.list(list.files(path=data_unzipped_directory))
 regions_list <- Filter((function(x) !grepl('Sevastopol_g', x)), regions_list) # Remove Sevastopol
 regions_number <- length(regions_list)
 
-
 ##############################################
 # 3. Define functions to process each region #
 ##############################################
@@ -36,55 +35,20 @@ regions_number <- length(regions_list)
 #   fields_to_parse <- (parsing_configuration$XMLFieldLocation[parsing_configuration$DocumentType==document_type])
 # }
 
-
 # Define a function that will extract what we need from each XML field (the set of XML fields is defined by the metadata file)
 #extract_xml_node <- function(XMLFieldLocation, StoreAs, VariableName){
 #test_list <- vector('list', 1)
-test_list <- list('vector', 1)
-extract_xml_node <- function(XMLFieldLocation){
-  print(paste("Extracting field ", XMLFieldLocation, sep=""))
-  fields_parsed_into_list <- vector(mode="list", length=fields_to_parse_length) # Preallocate this vector
-  test <- (xml_text(xml_find_all(document_to_parse, XMLFieldLocation, namespace)))
-  fields_parsed_into_list[[f]] <- data.frame(test)
+# test_list <- list('vector', 1)
+# extract_xml_node <- function(XMLFieldLocation){
+#   print(paste("Extracting field ", XMLFieldLocation, sep=""))
+#   fields_parsed_into_list <- vector(mode="list", length=fields_to_parse_length) # Preallocate this vector
+#   test <- (xml_text(xml_find_all(document_to_parse, XMLFieldLocation, namespace)))
+#   fields_parsed_into_list[[f]] <- data.frame(test)
   #print(xml_text(xml_find_all(document_to_parse, XMLFieldLocation, namespace)))
 } # Probably need to write a big messy function that works, then abstract later
 
 #document_vectors_list[[2]] <- data.frame(customer_regNum_text)
 #document_vectors_together_preallocated <- data.frame(document_vectors_list)
-
-#extract_xml_node("/*/d1:contract/oos:regNum", "ContractRegNum")
-extract_xml_node("/*/d1:contract/oos:regNum")
-
-# Define a function that will join up all the data extracted from a single XML file and store it safely
-save_extracted_xml <- function(OutputTable, Y, Z){
-  
-}
-
-
-# Better general approach
-# 1. List of parsed files
-# 2. Elements in list are matrices
-# 3. Matrix is preallocated with NAs (Columns = fields_to_parse_length, Rows = number of separate documents in the file)
-# 4. Parsing fills them in
-
-# Preamble during testing of function below
-r <- 1
-#r <- 48 # 48th in list is Moscow
-current_region <- as.character(regions_list[r])
-#library(xlsx)
-#parsing_configuration <- na.omit(read.xlsx(file="3-Unpack/how-I-parse-the-xml.xlsx", 1, stringsAsFactors=FALSE))
-parsing_configuration <- na.omit(read.xlsx(xlsxFile="3-Unpack/how-I-parse-the-xml.xlsx", 1))
-l <- 2
-d <- 1
-f <- 1
-document_type <- "notifications"
-
-# Parallelising it (most logical to parallelise the document processing as file loads not intensive)
-library(doParallel)
-registerDoParallel()
-#cl <- makeCluster(4)
-library(foreach)
-
 
 # Define a function to do all the hard work parsing, taking two inputs: type of document and region
 parse_files_parallel <- function(document_type, current_region){
@@ -188,6 +152,8 @@ non_parallel_duration <- (Sys.time() - non_parallel_start_time)
 print(non_parallel_duration)
 
 # Same thing but parallelised
+registerDoParallel()
+
 parallel_start_time <- Sys.time()
 for (r in 1:regions_number){
   current_region <- as.character(regions_list[r])

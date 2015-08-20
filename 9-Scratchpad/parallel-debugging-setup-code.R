@@ -3,10 +3,13 @@
 library(xml2)
 library(magrittr)
 library(openxlsx)
+library(foreach)
+library(doParallel)
 library(plyr)
 library(dplyr) # Always load last!
 
-data_directory <- "E:/Data/zakupki/"
+#data_directory <- "E:/Data/zakupki/"
+data_directory <- "~/data/zakupki/"
 data_download_date <- "2015-06-13"
 
 data_unzipped_directory <- paste(data_directory, data_download_date, "/", "zakupki-", data_download_date, "-unzipped-data/94fz/", sep="")
@@ -20,8 +23,8 @@ regions_number <- length(regions_list)
 r <- 1
 current_region <- as.character(regions_list[r])
 parsing_configuration <- na.omit(read.xlsx(xlsxFile="3-Unpack/how-I-parse-the-xml.xlsx", 1))
-document_type <- "notifications"
-document_type <- "contracts"
+#document_type <- "notifications"
+#document_type <- "contracts"
 
 library(foreach)
 library(doParallel)
@@ -45,6 +48,18 @@ STOP
 ## Laptop with external HDD; Parallel
 ## Region: "Altajskij_kraj", document: "contracts", rows: 262179, time: 2.87 hours, 5.9MB saved
 ## Region: "Altajskij_kraj", document: "notifications", rows: 70970, time: 14.86 mins, 2.6MB saved
+
+## Laptop with internal SSD; Parallel
+## Region: "Altajskij_kraj", document: "contracts", rows: 262179, time:  hours, 5.9MB saved
+## Region: "Altajskij_kraj", document: "notifications", rows: 70970, time:  mins, 2.6MB saved
+
+## Laptop with internal SSD; Parallel
+## Region: "Adygeja_Resp", document: "contracts", rows: 40244, time: 9.44 mins, 17MB saved (5.1 as DF)
+## Region: "Adygeja_Resp", document: "notifications", rows: 20256, time: 1.46 mins, 8.7MB saved
+
+## Laptop with external HDD; Parallel
+## Region: "Adygeja_Resp", document: "contracts", rows: 40244, time:  mins, 17MB saved (5.1 as DF)
+## Region: "Adygeja_Resp", document: "notifications", rows: 20256, time:  mins, 8.7MB saved
 
 ## Server with internal SSD; Non-parallel
 ## Region: "Adygeja_Resp", document: "contracts", rows: 40244, time: 9.95 mins, 17MB saved (5.1 as DF)
