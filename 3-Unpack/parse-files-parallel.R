@@ -101,7 +101,7 @@ parse_files_parallel <- function(document_type, current_region){
 #  for (l in 1:files_list_length){
 test_parallel_start_time <- Sys.time()
 #writeLines(c(""), "log.txt")
-test <-  foreach (l = 1:files_list_length, .combine=rbind, .packages=c("xml2"), .verbose=F) %dopar% {
+temp <-  foreach (l = 1:files_list_length, .combine=rbind, .packages=c("xml2"), .verbose=F) %dopar% {
     # All the action goes here (call separate functions here as necessary)
 #  sink("log.txt", append=TRUE)  
 #  cat(paste("Starting iteration",iteration,"\n")) 
@@ -130,14 +130,15 @@ test <-  foreach (l = 1:files_list_length, .combine=rbind, .packages=c("xml2"), 
   }  
 test_parallel_duration <- (Sys.time() - test_parallel_start_time)
 print(test_parallel_duration)
-stopImplicitCluster()
+#stopImplicitCluster()
 
-row.names(test) <- NULL
-Altajskij_kraj_notifications_parsed <- data.frame(test)
+row.names(temp) <- NULL
+#Altajskij_kraj_notifications_parsed <- data.frame(test)
 
   output_matrix_name <- paste(current_region, document_type, "parsed", sep="_")
-  output_matrix_generate_command <- paste(output_matrix_name, "<- do.call(\"rbind\", files_parsed_into_list)", sep="")
+  output_matrix_generate_command <- paste(output_matrix_name, "<- temp", sep="")
   eval(parse(text=output_matrix_generate_command))
+  rm(temp)
   output_matrix_file_name <- paste(to_directory, "/", output_matrix_name, ".rda", sep="")
   output_matrix_save_command <- paste("save(", output_matrix_name, ", file=\"", 
                                       output_matrix_file_name, "\")", sep="")

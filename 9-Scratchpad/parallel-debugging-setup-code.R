@@ -42,6 +42,15 @@ files_parsed_into_list <- vector(mode="list", length=files_list_length)
 
 ## Not run
 STOP
+## Laptop with external HDD; Parallel
 ## Region: "Altajskij_kraj", document: "contracts", rows: 262179, time: 2.87 hours, 5.9MB saved
 ## Region: "Altajskij_kraj", document: "notifications", rows: 70970, time: 14.86 mins, 2.6MB saved
+
+## Server with internal SSD; Non-parallel
+## Region: "Adygeja_Resp", document: "contracts", rows: 40244, time: 9.95 mins, 17MB saved (5.1 as DF)
+## Region: "Adygeja_Resp", document: "notifications", rows: 20256, time: 1.32 mins, 8.7MB saved
+
+## Server with internal SSD; Parallel
+## Region: "Adygeja_Resp", document: "contracts", rows: 40244, time: 7.72 mins, 17MB saved (5.1 as DF)
+## Region: "Adygeja_Resp", document: "notifications", rows: 20256, time: 56.6 secs, 8.7MB saved
 
