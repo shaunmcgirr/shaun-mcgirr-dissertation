@@ -38,3 +38,10 @@ files_list_length <- 5
 #files_list_length <- length(files_list) 
 document_id_field <- "/*/*/oos:id"
 files_parsed_into_list <- vector(mode="list", length=files_list_length)
+
+
+## Not run
+STOP
+## Region: "Altajskij_kraj", document: "contracts", rows: 262179, time: 2.87 hours, 5.9MB saved
+## Region: "Altajskij_kraj", document: "notifications", rows: 70970, time: 14.86 mins, 2.6MB saved
+

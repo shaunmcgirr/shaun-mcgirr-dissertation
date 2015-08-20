@@ -132,6 +132,9 @@ test_parallel_duration <- (Sys.time() - test_parallel_start_time)
 print(test_parallel_duration)
 stopImplicitCluster()
 
+row.names(test) <- NULL
+Altajskij_kraj_notifications_parsed <- data.frame(test)
+
   output_matrix_name <- paste(current_region, document_type, "parsed", sep="_")
   output_matrix_generate_command <- paste(output_matrix_name, "<- do.call(\"rbind\", files_parsed_into_list)", sep="")
   eval(parse(text=output_matrix_generate_command))
