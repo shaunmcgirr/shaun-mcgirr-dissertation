@@ -50,8 +50,8 @@ STOP
 ## Region: "Altajskij_kraj", document: "notifications", rows: 70970, time: 14.86 mins, 2.6MB saved
 
 ## Laptop with internal SSD; Parallel
-## Region: "Altajskij_kraj", document: "contracts", rows: 262179, time:  hours, 5.9MB saved
-## Region: "Altajskij_kraj", document: "notifications", rows: 70970, time:  mins, 2.6MB saved
+## Region: "Altajskij_kraj", document: "contracts", rows: 262179, time: 3.46 hours, 5.9MB saved
+## Region: "Altajskij_kraj", document: "notifications", rows: 70970, time: 17.36 mins, 2.6MB saved
 
 ## Laptop with internal SSD; Parallel
 ## Region: "Adygeja_Resp", document: "contracts", rows: 40244, time: 9.44 mins, 17MB saved (5.1 as DF)
