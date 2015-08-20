@@ -58,12 +58,36 @@ files_list <- as.list(list.files(path=from_directory, pattern="xml$", recursive=
 files_list_length <- length(files_list) 
 
 library(XML)
-xmlfile <- xmlTreeParse(as.character(files_list[1]))
+xmlfile <- xmlTreeParse(as.character(files_list[2]))
 xmltop <- xmlRoot(xmlfile)
 plantcat <- xmlSApply(xmltop, function(x) xmlSApply(x, xmlValue))
 plantcat_df <- data.frame(t(plantcat),row.names=NULL)
 
 
+# Try dumping each document inside a file in to a list first
+documents_in_this_directory_list <- vector(mode="list", length=0)
+file_to_parse <- read_xml(as.character(files_list[9]))
+  namespace <- xml_ns(file_to_parse)
+  documents_in_this_file_list <- (xml_find_all(file_to_parse, document_id_field,
+                                               namespace))
+  #documents_in_this_directory_list[[1]] <- c(documents_in_this_file_list)
+  documents_in_this_directory_list <- c(documents_in_this_directory_list, documents_in_this_file_list)
+# Now run over this list processing it
+fields_to_parse <- (parsing_configuration$XMLFieldLocation[parsing_configuration$DocumentType==document_type])
+fields_to_parse_length <- length(fields_to_parse)
+variable_names <- parsing_configuration$VariableName[parsing_configuration$DocumentType==document_type]
+documents_in_this_directory_list_length <- length(documents_in_this_directory_list)
+fields_by_document_matrix <- matrix(NA, nrow=documents_in_this_directory_list_length, 
+                                    ncol=fields_to_parse_length)
+dimnames(fields_by_document_matrix) <- list(NULL, variable_names)
+for(d in 1:documents_in_this_directory_list_length){
+  document_to_parse <- documents_in_this_directory_list[[d]]
+  for (f in 1:fields_to_parse_length){
+    variable_temporary <- xml_text(xml_find_all(document_to_parse, fields_to_parse[f], namespace))
+    if(length(variable_temporary) > 0){fields_by_document_matrix[d, f] <- variable_temporary} else{
+      fields_by_document_matrix[d, f] <- NA}
+  }
+}
 
 
 # NOTES: snap! read_xml can look inside a zip file
