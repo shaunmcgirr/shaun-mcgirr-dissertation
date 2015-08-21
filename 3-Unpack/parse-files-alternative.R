@@ -77,7 +77,7 @@ documents_in_this_directory_list <- vector(mode="list", length=0)
 # Preamble to the test
 stopImplicitCluster()
 registerDoParallel()
-#files_list_length <- 100
+#files_list_length <- 10
 
 # Standard loop
 files_to_parse_list <- vector(mode="list", length=0)

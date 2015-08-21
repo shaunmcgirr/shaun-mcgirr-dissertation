@@ -8,8 +8,8 @@ library(doParallel)
 library(plyr)
 library(dplyr) # Always load last!
 
-#data_directory <- "E:/Data/zakupki/"
-data_directory <- "~/data/zakupki/"
+data_directory <- "E:/Data/zakupki/"
+#data_directory <- "~/data/zakupki/"
 data_download_date <- "2015-06-13"
 
 data_unzipped_directory <- paste(data_directory, data_download_date, "/", "zakupki-", data_download_date, "-unzipped-data/94fz/", sep="")
@@ -17,8 +17,8 @@ data_parsed_directory <- paste(data_directory, data_download_date, "/", "zakupki
 
 #regions_list <- as.list("Adygeja_Resp")
 #regions_list <- as.list("Altajskij_kraj")
-regions_list <- as.list("Altaj_Resp")
-regions_list <- as.list("Mosvka")
+#regions_list <- as.list("Altaj_Resp")
+regions_list <- as.list("Moskva")
 regions_list <- Filter((function(x) !grepl('Sevastopol_g', x)), regions_list) # Remove Sevastopol
 regions_number <- length(regions_list)
 
@@ -39,8 +39,8 @@ fields_to_parse <- (parsing_configuration$XMLFieldName[parsing_configuration$Doc
 fields_to_parse_length <- length(fields_to_parse)
 variable_names <- parsing_configuration$VariableName[parsing_configuration$DocumentType==document_type]
 files_list <- as.list(list.files(path=from_directory, pattern="xml$", recursive=TRUE, full.names=TRUE))
-files_list_length <- 5
-#files_list_length <- length(files_list) 
+#files_list_length <- 5
+files_list_length <- length(files_list) 
 document_id_field <- "/*/*/oos:id"
 files_parsed_into_list <- vector(mode="list", length=files_list_length)
 
