@@ -18,6 +18,7 @@ data_parsed_directory <- paste(data_directory, data_download_date, "/", "zakupki
 #regions_list <- as.list("Adygeja_Resp")
 #regions_list <- as.list("Altajskij_kraj")
 regions_list <- as.list("Altaj_Resp")
+regions_list <- as.list("Mosvka")
 regions_list <- Filter((function(x) !grepl('Sevastopol_g', x)), regions_list) # Remove Sevastopol
 regions_number <- length(regions_list)
 

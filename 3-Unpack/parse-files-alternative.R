@@ -67,29 +67,62 @@ plantcat_df <- data.frame(t(plantcat),row.names=NULL)
 
 
 # Try dumping each document inside a file in to a list first
-documents_in_this_directory_list <- vector(mode="list", length=0)
-file_to_parse <- read_xml(as.character(files_list[9]))
-  namespace <- xml_ns(file_to_parse)
-  documents_in_this_file_list <- (xml_find_all(file_to_parse, document_id_field,
-                                               namespace))
-  #documents_in_this_directory_list[[1]] <- c(documents_in_this_file_list)
-  documents_in_this_directory_list <- c(documents_in_this_directory_list, documents_in_this_file_list)
-# Now run over this list processing it
 parsing_configuration <- na.omit(read.xlsx(xlsxFile="3-Unpack/how-I-parse-the-xml.xlsx", 1))
 fields_to_parse <- (parsing_configuration$XMLFieldLocation[parsing_configuration$DocumentType==document_type])
 fields_to_parse_length <- length(fields_to_parse)
 variable_names <- parsing_configuration$VariableName[parsing_configuration$DocumentType==document_type]
-documents_in_this_directory_list_length <- length(documents_in_this_directory_list)
-fields_by_document_matrix <- matrix(NA, nrow=documents_in_this_directory_list_length, 
-                                    ncol=fields_to_parse_length)
+
+documents_in_this_directory_list <- vector(mode="list", length=0)
+
+# Preamble to the test
+stopImplicitCluster()
+registerDoParallel()
+#files_list_length <- 100
+
+# Standard loop
+files_to_parse_list <- vector(mode="list", length=0)
+test_start_time <- Sys.time()
+for(l in 1:files_list_length){
+files_to_parse_list[[l]] <- read_xml(as.character(files_list[l]), verbose=F)
+}
+test_duration <- (Sys.time() - test_start_time)
+print(test_duration)
+
+# Foreach loop
+files_to_parse_list <- vector(mode="list", length=0)
+test_start_time <- Sys.time()
+files_to_parse_list <- foreach(l = 1:files_list_length, .packages=c("xml2"), .verbose=F) %dopar% {
+  #files_to_parse_list[[l]] <- read_xml(as.character(files_list[l]), verbose=F)
+  read_xml(as.character(files_list[l]), verbose=F)
+}
+test_duration <- (Sys.time() - test_start_time)
+print(test_duration)
+
+# Standard non-parallel: 56 secs, 14.7 secs
+# do: 
+# dopar: 
+
+#documents_in_this_directory_list_length <- length(documents_in_this_directory_list)
+
+
+# Now run over this list processing it
+
+# fields_by_document_matrix <- matrix(NA, nrow=documents_in_this_directory_list_length, 
+#                                     ncol=fields_to_parse_length)
+fields_by_document_matrix <- matrix(NA, nrow=0, ncol=fields_to_parse_length)
 dimnames(fields_by_document_matrix) <- list(NULL, variable_names)
 for(d in 1:documents_in_this_directory_list_length){
+#foreach(d = 1:documents_in_this_directory_list_length, .packages=c("xml2")) %do% {
   document_to_parse <- documents_in_this_directory_list[[d]]
+  document_to_parse_result_list <- vector(mode="list", length=0)
   for (f in 1:fields_to_parse_length){
-    variable_temporary <- xml_text(xml_find_all(document_to_parse, fields_to_parse[1], namespace))
-    if(length(variable_temporary) > 0){fields_by_document_matrix[, f] <- variable_temporary} else{
-      fields_by_document_matrix[d, f] <- NA}
+    variable_temporary <- xml_text(xml_find_all(document_to_parse, fields_to_parse[f], namespace))
+    #if(length(variable_temporary) > 0){fields_by_document_matrix[, f] <- variable_temporary} else{
+      #fields_by_document_matrix[, f] <- NA}
+    document_to_parse_result_list[[f]] <- variable_temporary
   }
+  temp <- do.call(cbind, document_to_parse_result_list)
+  fields_by_document_matrix <- rbind(fields_by_document_matrix, temp)
 }
 
 
