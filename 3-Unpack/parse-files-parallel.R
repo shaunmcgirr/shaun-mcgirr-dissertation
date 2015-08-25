@@ -81,14 +81,21 @@ temp <-  foreach (l = 1:files_list_length, .combine=rbind, .packages=c("xml2"), 
     for(d in 1:documents_in_this_file_list_length){
 #     foreach(d = 1:documents_in_this_file_list_length, .packages=c("xml2"), .verbose=T) %dopar% {
       document_to_parse <- xml_children(file_to_parse)[[d]]
-      for (f in 1:fields_to_parse_length){
-#       foreach(f = 1:fields_to_parse_length, .packages=c("xml2"), .verbose=F) %do% { # Parallelising at field level was slower!
-        variable_temporary <- xml_text(xml_find_all(document_to_parse, fields_to_parse[f], namespace))
-        if(length(variable_temporary) > 0){fields_by_document_matrix[d, f] <- variable_temporary} else{
-          fields_by_document_matrix[d, f] <- NA}
-        }
+#       for (f in 1:fields_to_parse_length){
+#         extract_xml_text <- function()
+#           lapply(fields_to_parse, xml_text(xml_find_all(document_to_parse, "oos:id", namespace)))
+            #fields_by_document_matrix[d, ] <- unlist(lsapply(fields_to_parse, function(x) xml_text(xml_find_all(document_to_parse, x, namespace))), recursive=FALSE)
+            document_parsed <- vector(mode = "list", length = fields_to_parse_length)
+            document_parsed <- lapply(fields_to_parse, function(x) xml_text(xml_find_all(document_to_parse, 
+                                                                                         x, namespace)))
+            document_parsed[lapply(document_parsed, function(x) print(length(x)))]
+          
+#         variable_temporary <- xml_text(xml_find_all(document_to_parse, fields_to_parse[f], namespace))
+#         if(length(variable_temporary) > 0){fields_by_document_matrix[d, f] <- variable_temporary} else{
+#           fields_by_document_matrix[d, f] <- NA}
+#         }
       }
-    } else {fields_by_document_matrix <- NA}
+    } else {fields_by_document_matrix[d, ] <- NA}
     files_parsed_into_list[[l]] <- fields_by_document_matrix
     #print(paste(l, " of ", files_list_length, " files parsed", sep=""))
   }  

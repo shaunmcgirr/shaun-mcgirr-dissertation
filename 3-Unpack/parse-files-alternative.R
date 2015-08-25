@@ -37,11 +37,9 @@ regions_number <- length(regions_list)
 # }
 
 
-
 #########################################################################
 # 4. Load and parse a configuration file that tells the code what to do #
 #########################################################################
-
 
 
 
@@ -59,6 +57,102 @@ files_list <- as.list(list.files(path=from_directory, pattern="xml$", recursive=
 files_list_length <- length(files_list) 
 document_id_field <- "/*/*/oos:id"
 
+parsing_configuration <- na.omit(read.xlsx(xlsxFile="3-Unpack/how-I-parse-the-xml.xlsx", 1))
+fields_to_parse <- (parsing_configuration$XMLFieldLocation[parsing_configuration$DocumentType==document_type])
+fields_to_parse_length <- length(fields_to_parse)
+variable_names <- parsing_configuration$VariableName[parsing_configuration$DocumentType==document_type]
+files_parsed_into_list <- vector(mode="list", length=files_list_length) # Preallocate this vector at its maximum possible length (number of files to parse)
+
+
+# Follow method outlined in the XML book (can't load docs in to a list first because files are too large, especially crypto signature)
+library(XML)
+
+# Getting one file right first
+file_to_parse <- xmlParse(as.character(files_list[f]))
+
+# files_to_parse_stored_in_list <- vector(mode = "list", length = files_list_length)
+# fields_by_file_matrix <- matrix(NA, nrow=xml_files_to_parse_number, ncol=1)
+
+# Non-parallel version
+files_parsed_into_list <- vector(mode="list", length=files_list_length) # Preallocate this vector at its maximum possible length (number of files to parse)
+
+files_list_1 <- files_list[1:10]
+temp1 <- lapply(files_list_1, function(x) xmlParse(x, useInternalNodes=TRUE)) #FALSE is even worse
+temp2 <- lapply(temp1, function(x) xmlChildren(xmlRoot(x), useInternalNodes=TRUE))
+
+files_list_2 <- files_list[11:20]
+temp1 <- lapply(files_list_2, xmlParse)
+temp2 <- lapply(temp1, function(x) xmlChildren(xmlRoot(x)))
+# So the problem is simply memory addressing: what you load in once tends to stick around even once processed
+
+test_start_time <- Sys.time()
+for(f in 1:files_list_length){
+#  file_to_parse <- xmlParse(as.character(files_list[f]))
+  file_to_parse <- sapply(as.character(files_list[f]), xmlParse)
+#   documents_in_this_file_list <- xmlChildren(xmlRoot(file_to_parse))
+#     documents_in_this_file_list_length <- length(documents_in_this_file_list)
+#   if(documents_in_this_file_list_length > 0){
+#     fields_by_document_matrix <- matrix(NA, nrow=documents_in_this_file_list_length, 
+#                                         ncol=2)
+#     #dimnames(fields_by_document_matrix) <- list(NULL, variable_names)
+#     for(d in 1:documents_in_this_file_list_length){
+#       document_to_parse <- xmlChildren(documents_in_this_file_list[[d]])
+#       fields_by_document_matrix[d, 1] <- xmlValue(document_to_parse[["id"]]) # These are named references to R list objects, nothing to do with XML
+#       fields_by_document_matrix[d, 2] <- xmlValue(document_to_parse[["notificationNumber"]])
+#       fields_by_document_matrix[d, 3] <- xmlValue(document_to_parse[["versionNumber"]])
+#       fields_by_document_matrix[d, 4] <- xmlValue(document_to_parse[["publishDate"]])
+#       fields_by_document_matrix[d, 5] <- xmlValue((document_to_parse[["placingWay"]])[["name"]])
+#       fields_by_document_matrix[d, 6] <- xmlValue(document_to_parse[["orderName"]])
+#       fields_by_document_matrix[d, 7] <- xmlValue(((document_to_parse[["order"]])[["placer"]])[["regNum"]])
+#       fields_by_document_matrix[d, 8] <- xmlValue(((document_to_parse[["order"]])[["placer"]])[["fullName"]])
+#     }} else {fields_by_document_matrix <- NA}
+#   files_parsed_into_list[[f]] <- fields_by_document_matrix
+  #free(file_to_parse)
+  print(paste(f, " of ", files_list_length, " files parsed", sep=""))
+}
+test_duration <- difftime(Sys.time(), test_start_time, units="secs")
+print(test_duration)
+# Small region
+# 2 fields: 11.6 secs
+# 8 fields: 22 secs
+# Moskva
+# 2 fields: 
+# 8 fields: 
+
+
+# Parallel version
+files_parsed_into_list <- vector(mode="list", length=files_list_length) # Preallocate this vector at its maximum possible length (number of files to parse)
+
+test_parallel_start_time <- Sys.time()
+temp <- foreach(f = 1:files_list_length, .packages=c("XML")) %dopar% {
+  file_to_parse <- xmlParse(as.character(files_list[f]))
+  documents_in_this_file_list <- xmlChildren(xmlRoot(file_to_parse))
+  documents_in_this_file_list_length <- length(documents_in_this_file_list)
+  if(documents_in_this_file_list_length > 0){
+    fields_by_document_matrix <- matrix(NA, nrow=documents_in_this_file_list_length, 
+                                        ncol=8)
+    #dimnames(fields_by_document_matrix) <- list(NULL, variable_names)
+    for(d in 1:documents_in_this_file_list_length){
+      document_to_parse <- xmlChildren(documents_in_this_file_list[[d]])
+      fields_by_document_matrix[d, 1] <- xmlValue(document_to_parse[["id"]])
+      fields_by_document_matrix[d, 2] <- xmlValue(document_to_parse[["notificationNumber"]])
+      fields_by_document_matrix[d, 3] <- xmlValue(document_to_parse[["versionNumber"]])
+      fields_by_document_matrix[d, 4] <- xmlValue(document_to_parse[["publishDate"]])
+      fields_by_document_matrix[d, 5] <- xmlValue((document_to_parse[["placingWay"]])[["name"]])
+      fields_by_document_matrix[d, 6] <- xmlValue(document_to_parse[["orderName"]])
+      fields_by_document_matrix[d, 7] <- xmlValue(((document_to_parse[["order"]])[["placer"]])[["regNum"]])
+      fields_by_document_matrix[d, 8] <- xmlValue(((document_to_parse[["order"]])[["placer"]])[["fullName"]])
+    }} else {fields_by_document_matrix <- NA}
+  files_parsed_into_list[[f]] <- fields_by_document_matrix
+  #print(paste(f, " of ", files_list_length, " files parsed", sep=""))
+}
+temp <- do.call(rbind, temp)
+test_parallel_duration <- difftime(Sys.time(), test_parallel_start_time, units="secs")
+print(test_parallel_duration)
+print(test_duration)
+
+
+
 library(XML)
 xmlfile <- xmlTreeParse(as.character(files_list[2]))
 xmltop <- xmlRoot(xmlfile)
@@ -67,10 +161,6 @@ plantcat_df <- data.frame(t(plantcat),row.names=NULL)
 
 
 # Try dumping each document inside a file in to a list first (doesn't seem sustainable on these data)
-parsing_configuration <- na.omit(read.xlsx(xlsxFile="3-Unpack/how-I-parse-the-xml.xlsx", 1))
-fields_to_parse <- (parsing_configuration$XMLFieldLocation[parsing_configuration$DocumentType==document_type])
-fields_to_parse_length <- length(fields_to_parse)
-variable_names <- parsing_configuration$VariableName[parsing_configuration$DocumentType==document_type]
 
 documents_in_this_directory_list <- vector(mode="list", length=0)
 
@@ -82,8 +172,8 @@ registerDoParallel()
 # Standard loop
 files_to_parse_list <- vector(mode="list", length=0)
 test_start_time <- Sys.time()
-#for(l in 1:files_list_length){
-for(l in 1:20){
+for(l in 1:files_list_length){
+#for(l in 1:20){
 files_to_parse_list[[l]] <- read_xml(as.character(files_list[l]), verbose=F)
 }
 test_duration <- (Sys.time() - test_start_time)
