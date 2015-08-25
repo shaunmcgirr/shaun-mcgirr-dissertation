@@ -1,0 +1,2 @@
+Server: Moscow notifications 10.84 hours; 690614 rows; 442MB saved
+Laptop: Moscow notifications 10.17 hours; 690614 rows; 49.6MB saved

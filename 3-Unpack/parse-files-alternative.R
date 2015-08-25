@@ -66,7 +66,7 @@ plantcat <- xmlSApply(xmltop, function(x) xmlSApply(x, xmlValue))
 plantcat_df <- data.frame(t(plantcat),row.names=NULL)
 
 
-# Try dumping each document inside a file in to a list first
+# Try dumping each document inside a file in to a list first (doesn't seem sustainable on these data)
 parsing_configuration <- na.omit(read.xlsx(xlsxFile="3-Unpack/how-I-parse-the-xml.xlsx", 1))
 fields_to_parse <- (parsing_configuration$XMLFieldLocation[parsing_configuration$DocumentType==document_type])
 fields_to_parse_length <- length(fields_to_parse)
@@ -82,7 +82,8 @@ registerDoParallel()
 # Standard loop
 files_to_parse_list <- vector(mode="list", length=0)
 test_start_time <- Sys.time()
-for(l in 1:files_list_length){
+#for(l in 1:files_list_length){
+for(l in 1:20){
 files_to_parse_list[[l]] <- read_xml(as.character(files_list[l]), verbose=F)
 }
 test_duration <- (Sys.time() - test_start_time)
