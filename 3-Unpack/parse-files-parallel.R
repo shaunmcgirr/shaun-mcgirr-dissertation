@@ -66,6 +66,7 @@ parse_files_parallel <- function(document_type, current_region){
 test_parallel_start_time <- Sys.time()
 #writeLines(c(""), "log.txt")
 temp <-  foreach (l = 1:files_list_length, .combine=rbind, .packages=c("xml2"), .verbose=F) %dopar% {
+#for (l in 1:files_list_length){  
     # All the action goes here (call separate functions here as necessary)
 #  sink("log.txt", append=TRUE)  
 #  cat(paste("Starting iteration",iteration,"\n")) 
