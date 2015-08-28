@@ -45,7 +45,7 @@ regions_number <- length(regions_list)
 #   test <- (xml_text(xml_find_all(document_to_parse, XMLFieldLocation, namespace)))
 #   fields_parsed_into_list[[f]] <- data.frame(test)
   #print(xml_text(xml_find_all(document_to_parse, XMLFieldLocation, namespace)))
-} # Probably need to write a big messy function that works, then abstract later
+ # Probably need to write a big messy function that works, then abstract later
 
 #document_vectors_list[[2]] <- data.frame(customer_regNum_text)
 #document_vectors_together_preallocated <- data.frame(document_vectors_list)
@@ -88,15 +88,19 @@ temp <-  foreach (l = 1:files_list_length, .combine=rbind, .packages=c("xml2"), 
             document_parsed <- vector(mode = "list", length = fields_to_parse_length)
             document_parsed <- lapply(fields_to_parse, function(x) xml_text(xml_find_all(document_to_parse, 
                                                                                          x, namespace)))
-            document_parsed[lapply(document_parsed, function(x) print(length(x)))]
+            #document_parsed_field_lengths <- (lapply(document_parsed, function(x) length(x)))
+            document_parsed[(lapply(document_parsed, function(x) length(x)))<1] <- NA
+            fields_by_document_matrix[d, ] <- unlist(document_parsed)
           
 #         variable_temporary <- xml_text(xml_find_all(document_to_parse, fields_to_parse[f], namespace))
 #         if(length(variable_temporary) > 0){fields_by_document_matrix[d, f] <- variable_temporary} else{
 #           fields_by_document_matrix[d, f] <- NA}
 #         }
-      }
-    } else {fields_by_document_matrix[d, ] <- NA}
-    files_parsed_into_list[[l]] <- fields_by_document_matrix
+    }
+    files_parsed_into_list[[l]] <- fields_by_document_matrix # Moving this inside the if statement so empty files do nothing
+    #} #else {fields_by_document_matrix[d, ] <- NA} # Try removing this, may not be needed now
+    } else {files_parsed_into_list[[l]] <- NA} # Try removing this, may not be needed now
+    #files_parsed_into_list[[l]] <- fields_by_document_matrix
     #print(paste(l, " of ", files_list_length, " files parsed", sep=""))
   }  
 test_parallel_duration <- (Sys.time() - test_parallel_start_time)
