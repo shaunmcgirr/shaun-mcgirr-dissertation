@@ -63,8 +63,8 @@ parse_files_key-value <- function(document_type, current_region){
   test_key_value_start_time <- Sys.time() # Set a timer
   
   # Loop over files in files_list, processing each in to files_parse_into_list
-  for (l in 1:files_list_length){
-#   temp <-  foreach (l = 1:files_list_length, .combine=c, .packages=c("xml2"), .verbose=F) %dopar% { # Parallel version
+  # for (l in 1:files_list_length){
+  temp <-  foreach (l = 1:files_list_length, .combine=rbind, .packages=c("xml2", "plyr"), .verbose=F) %dopar% { # Parallel version
     
     # Load a file from the list
     file_to_parse <- read_xml(as.character(files_list[l]))
@@ -109,13 +109,30 @@ parse_files_key-value <- function(document_type, current_region){
           #k <- k + fields_to_parse_length
           #key_value_list[[d]] <- key_value_output
           documents_in_this_file_parsed[[d]] <- key_value_output
+          # key_value_output
         }
-        files_parsed_into_list[[l]] <- documents_in_this_file_parsed
+        files_parsed_into_list[[l]] <- do.call(rbind, documents_in_this_file_parsed)
       } # else condition ends here
       print(paste(l, " of ", files_list_length, " files parsed", sep=""))
   }
+
+  test_key_value_duration <- (Sys.time() - test_key_value_start_time)
+  print(test_key_value_duration)
   
-test_output_matrix <- do.call(rbind, lapply(files_parsed_into_list, "[[", files_parsed_into_list))
+# Parallel test: 2.07 mins; 2.4
+# Single thread: 4.09 mins; 5.23
+  
+test_output_matrix <- do.call(rbind, files_parsed_into_list)
+  dimnames(test_output_matrix) <- list(NULL, c("document", "key", "value"))
+  
+  
+
+  
+  test_output_matrix <- do.call(rbind, (files_parsed_into_list[[2]]))
+  test_output_matrix <- do.call(rbind, documents_in_this_file_parsed)
+test_output_matrix <- do.call(rbind, lapply(files_parsed_into_list, function(x) [x])))
+lapply(files_parsed_into_list, function(x) [x]))
+
 
 lapply(files_parsed_into_list, "[[", "x")
 

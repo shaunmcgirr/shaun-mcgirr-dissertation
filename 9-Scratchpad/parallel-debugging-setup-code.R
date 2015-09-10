@@ -8,8 +8,8 @@ library(doParallel)
 library(plyr)
 library(dplyr) # Always load last!
 
-#data_directory <- "E:/Data/zakupki/"
-data_directory <- "~/data/zakupki/"
+data_directory <- "E:/Data/zakupki/"
+#data_directory <- "~/data/zakupki/"
 data_download_date <- "2015-06-13"
 
 data_unzipped_directory <- paste(data_directory, data_download_date, "/", "zakupki-", data_download_date, "-unzipped-data/94fz/", sep="")
