@@ -38,6 +38,17 @@ set_up_key_value_table <- function(document_type){
   key_value_ou
 }
 
+# Define a function to output the data once parsed
+parse_document_key_value <- function(document_counter){
+  document_id <- xml_text(xml_find_all(documents_in_this_file_list[document_counter], document_id_field, namespace))
+  key_value_output <- do.call(rbind.fill.matrix, lapply(fields_to_parse, function(x) cbind(document_id[document_counter], as.character(x), iconv(xml_text(xml_find_all(documents_in_this_file_list[document_counter], x, namespace)), from = "UTF-8", to = "UTF-8"))))
+  return(key_value_output)
+}
+
+
+
+
+
 # Define a function to do all the hard work parsing, taking two inputs: type of document and region
 parse_files_key-value <- function(document_type, current_region){
 
@@ -63,8 +74,8 @@ parse_files_key-value <- function(document_type, current_region){
   test_key_value_start_time <- Sys.time() # Set a timer
   
   # Loop over files in files_list, processing each in to files_parse_into_list
-  # for (l in 1:files_list_length){
-  temp <-  foreach (l = 1:files_list_length, .combine=rbind, .packages=c("xml2", "plyr"), .verbose=F) %dopar% { # Parallel version
+  for (l in 1:files_list_length){
+  # temp <-  foreach (l = 1:files_list_length, .combine=rbind, .packages=c("xml2", "plyr"), .verbose=F) %dopar% { # Parallel version
     
     # Load a file from the list
     file_to_parse <- read_xml(as.character(files_list[l]))
@@ -88,18 +99,17 @@ parse_files_key-value <- function(document_type, current_region){
         k <- 1
           
         # Hack the parser here, move to function later
-        for(d in 1:documents_in_this_file_list_length){
+        # for(d in 1:documents_in_this_file_list_length){
+        temp <-  foreach (d = 1:documents_in_this_file_list_length, .packages=c("xml2", "plyr"), .verbose=T) %do% { # Parallel version
           # print(paste("Parsing document ", d, " of ", documents_in_this_file_list_length, sep=""))
-          document_id <- xml_text(xml_find_all(documents_in_this_file_list[d], document_id_field, namespace))
-          key_value_output <- do.call(rbind.fill.matrix, lapply(fields_to_parse, function(x)
-            #cbind(as.character(x), xml_text(xml_find_all(documents_in_this_file_list[d], x, namespace)))))
-            #cbind(document_id[d], as.character(x), xml_text(xml_find_all(documents_in_this_file_list[d], x, namespace)))))
-            cbind(document_id[d], as.character(x), iconv(xml_text(xml_find_all(documents_in_this_file_list[d], x, namespace)), from = "UTF-8", to = "UTF-8"))))
+          # document_id <- xml_text(xml_find_all(documents_in_this_file_list[d], document_id_field, namespace))
+          # key_value_output <- do.call(rbind.fill.matrix, lapply(fields_to_parse, function(x) cbind(document_id[d], as.character(x), iconv(xml_text(xml_find_all(documents_in_this_file_list[d], x, namespace)), from = "UTF-8", to = "UTF-8"))))
 
 #           key_value_output <- matrix(NA, nrow=documents_in_this_file_list_length, ncol=3)
 #           key_value_output <- lapply(fields_to_parse, function(x)
 #              cbind(document_id[d], as.character(x), iconv(xml_text(xml_find_all(documents_in_this_file_list[d], x, namespace)), from = "UTF-8", to = "UTF-8")))
 
+          parse_document_key_value(d) # Probably doesn't work because of something to do with xml addressing?
                     
           # How long is this list?
           # length(key_value_output[,1])
@@ -108,19 +118,20 @@ parse_files_key-value <- function(document_type, current_region){
 
           #k <- k + fields_to_parse_length
           #key_value_list[[d]] <- key_value_output
-          documents_in_this_file_parsed[[d]] <- key_value_output
-          # key_value_output
+          #documents_in_this_file_parsed[[d]] <- key_value_output
+          #documents_in_this_file_parsed[[d]] <- parse_document_key_value(d)
         }
         files_parsed_into_list[[l]] <- do.call(rbind, documents_in_this_file_parsed)
       } # else condition ends here
-      # print(paste(l, " of ", files_list_length, " files parsed", sep=""))
+      print(paste(l, " of ", files_list_length, " files parsed", sep=""))
   }
 
   test_key_value_duration <- (Sys.time() - test_key_value_start_time)
   print(test_key_value_duration)
   
-# Parallel test: 2.07 mins  
-# Single thread: 4.09 mins
+# Parallel test: 2.07 mins; 2.4
+# Single thread: 4.09 mins; 5.23
+# Foreach single: 5.3
   
 test_output_matrix <- do.call(rbind, files_parsed_into_list)
   dimnames(test_output_matrix) <- list(NULL, c("document", "key", "value"))
