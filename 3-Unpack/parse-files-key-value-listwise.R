@@ -45,6 +45,18 @@ parse_document_key_value <- function(document_counter){
   return(key_value_output)
 }
 
+parse_document_key_value_lapply <- function(document_counter){
+  # document_id <- xml_text(xml_find_all(documents_in_this_file_list[document_counter], document_id_field, namespace))
+  key_value_output <- do.call(rbind.fill.matrix, 
+                              lapply(fields_to_parse, function(x) 
+                                cbind((xml_text(xml_find_all(documents_in_this_file_list[document_counter], document_id_field, namespace)))[document_counter], 
+                                      as.character(x), 
+                                      iconv(xml_text(xml_find_all(documents_in_this_file_list[document_counter], 
+                                                                  x, namespace)), from = "UTF-8", to = "UTF-8"
+                                            ))))
+  return(key_value_output)
+}
+
 
 
 
@@ -73,6 +85,19 @@ parse_files_key-value <- function(document_type, current_region){
   # Set a timer
   test_key_value_start_time <- Sys.time() # Set a timer
   
+  # Try loading the documents inside these files in to a list
+#   documents_per_file_list <- vector(mode="list", length=files_list_length)
+#   
+#   for (l in 1:files_list_length){
+#     # Load a file from the list, then its documents
+#     file_to_parse <- read_xml(as.character(files_list[l]))
+#       namespace <- xml_ns(file_to_parse)
+#     if(length(xml_children(file_to_parse)) < 1) {documents_per_file_list[[l]] <- NA}
+#       else {documents_per_file_list[[l]] <- xml_children(file_to_parse)}
+#     print(paste(l, " of ", files_list_length, " files loaded in memory", sep=""))
+#   }    
+### THIS RUNS OUT OF ROOM WITH MOSCOW, WOULD NEED TO BE 10 FILES AT A TIME AT MOST    
+  
   # Loop over files in files_list, processing each in to files_parse_into_list
   for (l in 1:files_list_length){
   # temp <-  foreach (l = 1:files_list_length, .combine=rbind, .packages=c("xml2", "plyr"), .verbose=F) %dopar% { # Parallel version
@@ -83,24 +108,47 @@ parse_files_key-value <- function(document_type, current_region){
       
     # Find the documents in this list so we have a primary key, count them
     documents_in_this_file_list <- xml_children(file_to_parse)
-      #documents_in_this_file_list <- (xml_find_all(file_to_parse, document_id_field,
-      #                                           namespace)) #Reference <oos:id> by full path
+      # documents_in_this_file_list <- lapply(documents_in_this_file_list, function(x) xml_children(x))
+      # documents_in_this_file_list <- lapply(file_to_parse, function(x) xml_children(x))
+      # documents_in_this_file_list <- (xml_find_all(file_to_parse, document_id_field, namespace)) 
+        # Reference <oos:id> by full path
       documents_in_this_file_list_length <- length(documents_in_this_file_list)
       documents_in_this_file_parsed <- vector(mode="list", length=documents_in_this_file_list_length)
+      documents_in_this_file_list_atomic <- vector(mode="list", length=documents_in_this_file_list_length)
+      
+    for(d in 1:documents_in_this_file_list_length){
+      documents_in_this_file_list_atomic[[d]] <- documents_in_this_file_list[d]
+    }
       
     # If fewer than one document in this file, sent NA to files_parsed_into_list
     if(documents_in_this_file_list_length < 1) {files_parsed_into_list[[l]] <- NA}
       else { # Otherwise, set up a key-value table to store parsing results
-        key_value_table <- matrix(NA, nrow=1, ncol=3)
-          dimnames(key_value_table) <- list(NULL, c("document", "key", "value"))
-        key_value_list <- vector(mode = "list", length=documents_in_this_file_list_length)
+#         key_value_table <- matrix(NA, nrow=1, ncol=3)
+#           dimnames(key_value_table) <- list(NULL, c("document", "key", "value"))
+#         key_value_list <- vector(mode = "list", length=documents_in_this_file_list_length)
+
+        test <- sapply(documents_in_this_file_list, function(d) xml_text(xml_find_all(d, document_id_field, namespace)), simplify=T) # Probably sapply/vapply is right, and just need the right syntax
+        test_atomic <- lapply(documents_in_this_file_list_atomic, function(d) xml_text(xml_find_all(d, document_id_field, namespace)))
         
+        {
+          # document_id <- xml_text(xml_find_all(documents_in_this_file_list[document_counter], document_id_field, namespace))
+          do.call(rbind.fill.matrix, 
+                                      lapply(fields_to_parse, function(x) 
+                                        cbind((xml_text(xml_find_all(d, document_id_field, namespace)))[d], 
+                                              as.character(x), 
+                                              iconv(xml_text(xml_find_all(d, 
+                                                                          x, namespace)), from = "UTF-8", to = "UTF-8"
+                                              ))))
+        })
+
+## Name the list elements with the document_id_field, eg list(J = 8, y = c(1, 2, 3), sigma = c(4, 5, 6))
+                
         # Set a counter for placing rows of output in the right place
         k <- 1
           
         # Hack the parser here, move to function later
         # for(d in 1:documents_in_this_file_list_length){
-        temp <-  foreach (d = 1:documents_in_this_file_list_length, .packages=c("xml2", "plyr"), .verbose=T) %do% { # Parallel version
+        temp <-  foreach (d = 1:documents_in_this_file_list_length, .packages=c("xml2", "plyr"), .verbose=T) %dopar% { # Parallel version
           # print(paste("Parsing document ", d, " of ", documents_in_this_file_list_length, sep=""))
           # document_id <- xml_text(xml_find_all(documents_in_this_file_list[d], document_id_field, namespace))
           # key_value_output <- do.call(rbind.fill.matrix, lapply(fields_to_parse, function(x) cbind(document_id[d], as.character(x), iconv(xml_text(xml_find_all(documents_in_this_file_list[d], x, namespace)), from = "UTF-8", to = "UTF-8"))))
