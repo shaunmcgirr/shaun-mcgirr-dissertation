@@ -8,6 +8,9 @@
 # 1. Housekeeping #
 ###################
 
+# Load functions
+source(file="3-Unpack/parse-files-functions.R")
+
 # Tell R where unzipped data is stored (at the end of unzip-files.R) and where to send it
 data_unzipped_directory <- set_data_subdirectory(data_directory, data_download_date, "unzipped")
 data_parsed_directory <- set_data_subdirectory(data_directory, data_download_date, "parsed")
@@ -33,7 +36,47 @@ parsing_configuration <- na.omit(read.xlsx(xlsxFile="3-Unpack/how-I-parse-the-xm
 #########################################################################
 
 
+################################################
+# 5. Begin processing #
+################################################
 
+# Replace this with a loop over regions, later on
+r <- 1
+current_region <- as.character(regions_list[r])
+
+# Specify a document_type by hand, to pass to functions (later store it in a metadata table based off parsing config, containing eg region name, a list of files for that region, and other data, making lapply easier)
+document_type <- "notifications"
+  fields_to_parse <- (parsing_configuration$XMLFieldName[parsing_configuration$DocumentType==document_type]) # loads fields from configuration
+  fields_to_parse_length <- length(fields_to_parse)
+  variable_names <- parsing_configuration$VariableName[parsing_configuration$DocumentType==document_type]  
+  document_id_field <- "/*/*/oos:id"
+
+# Create directories and find the files
+from_directory <- set_data_subdirectory_region(current_region, document_type, "from")
+to_directory <- set_data_subdirectory_region(current_region, document_type, "to")
+  dir.create(to_directory, recursive=TRUE)
+files_list <- generate_files_list(from_directory)
+  files_list_length <- length(files_list)
+
+# Load files (loop first, then lapply, then lapply on a truncated list that fits in memory)
+documents_in_this_directory_list <- lapply(files_list, load_documents_from_file)
+
+# Add metadata per file in the directory
+# test <- data.frame(c(rep(document_type, files_list_length)), documents_in_this_directory_list, rep(NA, files_list_length)) # Not possible to put XML inside DF
+
+# Create matrices for storage
+parsed_data_matrix <- as.data.frame(create_parsed_data_matrix(document_type, files_list_length))
+
+# Add in the loaded XML and calculate documents per row, reduce to files that have useful XML
+parsed_data_matrix$ParsedData <- documents_in_this_directory_list
+parsed_data_matrix$DocumentCount <- as.numeric(lapply(documents_in_this_directory_list, function(x) length(x)))
+parsed_data_matrix <- parsed_data_matrix[parsed_data_matrix$DocumentCount > 0, ]
+
+# Now pick the first row and parse it
+row <- 1
+file_to_parse <- parsed_data_matrix[row, ]
+
+  
 ################################################
 # 5. SCRATCHPAD #
 ################################################

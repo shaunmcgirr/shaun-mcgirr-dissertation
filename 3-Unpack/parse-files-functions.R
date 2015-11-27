@@ -19,6 +19,12 @@ set_data_subdirectory <- function(data_directory, data_download_date, subdirecto
   # return(data_subdirectory)
 }
 
+# Helper function for loading the per-region directories to process
+set_data_subdirectory_region <- function(current_region, document_type, direction){
+  if(direction=="from") return(paste0(data_unzipped_directory, current_region, "/", document_type)) # loads source directory
+  if(direction=="to") return(paste0(data_parsed_directory, current_region, "/", document_type)) # loads target directory
+}
+
 # Function to generate metadata about the regions to be processed
 generate_regions_list <- function(data_subdirectory){
   regions_list <- as.list(list.files(path=data_subdirectory))
@@ -35,10 +41,29 @@ generate_files_list <- function(directory){
 
 
 
-
-
 ###########################
 # 3. Processing functions #
 ###########################
+
+# Create a matrix ready to receive raw output from parsing (before we know how many documents) including 1) document type, 2) stored output, 3) metadata
+create_parsed_data_matrix <- function(document_type, parsed_data_matrix_length){
+  matrix(c(rep(document_type, parsed_data_matrix_length), rep(NA, parsed_data_matrix_length), rep(NA, parsed_data_matrix_length)),
+         nrow=parsed_data_matrix_length, ncol=3, dimnames=list(NULL, c("DocumentType", "ParsedData", "DocumentCount")))
+}
+
+# Load documents inside a file to a list
+load_documents_from_file <- function(file_to_load){
+  file_to_load_xml <- read_xml(as.character(file_to_load))
+    namespace <- xml_ns(file_to_load_xml)
+  documents_in_this_file_list <- xml_children(file_to_load_xml)
+  if(length(documents_in_this_file_list) > 0) return(documents_in_this_file_list)
+  # documents_in_this_file_list <- (xml_find_all(file_to_parse, document_id_field, namespace))
+}
+
+# Create a matrix ready to receive 1) a document type, 2) document ID, and 3) a list of key-value pairs
+create_key_value_matrix <- function(document_type, key_value_matrix_length){
+  matrix(c(rep(document_type, key_value_matrix_length), rep(NA, key_value_matrix_length), rep(NA, key_value_matrix_length)),
+         nrow=key_value_matrix_length, ncol=3, dimnames=list(NULL, c("DocumentType", "DocumentID", "KeyValues")))
+}
 
 
