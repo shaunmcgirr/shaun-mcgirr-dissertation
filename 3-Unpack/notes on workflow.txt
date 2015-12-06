@@ -1,0 +1,12 @@
+Sequence of operations on the xml
+
+CURRENT
+1) Put filenames in a list (DONE)
+2) Load XML objects in to lists in a dataframe, drop the empties (DONE)
+3) Unwind the lists stuck inside cells of dataframe so they are single objects
+
+
+BETTER
+1) Put filenames in a list (DONE)
+2) Load the XML objects in to a list by file (many objects per row, remove empties)
+3) Process this list in to one object per row

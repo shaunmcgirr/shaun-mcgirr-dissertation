@@ -17,8 +17,8 @@ data_parsed_directory <- set_data_subdirectory(data_directory, data_download_dat
 
 # Gather metadata about the regions to be worked on
 # regions_list <- generate_regions_list(data_parsed_directory)
-regions_list <- as.list("Adygeja_Resp")
-regions_number <- length(regions_list)
+  regions_list <- as.list("Adygeja_Resp")
+  regions_number <- length(regions_list)
 
 # Load and process the configuration file that tells later functions what to process
 parsing_configuration <- na.omit(read.xlsx(xlsxFile="3-Unpack/how-I-parse-the-xml.xlsx", 1))
@@ -49,20 +49,116 @@ document_type <- "notifications"
   fields_to_parse <- (parsing_configuration$XMLFieldName[parsing_configuration$DocumentType==document_type]) # loads fields from configuration
   fields_to_parse_length <- length(fields_to_parse)
   variable_names <- parsing_configuration$VariableName[parsing_configuration$DocumentType==document_type]  
-  document_id_field <- "/*/*/oos:id"
+  # document_id_field <- "/*/*/oos:id"
 
 # Create directories and find the files
 from_directory <- set_data_subdirectory_region(current_region, document_type, "from")
 to_directory <- set_data_subdirectory_region(current_region, document_type, "to")
   dir.create(to_directory, recursive=TRUE)
 files_list <- generate_files_list(from_directory)
-  files_list_length <- length(files_list)
+  files_list_length <- length(files_list) # Probably no longer needed
+  namespace <- xml_ns(read_xml(files_list[[1]])) # Hardcode the namespace based on the first file in the list
 
 # Load files (loop first, then lapply, then lapply on a truncated list that fits in memory)
 documents_in_this_directory_list <- lapply(files_list, load_documents_from_file)
+  documents_in_this_directory_list <- remove_empty_lists(documents_in_this_directory_list)
+  # documents_in_this_directory_list_length <- length(documents_in_this_directory_list)
 
 # Add metadata per file in the directory
 # test <- data.frame(c(rep(document_type, files_list_length)), documents_in_this_directory_list, rep(NA, files_list_length)) # Not possible to put XML inside DF
+  
+# XML operation directly on the non-unlisted list
+# xml_children(documents_in_this_directory_list[[1]])
+# xml_name(documents_in_this_directory_list[[1]])
+# xml_path(documents_in_this_directory_list[[1]])
+# xml_parents(documents_in_this_directory_list[[1]])
+# xml_contents(documents_in_this_directory_list[[1]])
+
+# Process this list in to one object per XML node
+documents_in_this_directory_list <- unlist(documents_in_this_directory_list, recursive = FALSE)
+  # documents_in_this_directory_list <- documents_in_this_directory_list[1:1000]
+# test_list <- lapply(documents_in_this_directory_list, as_list) # Potentially costly as puts signatures in list
+
+# test_output_1 <- lapply(test_list, function(x) unlist(x$notificationNumber))
+# test_output_2 <- lapply(test_list, function(x) unlist(x$versionNumber))
+
+# test_output_combined <- cbind(test_output_1, test_output_2)
+
+# Parse one detail list-wise, for good luck
+# document_to_parse <- documents_in_this_directory_list[[1]]
+# z <- xml_text(xml_find_all(document_to_parse, fields_to_parse[1], ns = namespace))
+
+# output_field <- function(document_to_parse, field_to_parse, namespace){
+#   x <- xml_text(xml_find_all(document_to_parse, field_to_parse, ns = namespace))
+# }
+
+# output_field <- function(document_to_parse){
+#   x <- xml_text(xml_find_all(document_to_parse, "oos:notificationNumber", ns = namespace))
+#   y <- xml_text(xml_find_all(document_to_parse, "oos:id", ns = namespace))
+#   z <- xml_text(xml_find_all(document_to_parse, "oos:publishDate", ns = namespace))
+#   a <- xml_text(xml_find_all(document_to_parse, "oos:orderName", ns = namespace))
+#   b <- xml_text(xml_find_all(document_to_parse, "oos:order/oos:placer/oos:regNum", ns = namespace))
+#   c <- xml_text(xml_find_all(document_to_parse, "oos:order/oos:placer/oos:fullName", ns = namespace))
+#   d <- xml_text(xml_find_all(document_to_parse, "oos:lots/oos:lot/oos:products/oos:product/oos:code", ns = namespace))
+#   return(list(x, y, z, a, b, c, d))
+# }
+# 
+# output_one_field <- function(field_to_parse, document_to_parse){
+#   output_field <- xml_text(xml_find_all(document_to_parse, field_to_parse, ns = namespace))
+# }
+# 
+# output_all_fields <- function(fields_to_parse, document_to_parse){
+#   # output_fields <- lapply(fields_to_parse, output_one_field)
+#   output_fields <- lapply(fields_to_parse, function(x) xml_text(xml_find_all(document_to_parse, x, ns = namespace)))
+# }
+
+output_document <- function(document_to_parse, fields_to_parse){
+  output_fields <- lapply(fields_to_parse, function(x) xml_text(xml_find_all(document_to_parse, x, ns = namespace)))
+}
+
+testing_output <- lapply(documents_in_this_directory_list, output_document, fields_to_parse = fields_to_parse)
+
+
+testing_output <- lapply(documents_in_this_directory_list, output_field)
+head(testing_output)
+testing_output[[1]]
+testing_output_data_frame <- do.call("rbind", testing_output)
+colnames(testing_output_data_frame) <- parsing_configuration$VariableName[parsing_configuration$DocumentType == document_type]
+
+
+xml_type(document_to_parse)
+xml_siblings(document_to_parse)
+xml_children(document_to_parse)
+xml_attr()
+xml_name(document_to_parse)
+xml_path(document_to_parse)
+xml_structure(document_to_parse)
+xml_text(xml_find_all(document_to_parse, "/*/*[4]"))
+
+test_list <- as_list(document_to_parse)
+test_list$notificationNumber
+         
+namespace <- xml_ns(document_to_parse)
+
+document_to_parse_children <- xml_children(documents_in_this_directory_list[[2]])
+xml_type(document_to_parse_children)
+xml_name(document_to_parse_children)
+xml_path(document_to_parse_children)
+
+  
+test <- mapply(documents_in_this_directory_list, "[", 50)
+testing <- sapply(documents_in_this_directory_list, "[", i=1)
+
+a <- documents_in_this_directory_list[[1]]
+b <- documents_in_this_directory_list[[239]]
+a[1]
+a[2]
+b[1]
+b[2]
+appended <- append(a, b)
+test <- unlist(documents_in_this_directory_list, recursive = FALSE)
+# write a function to do this internally: inputs are the list, and use its length inside the function to step through and unpack
+# or do some kind of "spreading" across a matrix?
 
 # Create matrices for storage
 parsed_data_matrix <- as.data.frame(create_parsed_data_matrix(document_type, files_list_length))
@@ -71,10 +167,23 @@ parsed_data_matrix <- as.data.frame(create_parsed_data_matrix(document_type, fil
 parsed_data_matrix$ParsedData <- documents_in_this_directory_list
 parsed_data_matrix$DocumentCount <- as.numeric(lapply(documents_in_this_directory_list, function(x) length(x)))
 parsed_data_matrix <- parsed_data_matrix[parsed_data_matrix$DocumentCount > 0, ]
+sum(parsed_data_matrix$DocumentCount)
+
+# rm(documents_in_this_directory_list)
 
 # Now pick the first row and parse it
 row <- 1
-file_to_parse <- parsed_data_matrix[row, ]
+file_to_parse <- parsed_data_matrix[row, 2]
+
+document_parsed <- vector(mode = "list", length = fields_to_parse_length)
+document_parsed <- lapply(fields_to_parse, function(x) xml_text(xml_find_all(file_to_parse, 
+                                                                             x, namespace)))
+a <- sapply(file_to_parse, '[', 1)
+sapply(file_to_parse, '[', 2)
+sapply(file_to_parse, '[', 3)
+test <- do.call("rbind", lapply(file_to_parse, '['))
+test <- lapply(file_to_parse, '[')
+
 
   
 ################################################

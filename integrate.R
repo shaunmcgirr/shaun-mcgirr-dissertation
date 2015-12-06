@@ -11,6 +11,7 @@
 # install.packages('foreach')
 # install.packages('doParallel')
 # install.packages('plyr')
+# install.packages('rlist')
 # install.packages('dplyr')
 library(xml2)
 library(magrittr)
@@ -18,6 +19,7 @@ library(openxlsx)
 library(foreach)
 library(doParallel)
 library(plyr)
+library(rlist)
 library(dplyr) # Always load last!
 
 #----- 2. Set project-wide parameters -----
@@ -32,6 +34,6 @@ data_download_date <- "2015-06-13"
 Sys.setlocale("LC_CTYPE", "Russian") # This may not be necessary on Mac/Linux
 
 #----- 3. Run scripts for each step -----
-source("3-Unpack//unzip-files.R") # unzips files from raw-data to unzipped-data
-source("3-Unpack//parse-files.R") # parses the unzipped xml files from unzipped-data to parsed-data
+# source("3-Unpack//unzip-files.R") # unzips files from raw-data to unzipped-data
+# source("3-Unpack//parse-files.R") # parses the unzipped xml files from unzipped-data to parsed-data
 

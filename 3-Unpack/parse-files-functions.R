@@ -39,6 +39,11 @@ generate_files_list <- function(directory){
   # files_list_length <- length(files_list) 
   }
 
+# Remove empty lists from inside lists
+remove_empty_lists  <-  function(x.list){   # delele null/empty entries in a list
+  x.list[unlist(lapply(x.list, length) != 0)]
+}
+
 
 
 ###########################
@@ -53,11 +58,27 @@ create_parsed_data_matrix <- function(document_type, parsed_data_matrix_length){
 
 # Load documents inside a file to a list
 load_documents_from_file <- function(file_to_load){
-  file_to_load_xml <- read_xml(as.character(file_to_load))
-    namespace <- xml_ns(file_to_load_xml)
-  documents_in_this_file_list <- xml_children(file_to_load_xml)
+  # file_to_load_xml <- read_xml(as.character(file_to_load))
+    # namespace <- xml_ns(file_to_load_xml)
+  documents_in_this_file_list <- xml_children(read_xml(as.character(file_to_load)))
   if(length(documents_in_this_file_list) > 0) return(documents_in_this_file_list)
+  # if(length(documents_in_this_file_list) > 0) return(documents_in_this_file_list[[1]])
   # documents_in_this_file_list <- (xml_find_all(file_to_parse, document_id_field, namespace))
+}
+
+# Separate items from a list in to standalone items
+separate_items_from_list <- function(list_to_separate){
+  number_of_items_in_list <- length(list_to_separate)
+  for (i in 1:number_of_items_in_list){
+    print(list_to_separate[i])
+  }  
+  lapply(list_to_separate, function(x) x)
+}
+
+# Unwind the documents stuck inside lists stuck (in turn) inside cells of data frame so we have a list of singular objects
+unwind_list_of_documents <- function(list_to_unwind){
+  number_of_documents <- sum(as.numeric(lapply(list_to_unwind, function(x) length(x))))
+  list_of_documents <- vector(mode = "list", length = number_of_documents)
 }
 
 # Create a matrix ready to receive 1) a document type, 2) document ID, and 3) a list of key-value pairs
