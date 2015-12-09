@@ -11,13 +11,14 @@
 # Load functions
 source(file="3-Unpack/parse-files-functions.R")
 
-# Tell R where unzipped data is stored (at the end of unzip-files.R) and where to send it
+# Tell R where unzipped data is stored (at the end of 3-Unpack/unzip-files.R) and where to send it
 data_unzipped_directory <- set_data_subdirectory(data_directory, data_download_date, "unzipped")
 data_parsed_directory <- set_data_subdirectory(data_directory, data_download_date, "parsed")
 
 # Gather metadata about the regions to be worked on
 # regions_list <- generate_regions_list(data_parsed_directory)
   regions_list <- as.list("Adygeja_Resp")
+  # regions_list <- as.list("Moskva")
   regions_number <- length(regions_list)
 
 # Load and process the configuration file that tells later functions what to process
@@ -59,67 +60,53 @@ files_list <- generate_files_list(from_directory)
   files_list_length <- length(files_list) # Probably no longer needed
   namespace <- xml_ns(read_xml(files_list[[1]])) # Hardcode the namespace based on the first file in the list
 
+# Batch up the list in to chunks
+batch_size <- 50
+  number_of_batches <- ceiling(files_list_length/batch_size)
+  batch_number <- gl(number_of_batches, batch_size, length = files_list_length)
+# list_of_batches <- (rep(1:number_of_batches, each = batch_size))[1:files_list_length]
+# files_list <- cbind(files_list, batch_number)
+  # colnames(files_list) <- c("file", "batch")
+batch_list <- split(files_list, batch_number)
+
+# Process two batches in a list
+# batch_to_process <- unlist(batch_list[[1]])
+# batch_list <- batch_list[1:100]
+
+# Function to process a single document
+output_document <- function(document_to_parse, fields_to_parse){
+  output_fields <- lapply(fields_to_parse, function(x) iconv(xml_text(xml_find_all(document_to_parse, x, ns = namespace)), from = "UTF-8", to = "UTF-8"))
+}
+
+# Function to turn batch_list item containing a file path in to list of documents
+find_documents_in_this_batch <- function(batch_list_item){
+  documents_in_this_batch <- lapply(batch_list_item, load_documents_from_file)
+  documents_in_this_batch <- unlist(remove_empty_lists(documents_in_this_batch), recursive = FALSE)
+}
+
+# Function to process the whole batch at once
+process_batch <- function(batch_to_process){
+  documents_in_this_batch <- find_documents_in_this_batch(batch_to_process)
+  batch_output <- lapply(documents_in_this_batch, output_document, fields_to_parse = fields_to_parse)
+  return(batch_output)
+}
+
+# Process the batch
+testing_batch_output <- lapply(batch_list, process_batch)
+testing_batch_output_data_frame <- do.call("rbind", unlist(testing_batch_output, recursive = FALSE))
+colnames(testing_batch_output_data_frame) <- parsing_configuration$VariableName[parsing_configuration$DocumentType == document_type]
+
+  
 # Load files (loop first, then lapply, then lapply on a truncated list that fits in memory)
 documents_in_this_directory_list <- lapply(files_list, load_documents_from_file)
   documents_in_this_directory_list <- remove_empty_lists(documents_in_this_directory_list)
   # documents_in_this_directory_list_length <- length(documents_in_this_directory_list)
 
-# Add metadata per file in the directory
-# test <- data.frame(c(rep(document_type, files_list_length)), documents_in_this_directory_list, rep(NA, files_list_length)) # Not possible to put XML inside DF
-  
-# XML operation directly on the non-unlisted list
-# xml_children(documents_in_this_directory_list[[1]])
-# xml_name(documents_in_this_directory_list[[1]])
-# xml_path(documents_in_this_directory_list[[1]])
-# xml_parents(documents_in_this_directory_list[[1]])
-# xml_contents(documents_in_this_directory_list[[1]])
-
 # Process this list in to one object per XML node
 documents_in_this_directory_list <- unlist(documents_in_this_directory_list, recursive = FALSE)
-  # documents_in_this_directory_list <- documents_in_this_directory_list[1:1000]
-# test_list <- lapply(documents_in_this_directory_list, as_list) # Potentially costly as puts signatures in list
 
-# test_output_1 <- lapply(test_list, function(x) unlist(x$notificationNumber))
-# test_output_2 <- lapply(test_list, function(x) unlist(x$versionNumber))
-
-# test_output_combined <- cbind(test_output_1, test_output_2)
-
-# Parse one detail list-wise, for good luck
-# document_to_parse <- documents_in_this_directory_list[[1]]
-# z <- xml_text(xml_find_all(document_to_parse, fields_to_parse[1], ns = namespace))
-
-# output_field <- function(document_to_parse, field_to_parse, namespace){
-#   x <- xml_text(xml_find_all(document_to_parse, field_to_parse, ns = namespace))
-# }
-
-# output_field <- function(document_to_parse){
-#   x <- xml_text(xml_find_all(document_to_parse, "oos:notificationNumber", ns = namespace))
-#   y <- xml_text(xml_find_all(document_to_parse, "oos:id", ns = namespace))
-#   z <- xml_text(xml_find_all(document_to_parse, "oos:publishDate", ns = namespace))
-#   a <- xml_text(xml_find_all(document_to_parse, "oos:orderName", ns = namespace))
-#   b <- xml_text(xml_find_all(document_to_parse, "oos:order/oos:placer/oos:regNum", ns = namespace))
-#   c <- xml_text(xml_find_all(document_to_parse, "oos:order/oos:placer/oos:fullName", ns = namespace))
-#   d <- xml_text(xml_find_all(document_to_parse, "oos:lots/oos:lot/oos:products/oos:product/oos:code", ns = namespace))
-#   return(list(x, y, z, a, b, c, d))
-# }
-# 
-# output_one_field <- function(field_to_parse, document_to_parse){
-#   output_field <- xml_text(xml_find_all(document_to_parse, field_to_parse, ns = namespace))
-# }
-# 
-# output_all_fields <- function(fields_to_parse, document_to_parse){
-#   # output_fields <- lapply(fields_to_parse, output_one_field)
-#   output_fields <- lapply(fields_to_parse, function(x) xml_text(xml_find_all(document_to_parse, x, ns = namespace)))
-# }
-
-output_document <- function(document_to_parse, fields_to_parse){
-  output_fields <- lapply(fields_to_parse, function(x) xml_text(xml_find_all(document_to_parse, x, ns = namespace)))
-}
 
 testing_output <- lapply(documents_in_this_directory_list, output_document, fields_to_parse = fields_to_parse)
-
-
-testing_output <- lapply(documents_in_this_directory_list, output_field)
 head(testing_output)
 testing_output[[1]]
 testing_output_data_frame <- do.call("rbind", testing_output)
