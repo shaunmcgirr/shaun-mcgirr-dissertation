@@ -17,8 +17,8 @@ data_parsed_directory <- set_data_subdirectory(data_directory, data_download_dat
 
 # Gather metadata about the regions to be worked on
 # regions_list <- generate_regions_list(data_parsed_directory)
-  regions_list <- as.list("Adygeja_Resp")
-  # regions_list <- as.list("Moskva")
+  # regions_list <- as.list("Adygeja_Resp")
+  regions_list <- as.list("Moskva")
   regions_number <- length(regions_list)
 
 # Load and process the configuration file that tells later functions what to process
@@ -61,7 +61,7 @@ files_list <- generate_files_list(from_directory)
   namespace <- xml_ns(read_xml(files_list[[1]])) # Hardcode the namespace based on the first file in the list
 
 # Batch up the list in to chunks
-batch_size <- 50
+batch_size <- 3
   number_of_batches <- ceiling(files_list_length/batch_size)
   batch_number <- gl(number_of_batches, batch_size, length = files_list_length)
 # list_of_batches <- (rep(1:number_of_batches, each = batch_size))[1:files_list_length]
@@ -71,7 +71,7 @@ batch_list <- split(files_list, batch_number)
 
 # Process two batches in a list
 # batch_to_process <- unlist(batch_list[[1]])
-# batch_list <- batch_list[1:100]
+batch_list <- batch_list[1:100]
 
 # Function to process a single document
 output_document <- function(document_to_parse, fields_to_parse){
@@ -85,14 +85,25 @@ find_documents_in_this_batch <- function(batch_list_item){
 }
 
 # Function to process the whole batch at once
-process_batch <- function(batch_to_process){
+process_batch <- function(batch_to_process, batch_sequence){
   documents_in_this_batch <- find_documents_in_this_batch(batch_to_process)
   batch_output <- lapply(documents_in_this_batch, output_document, fields_to_parse = fields_to_parse)
   return(batch_output)
+#   batch_output_file_name <- paste0(data_parsed_directory, current_region, "/", document_type, "/",
+#                                    current_region, "_", document_type, "_", batch_sequence, ".rda")
+  # batch_output_data_frame <- do.call("rbind", batch_output)
+  # save(batch_output_data_frame, file = batch_output_file_name)
+  # return(batch_output_file_name)
+  # output_list <- list(batch_output_file_name, batch_output_data_frame)
+  # rm(list = c("documents_in_this_batch", "batch_output", "batch_output_data_frame"))
+  # return(output_list)
+  return(batch_output)
 }
 
-# Process the batch
+# Process the batch (this could be parallelised)
 testing_batch_output <- lapply(batch_list, process_batch)
+# testing_batch_output_mapply <- mapply(process_batch, batch_to_process = batch_list, 
+                                      batch_sequence = seq_along(batch_list))
 testing_batch_output_data_frame <- do.call("rbind", unlist(testing_batch_output, recursive = FALSE))
 colnames(testing_batch_output_data_frame) <- parsing_configuration$VariableName[parsing_configuration$DocumentType == document_type]
 
