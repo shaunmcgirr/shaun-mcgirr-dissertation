@@ -88,7 +88,7 @@ find_documents_in_this_batch <- function(batch_list_item){
 process_batch <- function(batch_to_process, batch_sequence){
   documents_in_this_batch <- find_documents_in_this_batch(batch_to_process)
   batch_output <- lapply(documents_in_this_batch, output_document, fields_to_parse = fields_to_parse)
-  return(batch_output)
+  # return(batch_output)
 #   batch_output_file_name <- paste0(data_parsed_directory, current_region, "/", document_type, "/",
 #                                    current_region, "_", document_type, "_", batch_sequence, ".rda")
   # batch_output_data_frame <- do.call("rbind", batch_output)
@@ -96,6 +96,7 @@ process_batch <- function(batch_to_process, batch_sequence){
   # return(batch_output_file_name)
   # output_list <- list(batch_output_file_name, batch_output_data_frame)
   # rm(list = c("documents_in_this_batch", "batch_output", "batch_output_data_frame"))
+  rm("documents_in_this_batch")
   # return(output_list)
   return(batch_output)
 }
