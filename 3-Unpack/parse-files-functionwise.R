@@ -100,10 +100,10 @@ process_batch <- function(batch_to_process, batch_sequence){
   return(batch_output)
 }
 
-# Process the batch (this could be parallelised)
+# Process the batch (this could be parallelised, also try the version that saved/removed again)
 testing_batch_output <- lapply(batch_list, process_batch)
 # testing_batch_output_mapply <- mapply(process_batch, batch_to_process = batch_list, 
-                                      batch_sequence = seq_along(batch_list))
+#                                       batch_sequence = seq_along(batch_list))
 testing_batch_output_data_frame <- do.call("rbind", unlist(testing_batch_output, recursive = FALSE))
 colnames(testing_batch_output_data_frame) <- parsing_configuration$VariableName[parsing_configuration$DocumentType == document_type]
 
