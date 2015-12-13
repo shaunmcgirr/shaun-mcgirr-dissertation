@@ -50,12 +50,6 @@ remove_empty_lists  <-  function(x.list){   # delele null/empty entries in a lis
 # 3. Processing functions #
 ###########################
 
-# Create a matrix ready to receive raw output from parsing (before we know how many documents) including 1) document type, 2) stored output, 3) metadata
-create_parsed_data_matrix <- function(document_type, parsed_data_matrix_length){
-  matrix(c(rep(document_type, parsed_data_matrix_length), rep(NA, parsed_data_matrix_length), rep(NA, parsed_data_matrix_length)),
-         nrow=parsed_data_matrix_length, ncol=3, dimnames=list(NULL, c("DocumentType", "ParsedData", "DocumentCount")))
-}
-
 # Load documents inside a file to a list
 load_documents_from_file <- function(file_to_load){
   # file_to_load_xml <- read_xml(as.character(file_to_load))
@@ -66,25 +60,63 @@ load_documents_from_file <- function(file_to_load){
   # documents_in_this_file_list <- (xml_find_all(file_to_parse, document_id_field, namespace))
 }
 
-# Separate items from a list in to standalone items
-separate_items_from_list <- function(list_to_separate){
-  number_of_items_in_list <- length(list_to_separate)
-  for (i in 1:number_of_items_in_list){
-    print(list_to_separate[i])
-  }  
-  lapply(list_to_separate, function(x) x)
+# Function to process a single XML document
+output_document <- function(document_to_parse, fields_to_parse){
+  output_fields <- lapply(fields_to_parse, function(x) iconv(xml_text(xml_find_all(document_to_parse, x, ns = namespace)), from = "UTF-8", to = "UTF-8"))
 }
+
+# Function to turn batch_list item containing a file path in to list of documents
+find_documents_in_this_batch <- function(batch_list_item){
+  documents_in_this_batch <- lapply(batch_list_item, load_documents_from_file)
+  documents_in_this_batch <- unlist(remove_empty_lists(documents_in_this_batch), recursive = FALSE)
+}
+
+# Function to process the whole batch at once
+process_batch <- function(batch_to_process, batch_sequence){
+  documents_in_this_batch <- find_documents_in_this_batch(batch_to_process)
+  batch_output <- lapply(documents_in_this_batch, output_document, fields_to_parse = fields_to_parse)
+  # return(batch_output)
+  #   batch_output_file_name <- paste0(data_parsed_directory, current_region, "/", document_type, "/",
+  #                                    current_region, "_", document_type, "_", batch_sequence, ".rda")
+  # batch_output_data_frame <- do.call("rbind", batch_output)
+  # save(batch_output_data_frame, file = batch_output_file_name)
+  # return(batch_output_file_name)
+  # output_list <- list(batch_output_file_name, batch_output_data_frame)
+  # rm(list = c("documents_in_this_batch", "batch_output", "batch_output_data_frame"))
+  rm("documents_in_this_batch")
+  # return(output_list)
+  return(batch_output)
+}
+
+
+################################################
+# 5. SCRATCHPAD #
+################################################
+
+
+# Create a matrix ready to receive raw output from parsing (before we know how many documents) including 1) document type, 2) stored output, 3) metadata
+# create_parsed_data_matrix <- function(document_type, parsed_data_matrix_length){
+#   matrix(c(rep(document_type, parsed_data_matrix_length), rep(NA, parsed_data_matrix_length), rep(NA, parsed_data_matrix_length)),
+#          nrow=parsed_data_matrix_length, ncol=3, dimnames=list(NULL, c("DocumentType", "ParsedData", "DocumentCount")))
+# }
+
+# Separate items from a list in to standalone items
+# separate_items_from_list <- function(list_to_separate){
+#   number_of_items_in_list <- length(list_to_separate)
+#   for (i in 1:number_of_items_in_list){
+#     print(list_to_separate[i])
+#   }  
+#   lapply(list_to_separate, function(x) x)
+# }
 
 # Unwind the documents stuck inside lists stuck (in turn) inside cells of data frame so we have a list of singular objects
-unwind_list_of_documents <- function(list_to_unwind){
-  number_of_documents <- sum(as.numeric(lapply(list_to_unwind, function(x) length(x))))
-  list_of_documents <- vector(mode = "list", length = number_of_documents)
-}
+# unwind_list_of_documents <- function(list_to_unwind){
+#   number_of_documents <- sum(as.numeric(lapply(list_to_unwind, function(x) length(x))))
+#   list_of_documents <- vector(mode = "list", length = number_of_documents)
+# }
 
 # Create a matrix ready to receive 1) a document type, 2) document ID, and 3) a list of key-value pairs
-create_key_value_matrix <- function(document_type, key_value_matrix_length){
-  matrix(c(rep(document_type, key_value_matrix_length), rep(NA, key_value_matrix_length), rep(NA, key_value_matrix_length)),
-         nrow=key_value_matrix_length, ncol=3, dimnames=list(NULL, c("DocumentType", "DocumentID", "KeyValues")))
-}
-
-
+# create_key_value_matrix <- function(document_type, key_value_matrix_length){
+#   matrix(c(rep(document_type, key_value_matrix_length), rep(NA, key_value_matrix_length), rep(NA, key_value_matrix_length)),
+#          nrow=key_value_matrix_length, ncol=3, dimnames=list(NULL, c("DocumentType", "DocumentID", "KeyValues")))
+# }
