@@ -21,8 +21,9 @@ data_parsed_directory <- set_data_subdirectory(data_directory, data_download_dat
 
 # Gather metadata about the regions to be worked on
 # regions_list <- generate_regions_list(data_parsed_directory)
-regions_list <- as.list("Adygeja_Resp")
-# regions_list <- as.list("Moskva")
+# regions_list <- as.list("Adygeja_Resp")
+regions_list <- as.list("Moskva")
+# regions_list <- as.list(c("Adygeja_Resp", "Moskva"))
 regions_number <- length(regions_list)
 
 #########################################################################
@@ -32,46 +33,60 @@ regions_number <- length(regions_list)
 # Load and process the configuration file that tells later functions what to process
 parsing_configuration <- na.omit(read.xlsx(xlsxFile="3-Unpack/how-I-parse-the-xml.xlsx", 1))
 
+# What kind of documents to parse?
+document_types_list <- as.list(c("contracts", "notifications"))
 
 ################################################
 # 5. Begin processing #
 ################################################
 
-# Replace this with a loop over regions, later on
-r <- 1
-current_region <- as.character(regions_list[r])
+# Begin control loop over regions (no XML processing should be done with loops)
+for(r in 1:regions_number){
+  # r <- 1
+  current_region <- as.character(regions_list[r])
+  
+  # Begin control loop over document types
+  for(d in 1:length(document_types_list)){
+  # document_type <- "notifications"
+  document_type <- as.character(document_types_list[d])
+    
+    fields_to_parse <- (parsing_configuration$XMLFieldName[parsing_configuration$DocumentType==document_type]) # loads fields from configuration
+    # fields_to_parse_length <- length(fields_to_parse) # Probably no longer needed
+    variable_names <- parsing_configuration$VariableName[parsing_configuration$DocumentType==document_type]  
 
-# Specify a document_type by hand, to pass to functions (later store it in a metadata table based off parsing config, containing eg region name, a list of files for that region, and other data, making lapply easier)
-document_type <- "notifications"
-  fields_to_parse <- (parsing_configuration$XMLFieldName[parsing_configuration$DocumentType==document_type]) # loads fields from configuration
-  # fields_to_parse_length <- length(fields_to_parse) # Probably no longer needed
-  variable_names <- parsing_configuration$VariableName[parsing_configuration$DocumentType==document_type]  
+    # Create directories and find the files
+    from_directory <- set_data_subdirectory_region(current_region, document_type, "from")
+    to_directory <- set_data_subdirectory_region(current_region, document_type, "to")
+      dir.create(to_directory, recursive=TRUE)
+    files_list <- generate_files_list(from_directory)
+      files_list_length <- length(files_list) 
+    namespace <- xml_ns(read_xml(files_list[[1]])) # Hardcode namespace based on  first file in list
 
-# Create directories and find the files
-from_directory <- set_data_subdirectory_region(current_region, document_type, "from")
-to_directory <- set_data_subdirectory_region(current_region, document_type, "to")
-  dir.create(to_directory, recursive=TRUE)
-files_list <- generate_files_list(from_directory)
-  files_list_length <- length(files_list) 
-namespace <- xml_ns(read_xml(files_list[[1]])) # Hardcode the namespace based on the first file in the list
+    # Batch up the list in to chunks
+    batch_size <- 3
+      number_of_batches <- ceiling(files_list_length/batch_size)
+      batch_number <- gl(number_of_batches, batch_size, length = files_list_length)
+    batch_list <- split(files_list, batch_number)
 
-# Batch up the list in to chunks
-batch_size <- 3
-  number_of_batches <- ceiling(files_list_length/batch_size)
-  batch_number <- gl(number_of_batches, batch_size, length = files_list_length)
-batch_list <- split(files_list, batch_number)
+    # Subset of batches during development
+    # batch_list <- batch_list[1:10]
 
-# Subset of batches during development
-batch_list <- batch_list[1:10]
+    # Process the batch (this could be parallelised, also try the version that saved/removed again)
+    batch_output_list <- lapply(batch_list, process_batch)
+    # testing_batch_output_mapply <- mapply(process_batch, batch_to_process = batch_list, 
+    #                                       batch_sequence = seq_along(batch_list))
+    batch_output_data_frame <- do.call("rbind", unlist(batch_output_list, recursive = FALSE))
+      colnames(batch_output_data_frame) <- parsing_configuration$VariableName[parsing_configuration$DocumentType == document_type]
+      filename <- paste0(to_directory, "/", current_region, "_", document_type, "_parsed_",
+                         data_download_date, ".rda")
+      save(batch_output_data_frame, file=filename)
+    
+    # Clean up
+    rm(list = c("files_list", "namespace", "batch_list", "batch_output_list", "batch_output_data_frame"))
+    gc()
+  } # Closes control loop over document_types_list in this region
 
-# Process the batch (this could be parallelised, also try the version that saved/removed again)
-testing_batch_output <- lapply(batch_list, process_batch)
-# testing_batch_output_mapply <- mapply(process_batch, batch_to_process = batch_list, 
-#                                       batch_sequence = seq_along(batch_list))
-testing_batch_output_data_frame <- do.call("rbind", unlist(testing_batch_output, recursive = FALSE))
-colnames(testing_batch_output_data_frame) <- parsing_configuration$VariableName[parsing_configuration$DocumentType == document_type]
-
-
+} # Closes control loop over regions_list
 
   
 ################################################
