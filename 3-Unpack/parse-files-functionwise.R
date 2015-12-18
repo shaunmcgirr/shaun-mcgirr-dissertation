@@ -21,8 +21,8 @@ data_parsed_directory <- set_data_subdirectory(data_directory, data_download_dat
 
 # Gather metadata about the regions to be worked on
 # regions_list <- generate_regions_list(data_parsed_directory)
-# regions_list <- as.list("Adygeja_Resp")
-regions_list <- as.list("Moskva")
+regions_list <- as.list("Adygeja_Resp")
+# regions_list <- as.list("Moskva")
 # regions_list <- as.list(c("Adygeja_Resp", "Moskva"))
 regions_number <- length(regions_list)
 
@@ -72,17 +72,27 @@ for(r in 1:regions_number){
     # batch_list <- batch_list[1:10]
 
     # Process the batch (this could be parallelised, also try the version that saved/removed again)
-    batch_output_list <- lapply(batch_list, process_batch)
-    # testing_batch_output_mapply <- mapply(process_batch, batch_to_process = batch_list, 
-    #                                       batch_sequence = seq_along(batch_list))
-    batch_output_data_frame <- do.call("rbind", unlist(batch_output_list, recursive = FALSE))
-      colnames(batch_output_data_frame) <- parsing_configuration$VariableName[parsing_configuration$DocumentType == document_type]
-      filename <- paste0(to_directory, "/", current_region, "_", document_type, "_parsed_",
-                         data_download_date, ".rda")
-      save(batch_output_data_frame, file=filename)
+#     batch_output_list <- lapply(batch_list, process_batch)
+#     batch_output_data_frame <- as.data.frame(do.call("rbind", unlist(batch_output_list, 
+#                                                                     recursive = FALSE)))
+#       colnames(batch_output_data_frame) <- parsing_configuration$VariableName[parsing_configuration$DocumentType == document_type]
+#       filename <- paste0(to_directory, "/", current_region, "_", document_type, "_parsed_",
+#                          data_download_date, ".rda")
+#       save(batch_output_data_frame, file=filename)
+    # rm(list = c("files_list", "namespace", "batch_list", "batch_output_list", "batch_output_data_frame"))
     
+      
+    # Process it key-value for comparison
+  # for(z in 1:length(batch_list)){
+    batch_output_list_key_value <- lapply(batch_list, process_batch_key_value)
+    # batch_output_list_key_value <- process_batch_key_value(batch_to_process = batch_list[[z]])
+  # }
+    batch_output_key_value <- as.data.frame(do.call("rbind", batch_output_list_key_value))
+      filename <- paste0(to_directory, "/", current_region, "_", document_type, "_parsed_key_value_",
+                          data_download_date, ".rda")
+      save(batch_output_key_value, file=filename)
     # Clean up
-    rm(list = c("files_list", "namespace", "batch_list", "batch_output_list", "batch_output_data_frame"))
+    rm(list = c("files_list", "namespace", "batch_list", "batch_output_list_key_value", "batch_output_key_value"))
     gc()
   } # Closes control loop over document_types_list in this region
 

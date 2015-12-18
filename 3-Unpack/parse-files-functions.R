@@ -44,6 +44,10 @@ remove_empty_lists  <-  function(x.list){   # delele null/empty entries in a lis
   x.list[unlist(lapply(x.list, length) != 0)]
 }
 
+# Parse an xml field
+parse_field <- function(document_to_parse, x){
+  iconv(xml_text(xml_find_all(document_to_parse, x, ns = namespace)), from = "UTF-8", to = "UTF-8")
+}
 
 
 ###########################
@@ -56,14 +60,27 @@ load_documents_from_file <- function(file_to_load){
     # namespace <- xml_ns(file_to_load_xml)
   documents_in_this_file_list <- xml_children(read_xml(as.character(file_to_load)))
   if(length(documents_in_this_file_list) > 0) return(documents_in_this_file_list)
-  # if(length(documents_in_this_file_list) > 0) return(documents_in_this_file_list[[1]])
+  # if(length(documents_in_this_file_list) > 0) return(cbind(documents_in_this_file_list, rep(as.character(file_to_load), times=length(documents_in_this_file_list))))
   # documents_in_this_file_list <- (xml_find_all(file_to_parse, document_id_field, namespace))
 }
 
-# Function to process a single XML document
-output_document <- function(document_to_parse, fields_to_parse){
-  output_fields <- lapply(fields_to_parse, function(x) iconv(xml_text(xml_find_all(document_to_parse, x, ns = namespace)), from = "UTF-8", to = "UTF-8"))
+# Function to process a single XML document in to a list per key-value pair within a document
+output_document_key_value <- function(document_to_parse, fields_to_parse){
+# for(p in 1:length(documents_in_this_batch)){ # Loop here for debugging only
+  # document_to_parse <- documents_in_this_batch[[p]]
+  output_fields <- lapply(fields_to_parse, function(x) rbind(x, if(length(parse_field(document_to_parse, x))>0) parse_field(document_to_parse, x) else NA ))
+  output_fields <- matrix(unlist(output_fields, recursive = FALSE), ncol = 2, byrow = TRUE)
+  output_fields <- cbind(output_fields[1, 2], output_fields)
+    colnames(output_fields) <- c("Document", "Key", "Value")
+  return(output_fields)
+# }
 }
+
+# Function to process a single XML document in to a list per document
+output_document <- function(document_to_parse, fields_to_parse){
+  output_fields <- lapply(fields_to_parse, function(x) parse_field(document_to_parse, x))
+}
+
 
 # Function to turn batch_list item containing a file path in to list of documents
 find_documents_in_this_batch <- function(batch_list_item){
@@ -85,6 +102,15 @@ process_batch <- function(batch_to_process, batch_sequence){
   # rm(list = c("documents_in_this_batch", "batch_output", "batch_output_data_frame"))
   rm("documents_in_this_batch")
   # return(output_list)
+  return(batch_output)
+}
+
+# Function to process the whole batch at once in to key-value pairs
+process_batch_key_value <- function(batch_to_process, batch_sequence){
+  documents_in_this_batch <- find_documents_in_this_batch(batch_to_process)
+  batch_output <- lapply(documents_in_this_batch, output_document_key_value, fields_to_parse = fields_to_parse)
+  batch_output <- do.call("rbind", batch_output)
+  rm("documents_in_this_batch")
   return(batch_output)
 }
 
