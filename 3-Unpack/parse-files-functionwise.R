@@ -106,6 +106,18 @@ for(r in 1:regions_number){
 STOP <- 1
 if(STOP == 1) stop("Stopping here")
 
+# Stitch it back toegether again and work out what it means
+load(file = "~/data/zakupki/2015-06-13/zakupki-2015-06-13-parsed-data/94fz/Adygeja_Resp/contracts/Adygeja_Resp_contracts_parsed_key_value_2015-06-13.rda")
+  contracts <- batch_output_key_value
+load(file = "~/data/zakupki/2015-06-13/zakupki-2015-06-13-parsed-data/94fz/Adygeja_Resp/notifications/Adygeja_Resp_notifications_parsed_key_value_2015-06-13.rda")
+  notifications <- batch_output_key_value
+rm(batch_output_key_value)
+
+contracts_missing <- contracts[!complete.cases(contracts),]
+  contracts_missing_table <- as.data.frame(table(contracts_missing$Key)) %>% arrange(-Freq)
+notifications_missing <- notifications[!complete.cases(notifications),]
+  notifications_missing_table <- as.data.frame(table(notifications_missing$Key)) %>% arrange(-Freq)
+
 # Add in the loaded XML and calculate documents per row, reduce to files that have useful XML
 parsed_data_matrix$ParsedData <- documents_in_this_directory_list
 parsed_data_matrix$DocumentCount <- as.numeric(lapply(documents_in_this_directory_list, function(x) length(x)))
