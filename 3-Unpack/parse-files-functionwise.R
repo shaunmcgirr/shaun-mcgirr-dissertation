@@ -76,12 +76,14 @@ for(r in 1:regions_number){
 #     batch_output_data_frame <- as.data.frame(do.call("rbind", unlist(batch_output_list, 
 #                                                                     recursive = FALSE)))
 #       colnames(batch_output_data_frame) <- parsing_configuration$VariableName[parsing_configuration$DocumentType == document_type]
-#       filename <- paste0(to_directory, "/", current_region, "_", document_type, "_parsed_",
-#                          data_download_date, ".rda")
-#       save(batch_output_data_frame, file=filename)
+      # filename <- paste0(to_directory, "/", current_region, "_", document_type, "_parsed_",
+                         # data_download_date, ".rda")
+      # save(batch_output_data_frame, file=filename)
     # rm(list = c("files_list", "namespace", "batch_list", "batch_output_list", "batch_output_data_frame"))
-    
-      
+      # Diagnose the parsing by generating a list of variables and the number of unique values of each
+#       unique_codes <- as.data.frame(apply(batch_output_data_frame, 2, function(x) length(unique(x))))
+#       missing_codes <- as.data.frame(apply(batch_output_data_frame, 2, function(x) sum(is.na(x))))
+#             
     # Process it key-value for comparison
   # for(z in 1:length(batch_list)){
     batch_output_list_key_value <- lapply(batch_list, process_batch_key_value)

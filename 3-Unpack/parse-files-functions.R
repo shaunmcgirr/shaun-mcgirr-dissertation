@@ -78,7 +78,7 @@ output_document_key_value <- function(document_to_parse, fields_to_parse){
 
 # Function to process a single XML document in to a list per document
 output_document <- function(document_to_parse, fields_to_parse){
-  output_fields <- lapply(fields_to_parse, function(x) parse_field(document_to_parse, x))
+  output_fields <- lapply(fields_to_parse, function(x) if(length(parse_field(document_to_parse, x))>0) parse_field(document_to_parse, x) else NA)
 }
 
 
