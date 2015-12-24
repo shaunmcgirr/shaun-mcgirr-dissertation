@@ -18,8 +18,8 @@ library(magrittr)
 library(openxlsx)
 library(foreach)
 library(doParallel)
-library(plyr)
-library(rlist)
+# library(plyr)
+# library(rlist)
 library(dplyr) # Always load last!
 
 #----- 2. Set project-wide parameters -----
