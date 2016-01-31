@@ -9,26 +9,43 @@
 # 1. Housekeeping #
 ###################
 
-# Change in to the directory where consolidated data is stored (at the end of step 3)
-# setwd('~/data/zakupki/2015-03-23/zakupki-2015-03-23-consolidated-data')
-setwd('~/data/test02output')
-
+# Change in to the directory where parsed data are stored (at the end of step 3)
+# setwd('~/data/zakupki/2015-06-13/zakupki-2015-06-13-parsed-data/')
+data_parsed_directory <- set_data_subdirectory(data_directory, data_download_date, "parsed")
 
 ############################################
 # 2. Gather parameters about the job ahead #
 ############################################
 
 # Obtain list of regions for which consolidated data is available
-# Code goes here
+# regions_list <- generate_regions_list(data_parsed_directory)
+regions_list <- as.list("Adygeja_Resp")
+regions_number <- length(regions_list)
 
 # Define target of processed data
-# Code goes here
+data_constructed_directory <- set_data_subdirectory(data_directory, data_download_date, "constructed")
 
 ##############################################
 # 3. Define functions to process each region #
 ##############################################
 
 # Wrap the code written below in to functions
+
+for(r in 1:regions_number){
+  # r <- 1
+  current_region <- as.character(regions_list[r])
+
+  # Begin control loop over document types
+  for(d in 1:length(document_types_list)){
+    document_type <- "notifications"
+    # document_type <- as.character(document_types_list[d])  
+    
+    file_to_process <- paste0(data_parsed_directory, current_region, "/", document_type, "/",
+                              current_region, "_", document_type, "_parsed_key_value_",
+                              data_download_date, ".rda")
+    
+    # Measure 1: what is the difference between notified and contracted price?
+    
 
 ################################################
 # 4. Loop over regions to process them in turn #
