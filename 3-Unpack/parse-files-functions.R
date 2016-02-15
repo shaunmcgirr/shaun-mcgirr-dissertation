@@ -70,8 +70,8 @@ output_document_key_value <- function(document_to_parse, fields_to_parse){
   # document_to_parse <- documents_in_this_batch[[p]]
   output_fields <- lapply(fields_to_parse, function(x) rbind(x, if(length(parse_field(document_to_parse, x))>0) parse_field(document_to_parse, x) else NA ))
   output_fields <- matrix(unlist(output_fields, recursive = FALSE), ncol = 2, byrow = TRUE)
-  output_fields <- cbind(output_fields[1, 2], output_fields)
-    colnames(output_fields) <- c("Document", "Key", "Value")
+  output_fields <- cbind(output_fields[1, 2], output_fields[3, 2], output_fields)
+    colnames(output_fields) <- c("Document", "Version", "Key", "Value")
   return(output_fields)
 # }
 }
@@ -107,6 +107,7 @@ process_batch <- function(batch_to_process, batch_sequence){
 
 # Function to process the whole batch at once in to key-value pairs
 process_batch_key_value <- function(batch_to_process, batch_sequence){
+  # Debugging batch_to_process <- batch_list[[1]]
   documents_in_this_batch <- find_documents_in_this_batch(batch_to_process)
   batch_output <- lapply(documents_in_this_batch, output_document_key_value, fields_to_parse = fields_to_parse)
   batch_output <- do.call("rbind", batch_output)

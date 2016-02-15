@@ -9,6 +9,9 @@
 # 1. Housekeeping #
 ###################
 
+# Load functions
+source(file="3-Unpack/parse-files-functions.R")
+
 # Change in to the directory where parsed data are stored (at the end of step 3)
 # setwd('~/data/zakupki/2015-06-13/zakupki-2015-06-13-parsed-data/')
 data_parsed_directory <- set_data_subdirectory(data_directory, data_download_date, "parsed")
@@ -44,9 +47,29 @@ for(r in 1:regions_number){
                               current_region, "_", document_type, "_parsed_key_value_",
                               data_download_date, ".rda")
     
-    # Measure 1: what is the difference between notified and contracted price?
+    # Steps for processing key-value in to wide format ready for merging
+    
+    # 1. Determine latest version
+    versions <- batch_output_key_value %>%
+      filter(Key == "oos:versionNumber") %>%
+      group_by(Document, Version) %>%
+      summarise(max(Value))
+    
+    #     batch_output_key_value$Document <- as.numeric(levels(batch_output_key_value$Document))[batch_output_key_value$Document]
+#     batch_output_key_value$Value <- as.numeric(levels(batch_output_key_value$Value))[batch_output_key_value$Value]
     
 
+    # 
+    
+    # Measure 1: what is the difference between notified and contracted price?
+    notifications <- batch_output_key_value %>%
+                    filter(Key == "oos:lots/oos:lot/oos:customerRequirements/oos:customerRequirement/oos:maxPrice") %>%
+                    mutate(Notification)
+                    group_by(Document, Version) %>%
+                    summarise(NotificationTotalMaxPrice = sum(as.numeric(Value)))
+
+    contracts <- 
+    
 ################################################
 # 4. Loop over regions to process them in turn #
 ################################################

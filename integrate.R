@@ -20,6 +20,7 @@ library(foreach)
 library(doParallel)
 # library(plyr)
 # library(rlist)
+library(tidyr)
 library(dplyr) # Always load last!
 
 #----- 2. Set project-wide parameters -----

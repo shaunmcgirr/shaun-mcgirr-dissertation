@@ -89,7 +89,10 @@ for(r in 1:regions_number){
     batch_output_list_key_value <- lapply(batch_list, process_batch_key_value)
     # batch_output_list_key_value <- process_batch_key_value(batch_to_process = batch_list[[z]])
   # }
-    batch_output_key_value <- as.data.frame(do.call("rbind", batch_output_list_key_value))
+    batch_output_key_value <- as.data.frame(do.call("rbind", batch_output_list_key_value),
+                                            stringsAsFactors = F)
+    # batch_output_key_value$Document <- as.factor(batch_output_key_value$Document)
+      batch_output_key_value$Version <- as.numeric(batch_output_key_value$Version)
       filename <- paste0(to_directory, "/", current_region, "_", document_type, "_parsed_key_value_",
                           data_download_date, ".rda")
       save(batch_output_key_value, file=filename)
