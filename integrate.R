@@ -23,6 +23,8 @@ library(doParallel)
 library(tidyr)
 library(dplyr) # Always load last!
 
+options(digits = 15) # So display of lat/lon isn't truncated
+
 #----- 2. Set project-wide parameters -----
 # The scripts run below will assume data is available in this directory, named according to the pattern described in section 1 above, eg E:/Data/zakupki/2015-06-13/zakupki-2015-06-13-raw-data
 #data_directory <- "E:/Data/zakupki/" # When running off external HDD on laptop

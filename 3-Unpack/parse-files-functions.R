@@ -60,7 +60,10 @@ load_documents_from_file <- function(file_to_load){
     # namespace <- xml_ns(file_to_load_xml)
   documents_in_this_file_list <- xml_children(read_xml(as.character(file_to_load)))
   if(length(documents_in_this_file_list) > 0) return(documents_in_this_file_list)
-  # if(length(documents_in_this_file_list) > 0) return(cbind(documents_in_this_file_list, rep(as.character(file_to_load), times=length(documents_in_this_file_list))))
+  # if(length(documents_in_this_file_list) > 0) return(matrix(cbind(documents_in_this_file_list, 
+  #                                                                 rep(as.character(file_to_load), 
+  #                                                                     times=length(documents_in_this_file_list))),
+  #                                                           ncol = 2))
   # documents_in_this_file_list <- (xml_find_all(file_to_parse, document_id_field, namespace))
 }
 
@@ -84,6 +87,7 @@ output_document <- function(document_to_parse, fields_to_parse){
 
 # Function to turn batch_list item containing a file path in to list of documents
 find_documents_in_this_batch <- function(batch_list_item){
+  # Debugging: batch_list_item <- batch_list[[1]]
   documents_in_this_batch <- lapply(batch_list_item, load_documents_from_file)
   documents_in_this_batch <- unlist(remove_empty_lists(documents_in_this_batch), recursive = FALSE)
 }
