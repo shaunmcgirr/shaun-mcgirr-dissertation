@@ -48,12 +48,77 @@ for(r in 1:regions_number){
                               data_download_date, ".rda")
     
     # Steps for processing key-value in to wide format ready for merging
+    batch_output_key_value$DocumentVersion <- as.numeric(paste(batch_output_key_value$Document,
+                                                               batch_output_key_value$Version,
+                                                               sep = "."))
+    
+    number_of_documents_parsed <- batch_output_key_value %>%
+                                    filter(Key == "oos:id")
+    
+    # 16428 parsed, for 15276 oos:id fields
+    # Try counting number of rows under each oos:id, this is how many times Counter should be rep
+    simplified <- batch_output_key_value %>% select(Document, Key) %>% add_rownames()
+    
+    unique_numbers <- seq(16428)
+    
+    # Find where new oos:id appears, this - 1 is number of times to repeat each unique_number
+    rows_where_unique_number_changes <- simplified %>% 
+                                          filter(Key == "oos:id") %>%
+                                          select(rowname)
+    
+    target_number_of_rows = length(batch_output_key_value$Document)
+    
+    shifted_vector <- rows_where_unique_number_changes[2:nrow(rows_where_unique_number_changes), 1]
+    shifted_vector <- rbind(shifted_vector, target_number_of_rows)
+    
+    number_of_times_to_repeat <- cbind(rows_where_unique_number_changes, shifted_vector)
+    
+    # dplyr below is getting a bit cute, just shift the vectors by one index
+    number_of_times_to_repeat <- rows_where_unique_number_changes %>%
+                                  mutate(FirstRow = as.numeric(rowname),
+                                         LastRow = if(!is.na(as.numeric(lead(rowname, 1))))
+                                                      as.numeric(lead(rowname, 1))
+                                                    else target_number_of_rows) %>%
+                                  mutate(Repetitions = LastRow - FirstRow) %>%
+                                  select(Repetitions)
+    
+    number_of_times_to_repeat <- as.integer(number_of_times_to_repeat$Repetitions)
+
+    unique_numbers_vector <- rep(unique_numbers, number_of_times_to_repeat)
+    
+    row_numbers <- row.names(simplified)
     
     # 1. Determine latest version
     versions <- batch_output_key_value %>%
-      filter(Key == "oos:versionNumber") %>%
-      group_by(Document, Version) %>%
-      summarise(max(Value))
+      group_by(Document) %>%
+      summarise(HighestDocumentVersion = max(DocumentVersion)) 
+    
+    most_recent_document_versions <- batch_output_key_value %>%
+                                      group_by(Document) %>%
+                                        summarise(HighestDocumentVersion = max(DocumentVersion)) %>% ungroup() %>%
+                                      inner_join(batch_output_key_value, by = c("HighestDocumentVersion" = "DocumentVersion"))
+      
+      filter(DocumentVersion == HighestDocumentVersion)
+    
+    # Number of versions per document
+      versions_per_document <- batch_output_key_value %>%
+                                  filter(Key == "oos:id") %>%
+                                  group_by(Document, Version, Value, DocumentVersion) %>%
+                                  tally(n())
+      # So there are duplicate documents not separated by different version number...
+      
+      # For a given DocumentVersion we need to only present the most frequent rows
+      duplicated_rows <- batch_output_key_value %>%
+                          group_by(Document, Version, Key, Value) %>%
+                          filter(n()>1)
+      # Easier to change the parser to count actual documents on its way through
+                                
+        group_by(Document) %>%
+                                  tally(length(unique(DocumentVersion)))
+    
+    %>%
+      mutate(MoreThanOneVersion = HighestDocumentVersion - as.numeric(Document)) %>%
+      filter(MoreThanOneVersion > 0.1)
     
     #     batch_output_key_value$Document <- as.numeric(levels(batch_output_key_value$Document))[batch_output_key_value$Document]
 #     batch_output_key_value$Value <- as.numeric(levels(batch_output_key_value$Value))[batch_output_key_value$Value]
