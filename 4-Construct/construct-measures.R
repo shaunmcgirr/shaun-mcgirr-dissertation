@@ -69,24 +69,41 @@ for(r in 1:regions_number){
     target_number_of_rows = length(batch_output_key_value$Document)
     
     shifted_vector <- rows_where_unique_number_changes[2:nrow(rows_where_unique_number_changes), 1]
-    shifted_vector <- rbind(shifted_vector, target_number_of_rows)
+    shifted_vector <- rbind(shifted_vector, (target_number_of_rows+1))
     
-    number_of_times_to_repeat <- cbind(rows_where_unique_number_changes, shifted_vector)
+    number_of_times_to_repeat <- cbind(rows_where_unique_number_changes, shifted_vector) 
+      colnames(number_of_times_to_repeat) <- c("FirstRow", "LastRow")
     
-    # dplyr below is getting a bit cute, just shift the vectors by one index
-    number_of_times_to_repeat <- rows_where_unique_number_changes %>%
-                                  mutate(FirstRow = as.numeric(rowname),
-                                         LastRow = if(!is.na(as.numeric(lead(rowname, 1))))
-                                                      as.numeric(lead(rowname, 1))
-                                                    else target_number_of_rows) %>%
-                                  mutate(Repetitions = LastRow - FirstRow) %>%
-                                  select(Repetitions)
     
-    number_of_times_to_repeat <- as.integer(number_of_times_to_repeat$Repetitions)
+    number_of_times_to_repeat$NumberOfTimesToRepeat = as.numeric(number_of_times_to_repeat$LastRow) - 
+                                                      as.numeric(number_of_times_to_repeat$FirstRow)
+    
+    unique_numbers_vector <- rep(unique_numbers, number_of_times_to_repeat$NumberOfTimesToRepeat)
+    
+    
+    merged <- cbind(batch_output_key_value, unique_numbers_vector)
 
-    unique_numbers_vector <- rep(unique_numbers, number_of_times_to_repeat)
+    unique_numbers_per_document <- merged %>%
+                                    select(Document, unique_numbers_vector) %>%
+                                    distinct(Document, unique_numbers_vector) %>%
+                                    group_by(Document) %>%
+                                    tally(n())
     
-    row_numbers <- row.names(simplified)
+    most_fields <- merged %>%
+                       # mutate(DocumentVersionUnique = paste(DocumentVersion, unique_numbers_vector, sep = ".")) %>%
+                       # mutate(Document = as.numeric(Document), 
+                       #        DocumentVersionUnique = as.numeric(DocumentVersionUnique)) %>%
+                        group_by(Document, unique_numbers_vector) %>%
+                          tally(n()) %>% ungroup() %>%
+                        arrange(Document, -n, -unique_numbers_vector) %>%
+                        distinct(Document) # Returns most recently parsed of doc versions with most fields
+
+    one_version_per_document <- merged %>%
+                                  right_join(most_fields, by = c("Document", "unique_numbers_vector"))
+                    
+    
+
+    
     
     # 1. Determine latest version
     versions <- batch_output_key_value %>%
