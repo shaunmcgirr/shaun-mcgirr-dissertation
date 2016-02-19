@@ -43,56 +43,83 @@ for(r in 1:regions_number){
     document_type <- "notifications"
     # document_type <- as.character(document_types_list[d])  
     
+    # Load the next file to process
     file_to_process <- paste0(data_parsed_directory, current_region, "/", document_type, "/",
                               current_region, "_", document_type, "_parsed_key_value_",
                               data_download_date, ".rda")
+    load(file=file_to_process)
     
-    # Steps for processing key-value in to wide format ready for merging
+  ### DATA QUALITY STEPS ###
+    # Concatenate document ID with version number (doesn't resolve duplicates!)
     batch_output_key_value$DocumentVersion <- as.numeric(paste(batch_output_key_value$Document,
                                                                batch_output_key_value$Version,
                                                                sep = "."))
     
-    number_of_documents_parsed <- batch_output_key_value %>%
-                                    filter(Key == "oos:id")
+    # Add column of zeroes we will replace with a unique ID for each document parsed from XML
+    batch_output_key_value$UniqueID <- as.numeric(0)
+
+    rows_with_unique_number <- batch_output_key_value %>%
+                                 add_rownames() %>%
+                                 filter(Key == "oos:id") %>%
+                                 select(rowname) %>%
+                                 cbind(unique_numbers)
     
-    # 16428 parsed, for 15276 oos:id fields
-    # Try counting number of rows under each oos:id, this is how many times Counter should be rep
-    simplified <- batch_output_key_value %>% select(Document, Key) %>% add_rownames()
+    test <- batch_output_key_value %>%
+              add_rownames() %>%
+            left_join(rows_with_unique_number, by = "rowname") %>%
+              mutate(unique_numbers = na.locf(unique_numbers))
     
-    unique_numbers <- seq(16428)
+  # Loop version (slow!)  
+  counter <- 0
+    for (i in 1:target_number_of_rows){
+      if(batch_output_key_value$Key[i] == "oos:id"){
+        counter <- counter + 1
+        batch_output_key_value$UniqueID[i] <- counter}
+      else batch_output_key_value$UniqueID[i] <- counter
+      }
     
+
+  # Apply version (too tricky)      
+    test <- apply(batch_output_key_value, 1, function(x) if(x['Key'] == "oos:id") x['UniqueID'] <- seq_along(number_of_documents_parsed)[i]) 
+      
+  # Manual version  
+    # Count number of docs parsed from the XML to produce file, generate a unique ID for each
+    number_of_documents_parsed <- length(batch_output_key_value$Key[batch_output_key_value$Key == "oos:id"])
+      unique_numbers <- seq(number_of_documents_parsed)
+
     # Find where new oos:id appears, this - 1 is number of times to repeat each unique_number
-    rows_where_unique_number_changes <- simplified %>% 
+    rows_where_unique_number_changes <- batch_output_key_value %>% 
+                                          select(Document, Key) %>% 
+                                          add_rownames() %>%
                                           filter(Key == "oos:id") %>%
                                           select(rowname)
-    
+      
+    # Generate as vector as long as the parsed data frame, containing number of times unique ID should repeat
     target_number_of_rows = length(batch_output_key_value$Document)
     
-    shifted_vector <- rows_where_unique_number_changes[2:nrow(rows_where_unique_number_changes), 1]
-    shifted_vector <- rbind(shifted_vector, (target_number_of_rows+1))
+    shifted_vector <- rows_where_unique_number_changes[2:nrow(rows_where_unique_number_changes), 1] %>%
+                        rbind((target_number_of_rows+1))
     
     number_of_times_to_repeat <- cbind(rows_where_unique_number_changes, shifted_vector) 
       colnames(number_of_times_to_repeat) <- c("FirstRow", "LastRow")
-    
     
     number_of_times_to_repeat$NumberOfTimesToRepeat = as.numeric(number_of_times_to_repeat$LastRow) - 
                                                       as.numeric(number_of_times_to_repeat$FirstRow)
     
     unique_numbers_vector <- rep(unique_numbers, number_of_times_to_repeat$NumberOfTimesToRepeat)
     
-    
-    merged <- cbind(batch_output_key_value, unique_numbers_vector)
+    # unique_numbers_per_document <- cbind(batch_output_key_value, unique_numbers_vector) %>%
+    #                                  select(Document, unique_numbers_vector) %>%
+    #                                   distinct(Document, unique_numbers_vector) %>%
+    #                                  group_by(Document) %>%
+    #                                   tally(n())
 
-    unique_numbers_per_document <- merged %>%
-                                    select(Document, unique_numbers_vector) %>%
-                                    distinct(Document, unique_numbers_vector) %>%
-                                    group_by(Document) %>%
-                                    tally(n())
-    
-    most_fields <- merged %>%
+    # Use this vector to remove duplicates from the input data frame
+    most_fields <- cbind(batch_output_key_value, unique_numbers_vector) %>%
                        # mutate(DocumentVersionUnique = paste(DocumentVersion, unique_numbers_vector, sep = ".")) %>%
                        # mutate(Document = as.numeric(Document), 
                        #        DocumentVersionUnique = as.numeric(DocumentVersionUnique)) %>%
+                        filter(!is.na(Value)) %>%
                         group_by(Document, unique_numbers_vector) %>%
                           tally(n()) %>% ungroup() %>%
                         arrange(Document, -n, -unique_numbers_vector) %>%
@@ -101,8 +128,8 @@ for(r in 1:regions_number){
     one_version_per_document <- merged %>%
                                   right_join(most_fields, by = c("Document", "unique_numbers_vector"))
                     
+    ### MAKE THIS ALL A FUNCTION!
     
-
     
     
     # 1. Determine latest version
