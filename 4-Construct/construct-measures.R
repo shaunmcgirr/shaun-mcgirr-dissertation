@@ -41,6 +41,7 @@ for(r in 1:regions_number){
   # Begin control loop over document types
   for(d in 1:length(document_types_list)){
     document_type <- "notifications"
+    # document_type <- "contracts"
     # document_type <- as.character(document_types_list[d])  
     
     # Load the next file to process
@@ -62,39 +63,43 @@ for(r in 1:regions_number){
     number_of_documents_parsed <- length(batch_output_key_value$Key[batch_output_key_value$Key == "oos:id"])
     UniqueID <- seq(number_of_documents_parsed)
     
+    # Work out which rows are associated with a change to a new document (as identified by oos:id)
     rows_with_UniqueID <- batch_output_key_value %>%
                                  add_rownames() %>%
                                  filter(Key == "oos:id") %>%
                                  select(rowname) %>%
                                  cbind(UniqueID)
     
+    # Join these unique IDs on
     batch_output_key_value <- batch_output_key_value %>%
                                add_rownames() %>%
                               left_join(rows_with_UniqueID, by = "rowname") %>%
                               mutate(UniqueID = na.locf(UniqueID))
-    
+
+    # Concatenate all our identifiers to provide a completely unique identifier for each doc parsed
     batch_output_key_value$DocumentVersionUniqueID <- paste(batch_output_key_value$DocumentVersion, batch_output_key_value$UniqueID, sep = ".")
     
-    notificationNumbers <- batch_output_key_value %>%
-                            filter(Key == "oos:notificationNumber") %>%
+    # We actually care about having the best data for each entity, in this case "notificationNumber", extract these
+    business_keys <- batch_output_key_value %>%
+                            filter(Key == "oos:notificationNumber" | Key == "oos:regNum") %>%
                             select(DocumentVersionUniqueID, Value) %>%
-                            rename(notificationNumber = Value)
+                            rename(BusinessKey = Value)
     
+    # Merge those on
     batch_output_key_value <- batch_output_key_value %>%
-                                left_join(notificationNumbers, by = "DocumentVersionUniqueID")
+                                left_join(business_keys, by = "DocumentVersionUniqueID")
     
-    # unique_notification_numbers <- batch_output_key_value %>%
-    #                                 filter(Key == "oos:notificationNumber")
-    
+    # Find out which document has the best data for a given notificationNumber
     most_fields <- batch_output_key_value %>%
       filter(!is.na(Value)) %>%
-      group_by(notificationNumber, DocumentVersionUniqueID) %>%
+      group_by(BusinessKey, DocumentVersionUniqueID) %>%
       tally(n()) %>% ungroup() %>%
-      arrange(notificationNumber, -n, -UniqueID) %>%
-      distinct(notificationNumber) # Returns most recently parsed doc for each notificationNumber (out of docs with most fields)
+      arrange(BusinessKey, -n, -UniqueID) %>%
+      distinct(BusinessKey) # Returns most recently parsed doc for each notificationNumber (out of docs with most fields)
     
+    # Use info above to cut down parsed data frame to just the best documents
     one_version_per_document <- batch_output_key_value %>%
-      right_join(most_fields, by = c("DocumentVersionUniqueID", "notificationNumber")) %>%
+      right_join(most_fields, by = c("DocumentVersionUniqueID", "BusinessKey")) %>%
       select(DocumentVersionUniqueID, Key, Value)
     
     
