@@ -56,20 +56,50 @@ for(r in 1:regions_number){
                                                                sep = "."))
     
     # Add column of zeroes we will replace with a unique ID for each document parsed from XML
-    batch_output_key_value$UniqueID <- as.numeric(0)
+    # batch_output_key_value$UniqueID <- as.numeric(0)
 
-    rows_with_unique_number <- batch_output_key_value %>%
+    # Count number of docs parsed from the XML to produce file, generate a unique ID for each
+    number_of_documents_parsed <- length(batch_output_key_value$Key[batch_output_key_value$Key == "oos:id"])
+    UniqueID <- seq(number_of_documents_parsed)
+    
+    rows_with_UniqueID <- batch_output_key_value %>%
                                  add_rownames() %>%
                                  filter(Key == "oos:id") %>%
                                  select(rowname) %>%
-                                 cbind(unique_numbers)
+                                 cbind(UniqueID)
     
-    test <- batch_output_key_value %>%
-              add_rownames() %>%
-            left_join(rows_with_unique_number, by = "rowname") %>%
-              mutate(unique_numbers = na.locf(unique_numbers))
+    batch_output_key_value <- batch_output_key_value %>%
+                               add_rownames() %>%
+                              left_join(rows_with_UniqueID, by = "rowname") %>%
+                              mutate(UniqueID = na.locf(UniqueID))
     
-  # Loop version (slow!)  
+    batch_output_key_value$DocumentVersionUniqueID <- paste(batch_output_key_value$DocumentVersion, batch_output_key_value$UniqueID, sep = ".")
+    
+    notificationNumbers <- batch_output_key_value %>%
+                            filter(Key == "oos:notificationNumber") %>%
+                            select(DocumentVersionUniqueID, Value) %>%
+                            rename(notificationNumber = Value)
+    
+    batch_output_key_value <- batch_output_key_value %>%
+                                left_join(notificationNumbers, by = "DocumentVersionUniqueID")
+    
+    # unique_notification_numbers <- batch_output_key_value %>%
+    #                                 filter(Key == "oos:notificationNumber")
+    
+    most_fields <- batch_output_key_value %>%
+      filter(!is.na(Value)) %>%
+      group_by(notificationNumber, DocumentVersionUniqueID) %>%
+      tally(n()) %>% ungroup() %>%
+      arrange(notificationNumber, -n, -UniqueID) %>%
+      distinct(notificationNumber) # Returns most recently parsed doc for each notificationNumber (out of docs with most fields)
+    
+    one_version_per_document <- batch_output_key_value %>%
+      right_join(most_fields, by = c("DocumentVersionUniqueID", "notificationNumber")) %>%
+      select(DocumentVersionUniqueID, Key, Value)
+    
+    
+    
+    # Loop version (slow!)  
   counter <- 0
     for (i in 1:target_number_of_rows){
       if(batch_output_key_value$Key[i] == "oos:id"){
