@@ -25,8 +25,8 @@ data_parsed_directory <- set_data_subdirectory(data_directory, data_download_dat
 regions_list <- as.list("Adygeja_Resp")
 regions_number <- length(regions_list)
 
-# Define target of processed data
-data_constructed_directory <- set_data_subdirectory(data_directory, data_download_date, "constructed")
+# Define target of cleaned data
+data_cleaned_directory <- set_data_subdirectory(data_directory, data_download_date, "cleaned")
 
 ##############################################
 # 3. Define functions to process each region #
@@ -102,8 +102,29 @@ for(r in 1:regions_number){
       right_join(most_fields, by = c("DocumentVersionUniqueID", "BusinessKey")) %>%
       select(DocumentVersionUniqueID, Key, Value)
     
+    # Print how many rows that got rid of!
+    print(paste0(current_region, "/", document_type, ": ",
+                "Reducing the parsed data to one document per business key reduced the initial row count (",
+                length(batch_output_key_value$Document), ") by ",
+                round((1-length(one_version_per_document$Document)/length(batch_output_key_value$Document))*100, digits = 1),
+                "% to ", length(one_version_per_document$Document)))
     
+    # Rename the object to something useful for later
+    
+    # Save the cleaned data (renaming object to something useful beforehand)
+    to_directory <- paste0(data_cleaned_directory, current_region)
+      dir.create(to_directory, recursive=TRUE)
+    filename <- paste0(to_directory, "/", current_region, "_", document_type, "_cleaned_",
+                       data_download_date, ".rda")
+    if(document_type == "contracts"){contracts_cleaned <- one_version_per_document; save(contracts_cleaned, file=filename); rm(contracts_cleaned)}
+    if(document_type == "notifications"){notifications_cleaned <- one_version_per_document; save(notifications_cleaned, file=filename); rm(notifications_cleaned)}
+    
+    # Clean up
+    rm(most_fields); rm(one_version_per_document); rm(batch_output_key_value); rm(business_keys); rm(rows_with_UniqueID); gc()
+    
+  } # Closes control loop over document_types_list in this region
   
+} # Closes control loop over regions_list
                     
     ### MAKE THIS ALL A FUNCTION!
     
