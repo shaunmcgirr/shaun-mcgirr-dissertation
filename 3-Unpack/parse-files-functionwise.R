@@ -33,8 +33,6 @@ regions_number <- length(regions_list)
 # Load and process the configuration file that tells later functions what to process
 parsing_configuration <- na.omit(read.xlsx(xlsxFile="3-Unpack/how-I-parse-the-xml.xlsx", 1))
 
-# What kind of documents to parse?
-document_types_list <- as.list(c("contracts", "notifications"))
 
 ################################################
 # 5. Begin processing #
@@ -47,7 +45,7 @@ for(r in 1:regions_number){
   
   # Begin control loop over document types
   for(d in 1:length(document_types_list)){
-  # document_type <- "notifications"
+  # document_type <- "notifications"; # document_type <- "contracts"
   document_type <- as.character(document_types_list[d])
     
     fields_to_parse <- (parsing_configuration$XMLFieldName[parsing_configuration$DocumentType==document_type]) # loads fields from configuration

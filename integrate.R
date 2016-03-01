@@ -20,6 +20,7 @@ library(foreach)
 library(doParallel)
 # library(plyr)
 # library(rlist)
+library(zoo)
 library(tidyr)
 library(dplyr) # Always load last!
 
@@ -33,6 +34,9 @@ data_directory <- "~/data/zakupki/" # When running on internal laptop HDD
 #data_directory <- "~/data-ssd/zakupki/" # When running on internal server HDD
 data_download_date <- "2015-06-13"
 #setwd("~/git/shaun-mcgirr-dissertation/") # Only needed when running in batch on Linux
+
+# What kind of documents to parse?
+document_types_list <- as.list(c("contracts", "notifications"))
 
 # Set up R to display Russian characters as best it can on Windows (generally no problem on Mac/Linux)
 Sys.setlocale("LC_CTYPE", "Russian") # This may not be necessary on Mac/Linux
