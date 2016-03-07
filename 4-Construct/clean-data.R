@@ -50,7 +50,7 @@ for(r in 1:regions_number){
     
   ### DATA QUALITY STEPS ###
     # Concatenate document ID with version number (doesn't resolve duplicates!)
-    batch_output_key_value$DocumentVersion <- as.numeric(paste(batch_output_key_value$Document,
+    batch_output_key_value$DocumentVersion <- as.character(paste(batch_output_key_value$Document,
                                                                batch_output_key_value$Version,
                                                                sep = "."))
 
@@ -58,6 +58,7 @@ for(r in 1:regions_number){
     number_of_documents_parsed <- length(batch_output_key_value$Key[batch_output_key_value$Key == "oos:id"])
     UniqueID <- seq(number_of_documents_parsed)
     
+    # Not slow
     # Work out which rows are associated with a change to a new document (as identified by oos:id)
     rows_with_UniqueID <- batch_output_key_value %>%
                                  add_rownames() %>%
@@ -65,6 +66,7 @@ for(r in 1:regions_number){
                                  select(rowname) %>%
                                  cbind(UniqueID)
     
+    # Very slow but no memory issues
     # Join these unique IDs on
     batch_output_key_value <- batch_output_key_value %>%
                                add_rownames() %>%
@@ -79,7 +81,8 @@ for(r in 1:regions_number){
                             filter(Key == "oos:notificationNumber" | Key == "oos:regNum") %>%
                             select(DocumentVersionUniqueID, Value) %>%
                             rename(BusinessKey = Value)
-    
+
+    # Quite slow but not too rough on memory    
     # Merge those on
     batch_output_key_value <- batch_output_key_value %>%
                                 left_join(business_keys, by = "DocumentVersionUniqueID")
@@ -92,6 +95,8 @@ for(r in 1:regions_number){
       arrange(BusinessKey, -n, -UniqueID) %>%
       distinct(BusinessKey) # Returns most recently parsed doc for each notificationNumber (out of docs with most fields)
     
+    # Very slow (probably a smarter way to do this, eg assign simpler number to each)
+    # Might also want to preallocate this and other large objects
     # Use info above to cut down parsed data frame to just the best documents
     one_version_per_document <- batch_output_key_value %>%
       right_join(most_fields, by = c("DocumentVersionUniqueID", "BusinessKey")) %>%
