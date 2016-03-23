@@ -48,16 +48,51 @@ for(r in 1:regions_number){
                               current_region, "_", document_type, "_cleaned_",
                               data_download_date, ".rda")
     load(file=file_to_process)
+  } # Closes control loop over document types loaded
     
+  # Distributions of the raw variables of interest
+  notifications_maxPrice <- notifications_cleaned %>% 
+    filter(Key == "oos:lots/oos:lot/oos:customerRequirements/oos:customerRequirement/oos:maxPrice") %>%
+    mutate(NotificationMaxPrice = as.numeric(Value)) %>%
+    select(NotificationMaxPrice)
+  hist(log(notifications_maxPrice$NotificationMaxPrice), breaks = 100, col=rgb(1, 0, 0, 0.5))
+  
+  notifications_maxPrice_three_quartiles <- notifications_maxPrice %>%
+    filter(NotificationMaxPrice <= as.numeric(summary(notifications_maxPrice$NotificationMaxPrice)[5]))
+  hist((notifications_maxPrice_three_quartiles$NotificationMaxPrice), breaks = 100)
+  # A lot of notifications right below 500,000 rubles, see http://www.otc.ru/academy/articles/Kak_rabotat_s_zakupkami
+
+  contracts_price <- contracts_cleaned %>% 
+    filter(Key == "oos:price") %>%
+    mutate(ContractsPrice = as.numeric(Value)) %>%
+    select(ContractsPrice)
+  hist(log(contracts_price$ContractsPrice), breaks = 100, col=rgb(0, 0, 1, 0.5), add=T)  
+  
     # Measure 1: what is the difference between notified and contracted price?
-    notifications <- batch_output_key_value %>%
+    notifications <- notifications_cleaned %>%
       filter(Key == "oos:lots/oos:lot/oos:customerRequirements/oos:customerRequirement/oos:maxPrice") %>%
-      mutate(Notification)
-    group_by(Document, Version) %>%
+      group_by(BusinessKey) %>%
       summarise(NotificationTotalMaxPrice = sum(as.numeric(Value)))
     
-    contracts <- 
+    contracts <- contracts_cleaned %>%
+      filter(Key == "oos:price") %>%
+      group_by(BusinessKey) %>%
+      summarise(ContractTotalPrice = sum(as.numeric(Value)))
       
+    contracts_per_notification <- notifications %>%
+      left_join(contracts, by = "BusinessKey") # Same length as notifications
+    
+    notifications_per_contract <- contracts %>%
+      left_join(notifications, by = "BusinessKey") # Same length as contracts
+    
+    notifications_and_contracts <- notifications %>%
+      full_join(contracts, by = "BusinessKey") %>%
+      mutate(NotificationMaxPriceMinusContractPrice = NotificationTotalMaxPrice - ContractTotalPrice,
+             ContractPriceMinusNotificationMaxPrice = ContractTotalPrice - NotificationTotalMaxPrice,
+             AuctionEfficiency = (ContractTotalPrice/NotificationTotalMaxPrice*100))
+    hist(log(notifications_and_contracts$NotificationMaxPriceMinusContractPrice), breaks = 100)
+    hist((notifications_and_contracts$AuctionEfficiency), breaks = 500)
+    
     
     
   } # Closes control loop over document_types_list in this region
