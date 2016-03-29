@@ -1,0 +1,6 @@
+# Dimensions of parsed objects (add the creation of these statistics to the script)
+
+Name                                          Length  Width   MB
+Moskva_notifications_parsed_2015-06-13.rda    687280      9   54
+Moskva_contracts_parsed_2015-06-13.rda       2137100     17   73
+
