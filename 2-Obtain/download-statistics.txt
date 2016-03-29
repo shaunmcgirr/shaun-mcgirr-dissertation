@@ -1,0 +1,10 @@
+Download started 2015-06-13
+Total: 1084 directories, 990622 files
+Data downloaded 60.5 GB
+
+Download started 2016-03-08
+Total: 1085 directories, 1438623 files, 0 symlinks
+New: 1438623 files, 0 symlinks
+65199200332 bytes transferred in 546364 seconds (116.5K/s)
+26 errors detected
+Data downloaded: 66GB
