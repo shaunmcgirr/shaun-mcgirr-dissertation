@@ -5,24 +5,17 @@
 # https://github.com/shaunmcgirr/shaun-mcgirr-dissertation/blob/master/2-Obtain/download-raw-procurement-data.md
 
 # Packages are loaded here unless there is a special reason to load them in the scripts below
-# install.packages('xml2')
-# install.packages('magrittr')
-# install.packages('openxlsx')
-# install.packages('foreach')
-# install.packages('doParallel')
-# install.packages('plyr')
-# install.packages('rlist')
-# install.packages('dplyr')
-library(xml2)
-library(magrittr)
-library(openxlsx)
-library(foreach)
-library(doParallel)
-# library(plyr)
-# library(rlist)
+library(xml2)         # install.packages('xml2')
+library(magrittr)     # install.packages('magrittr')
+library(openxlsx)     # install.packages('openxlsx')
+library(foreach)      # install.packages('foreach')
+library(doParallel)   # install.packages('doParallel')
+# library(plyr)       # install.packages('plyr')
+# library(rlist)      # install.packages('rlist')
 library(zoo)
-library(tidyr)
-library(dplyr) # Always load last!
+library(tidyr)        # install.packages('tidyr')
+# Always load dplyr last!  
+library(dplyr)        # install.packages('dplyr')
 
 options(digits = 15) # So display of lat/lon isn't truncated
 
@@ -32,6 +25,7 @@ options(digits = 15) # So display of lat/lon isn't truncated
 data_directory <- "~/data/zakupki/" # When running on internal laptop HDD
 #data_directory <- "/media/ext3tb/Data/zakupki/" # When running off external HDD on server
 #data_directory <- "~/data-ssd/zakupki/" # When running on internal server HDD
+#data_directory <- "../../SHAUN-HDD/Data/zakupki/" # When running ext HDD on an unrelated Mac
 data_download_date <- "2015-06-13"
 #setwd("~/git/shaun-mcgirr-dissertation/") # Only needed when running in batch on Linux
 
