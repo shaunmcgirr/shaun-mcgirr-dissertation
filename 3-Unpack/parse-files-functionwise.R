@@ -22,6 +22,7 @@ data_parsed_directory <- set_data_subdirectory(data_directory, data_download_dat
 # Gather metadata about the regions to be worked on
 # regions_list <- generate_regions_list(data_parsed_directory)
 regions_list <- as.list("Adygeja_Resp")
+# regions_list <- as.list("Burjatija_Resp")
 # regions_list <- as.list("Moskva")
 # regions_list <- as.list(c("Adygeja_Resp", "Moskva"))
 regions_number <- length(regions_list)
@@ -51,7 +52,6 @@ for(r in 1:regions_number){
   document_type_start_time <- Sys.time()
     
     fields_to_parse <- (parsing_configuration$XMLFieldName[parsing_configuration$DocumentType==document_type]) # loads fields from configuration
-    # fields_to_parse_length <- length(fields_to_parse) # Probably no longer needed
     variable_names <- parsing_configuration$VariableName[parsing_configuration$DocumentType==document_type]  
 
     # Create directories and find the files
@@ -63,7 +63,7 @@ for(r in 1:regions_number){
     namespace <- xml_ns(read_xml(files_list[[1]])) # Hardcode namespace based on  first file in list
 
     # Batch up the list in to chunks
-    batch_size <- 3
+    batch_size <- 3 # batch_size = 3 gives safe memory performance when not processing multicore
       number_of_batches <- ceiling(files_list_length/batch_size)
       batch_number <- gl(number_of_batches, batch_size, length = files_list_length)
     batch_list <- split(files_list, batch_number)
@@ -71,23 +71,16 @@ for(r in 1:regions_number){
     # Subset of batches during development
     # batch_list <- batch_list[1:10]
 
-    # Process the batch (this could be parallelised, also try the version that saved/removed again)
-#     batch_output_list <- lapply(batch_list, process_batch)
-#     batch_output_data_frame <- as.data.frame(do.call("rbind", unlist(batch_output_list, 
-#                                                                     recursive = FALSE)))
-#       colnames(batch_output_data_frame) <- parsing_configuration$VariableName[parsing_configuration$DocumentType == document_type]
-      # filename <- paste0(to_directory, "/", current_region, "_", document_type, "_parsed_",
-                         # data_download_date, ".rda")
-      # save(batch_output_data_frame, file=filename)
-    # rm(list = c("files_list", "namespace", "batch_list", "batch_output_list", "batch_output_data_frame"))
-      # Diagnose the parsing by generating a list of variables and the number of unique values of each
-#       unique_codes <- as.data.frame(apply(batch_output_data_frame, 2, function(x) length(unique(x))))
-#       missing_codes <- as.data.frame(apply(batch_output_data_frame, 2, function(x) sum(is.na(x))))
-#             
-    # Process it key-value for comparison
+    # Run batch_list through process_batch_key_value() which in turn calls functions that:
+      # 1. Find the distinct XML documents in each batch using find_documents_in_this_batch()
+      #    which in turn calls load_documents_from_file() to read the XML files
+      # 2. Run each found document through output_document_key_value() using fields_to_parse
+      #    loaded above, which does the actual parsing and collection of outputs
+      # 3. Bind all the output together with do.call("rbind", X)
+    
   # for(z in 1:length(batch_list)){
     # batch_output_list_key_value <- lapply(batch_list, process_batch_key_value)
-    batch_output_list_key_value <- mclapply(batch_list, process_batch_key_value, mc.cores = number_of_cores, mc.preschedule = T)
+    batch_output_list_key_value <- mclapply(batch_list, process_batch_key_value, mc.cores = number_of_cores, mc.preschedule = F)
     # batch_output_list_key_value <- process_batch_key_value(batch_to_process = batch_list[[z]])
   # }
     batch_output_key_value <- as.data.frame(do.call("rbind", batch_output_list_key_value),

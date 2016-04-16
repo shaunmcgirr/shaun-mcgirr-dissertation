@@ -22,6 +22,7 @@ data_parsed_directory <- set_data_subdirectory(data_directory, data_download_dat
 # Obtain list of regions for which consolidated data is available
 # regions_list <- generate_regions_list(data_parsed_directory)
 regions_list <- as.list("Adygeja_Resp")
+# regions_list <- as.list("Burjatija_Resp")
 regions_number <- length(regions_list)
 
 # Define target of cleaned data

@@ -57,7 +57,7 @@ parse_field <- function(document_to_parse, x){
 # Load documents inside a file to a list
 load_documents_from_file <- function(file_to_load){
   # file_to_load_xml <- read_xml(as.character(file_to_load))
-    # namespace <- xml_ns(file_to_load_xml)
+    # namespace <- xml_ns(file_to_load_xml) # Moved outside function
   documents_in_this_file_list <- xml_children(read_xml(as.character(file_to_load)))
   if(length(documents_in_this_file_list) > 0) return(documents_in_this_file_list)
   # if(length(documents_in_this_file_list) > 0) return(matrix(cbind(documents_in_this_file_list, 
@@ -67,7 +67,7 @@ load_documents_from_file <- function(file_to_load){
   # documents_in_this_file_list <- (xml_find_all(file_to_parse, document_id_field, namespace))
 }
 
-# Function to process a single XML document in to a list per key-value pair within a document
+# Function to process a single XML document in to a list per key-value pair within a document (should not be multicore)
 output_document_key_value <- function(document_to_parse, fields_to_parse){
 # for(p in 1:length(documents_in_this_batch)){ # Loop here for debugging only
   # document_to_parse <- documents_in_this_batch[[p]]
@@ -84,36 +84,20 @@ output_document <- function(document_to_parse, fields_to_parse){
   output_fields <- lapply(fields_to_parse, function(x) if(length(parse_field(document_to_parse, x))>0) parse_field(document_to_parse, x) else NA)
 }
 
-
 # Function to turn batch_list item containing a file path in to list of documents
 find_documents_in_this_batch <- function(batch_list_item){
   # Debugging: batch_list_item <- batch_list[[1]]
-  documents_in_this_batch <- lapply(batch_list_item, load_documents_from_file)
+  # documents_in_this_batch <- lapply(batch_list_item, load_documents_from_file) # Better to parallelize as below
+  documents_in_this_batch <- mclapply(batch_list_item, load_documents_from_file, mc.cores = number_of_cores, mc.preschedule = T)
   documents_in_this_batch <- unlist(remove_empty_lists(documents_in_this_batch), recursive = FALSE)
-}
-
-# Function to process the whole batch at once
-process_batch <- function(batch_to_process, batch_sequence){
-  documents_in_this_batch <- find_documents_in_this_batch(batch_to_process)
-  batch_output <- lapply(documents_in_this_batch, output_document, fields_to_parse = fields_to_parse)
-  # return(batch_output)
-  #   batch_output_file_name <- paste0(data_parsed_directory, current_region, "/", document_type, "/",
-  #                                    current_region, "_", document_type, "_", batch_sequence, ".rda")
-  # batch_output_data_frame <- do.call("rbind", batch_output)
-  # save(batch_output_data_frame, file = batch_output_file_name)
-  # return(batch_output_file_name)
-  # output_list <- list(batch_output_file_name, batch_output_data_frame)
-  # rm(list = c("documents_in_this_batch", "batch_output", "batch_output_data_frame"))
-  rm("documents_in_this_batch")
-  # return(output_list)
-  return(batch_output)
 }
 
 # Function to process the whole batch at once in to key-value pairs
 process_batch_key_value <- function(batch_to_process, batch_sequence){
   # Debugging batch_to_process <- batch_list[[1]]
   documents_in_this_batch <- find_documents_in_this_batch(batch_to_process)
-  batch_output <- lapply(documents_in_this_batch, output_document_key_value, fields_to_parse = fields_to_parse)
+  # batch_output <- lapply(documents_in_this_batch, output_document_key_value, fields_to_parse = fields_to_parse) # Better to parallelize as below
+  batch_output <- mclapply(documents_in_this_batch, output_document_key_value, fields_to_parse = fields_to_parse, mc.cores = number_of_cores, mc.preschedule = T)
   batch_output <- do.call("rbind", batch_output)
   rm("documents_in_this_batch")
   return(batch_output)

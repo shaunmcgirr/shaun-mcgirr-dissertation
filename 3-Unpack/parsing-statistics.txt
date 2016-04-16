@@ -4,14 +4,37 @@ Name                                          Length  Width   MB
 Moskva_notifications_parsed_2015-06-13.rda    687280      9   54
 Moskva_contracts_parsed_2015-06-13.rda       2137100     17   73
 
+# Moving parallelization
+inside process_batch_key_value prescheduled=F fails
+inside process_batch_key_value prescheduled=T speeds up, but CPU underutilized
+- adding mc to find_documents_in_this_batch (pre=F) cuts down to 2 mins!
+- making everything except output_document_key_value mcapply cuts to 1.1 mins
+- adding that in torpedoes (conflict), actual parsing isn’t slow it’s loading
+- unfortunately it has spawned many many rsessions…may need the kill option? (seems ok)
+- now need to check it isn’t actually messing up the data…
+
+Adygeja
+4.2 mins with batch_size = 3
+4.6 mins with batch_size = 2
+4.4 mins with batch_size = 6
+4.4 mins with batch_size = 1
+4.2 mins with batch_size = 4
+
+
 # Timings of parallel parser on Mac desktop
-Altaj_Resp (0.9GB): 
-Adygeja_Resp (1.4GB): ~ 5:00
-Burjatija_Resp (3.6GB): ~ 6:45
+Altaj_Resp (0.9GB): 4.2 top-level MC presched=F, 3.6 inside MC presched=T)
+Adygeja_Resp (1.4GB): ~ 2.5 mins
+Burjatija_Resp (3.6GB): ~ 6:45 mins top-level MC, 
 Leningradskaja_obl (5.1GB): 9:30
 Irkutskaja_obl (9.3GB): 19.26
 Krasnojarskij_kraj (14.0GB): 
 Moskovskaja_obl (22.8GB): 
 Sankt-Peterburg (29.6GB): 
 Krasnodarskij_kraj (30.0GB): 
-Moskva (63.8GB): 
+Moskva (63.8GB): 2.5 hours (contracts 2, notifications 0.5 but maybe interrupted)
+contracts: same as below!
+notifications: same as below!
+
+before-leaving directory, Moscow files
+contracts: 88,091,654 obs of 4 vars
+notifications: 14,671,826 obs
