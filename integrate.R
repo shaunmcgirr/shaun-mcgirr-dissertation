@@ -8,8 +8,9 @@
 library(xml2)         # install.packages('xml2')
 library(magrittr)     # install.packages('magrittr')
 library(openxlsx)     # install.packages('openxlsx')
-library(foreach)      # install.packages('foreach')
-library(doParallel)   # install.packages('doParallel')
+library(parallel)     # install.packages('parallel')
+# library(foreach)      # install.packages('foreach')
+# library(doParallel)   # install.packages('doParallel')
 # library(plyr)       # install.packages('plyr')
 # library(rlist)      # install.packages('rlist')
 library(zoo)
@@ -31,6 +32,15 @@ data_download_date <- "2015-06-13"
 
 # What kind of documents to parse?
 document_types_list <- as.list(c("contracts", "notifications"))
+
+# Configure number of cores available (will default to 1 on Windows due to non-availability of easy parallelisation via library(parallel))
+number_of_cores <- max(1, detectCores() - 1) # Can change last number to 1 or 2 depending on tolerance for responsiveness of other processes
+
+
+# Are we running on a Mac/Linux machine, which allows for easy parallelisation (eg mclapply for lapply?)
+# Probably not needed as mclapply can run with mc.cores = 1
+# arch <- "Mac/Linux"
+# arch <- "Windows"
 
 # Set up R to display Russian characters as best it can on Windows (generally no problem on Mac/Linux)
 Sys.setlocale("LC_CTYPE", "Russian") # This may not be necessary on Mac/Linux

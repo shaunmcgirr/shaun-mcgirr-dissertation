@@ -42,11 +42,13 @@ parsing_configuration <- na.omit(read.xlsx(xlsxFile="3-Unpack/how-I-parse-the-xm
 for(r in 1:regions_number){
   # r <- 1
   current_region <- as.character(regions_list[r])
+  region_start_time <- Sys.time()
   
   # Begin control loop over document types
   for(d in 1:length(document_types_list)){
   # document_type <- "notifications"; # document_type <- "contracts"
   document_type <- as.character(document_types_list[d])
+  document_type_start_time <- Sys.time()
     
     fields_to_parse <- (parsing_configuration$XMLFieldName[parsing_configuration$DocumentType==document_type]) # loads fields from configuration
     # fields_to_parse_length <- length(fields_to_parse) # Probably no longer needed
@@ -84,7 +86,8 @@ for(r in 1:regions_number){
 #             
     # Process it key-value for comparison
   # for(z in 1:length(batch_list)){
-    batch_output_list_key_value <- lapply(batch_list, process_batch_key_value)
+    # batch_output_list_key_value <- lapply(batch_list, process_batch_key_value)
+    batch_output_list_key_value <- mclapply(batch_list, process_batch_key_value, mc.cores = number_of_cores, mc.preschedule = T)
     # batch_output_list_key_value <- process_batch_key_value(batch_to_process = batch_list[[z]])
   # }
     batch_output_key_value <- as.data.frame(do.call("rbind", batch_output_list_key_value),
@@ -97,8 +100,17 @@ for(r in 1:regions_number){
     # Clean up
     rm(list = c("files_list", "namespace", "batch_list", "batch_output_list_key_value", "batch_output_key_value"))
     gc()
+    
+    # Report time for this document type
+    document_type_processing_time <- (Sys.time() - document_type_start_time)
+    print(paste("Processing", document_type, "from", current_region, "took", sep=" "))
+    print(document_type_processing_time)
   } # Closes control loop over document_types_list in this region
-
+  
+  # Report time for this region as a whole
+  region_processing_time <- (Sys.time() - region_start_time)
+  print(paste("Processing", current_region, "took", sep=" "))
+  print(region_processing_time)
 } # Closes control loop over regions_list
 
   

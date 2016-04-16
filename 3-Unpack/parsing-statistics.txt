@@ -4,3 +4,14 @@ Name                                          Length  Width   MB
 Moskva_notifications_parsed_2015-06-13.rda    687280      9   54
 Moskva_contracts_parsed_2015-06-13.rda       2137100     17   73
 
+# Timings of parallel parser on Mac desktop
+Altaj_Resp (0.9GB): 
+Adygeja_Resp (1.4GB): ~ 5:00
+Burjatija_Resp (3.6GB): ~ 6:45
+Leningradskaja_obl (5.1GB): 9:30
+Irkutskaja_obl (9.3GB): 19.26
+Krasnojarskij_kraj (14.0GB): 
+Moskovskaja_obl (22.8GB): 
+Sankt-Peterburg (29.6GB): 
+Krasnodarskij_kraj (30.0GB): 
+Moskva (63.8GB): 
