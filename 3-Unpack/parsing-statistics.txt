@@ -11,7 +11,21 @@ inside process_batch_key_value prescheduled=T speeds up, but CPU underutilized
 - making everything except output_document_key_value mcapply cuts to 1.1 mins
 - adding that in torpedoes (conflict), actual parsing isn’t slow it’s loading
 - unfortunately it has spawned many many rsessions…may need the kill option? (seems ok)
-- now need to check it isn’t actually messing up the data…
+- now need to check it isn’t actually messing up the data…yes all the actual data missing
+
+Adygeja
+- mc main/mc output/mc find 1.72 mins (no data)
+- lapply main/mc output/mc find 1.7 mins (no data)
+- mc main/mc output/lapply find 2.1 mins (has data)
+- mc main/lapply output/mc find 1.2 mins (no data, so it’s mc find that is culprit)
+- apply main/mc output/lapply find 3.3 mins (has data)
+- mc main/lapply output/lapply find 2.0 mins
+
+Leningradskaja
+- mc main/lapply output 8.9-9.3 mins (clean test 9.8 mins)
+- lapply main/mc output 13 mins
+- mc main/mc output 9-10 mins (clean test 9.2 mins)
+
 
 Adygeja
 4.2 mins with batch_size = 3

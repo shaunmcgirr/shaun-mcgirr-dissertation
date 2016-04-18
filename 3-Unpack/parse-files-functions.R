@@ -84,20 +84,20 @@ output_document <- function(document_to_parse, fields_to_parse){
   output_fields <- lapply(fields_to_parse, function(x) if(length(parse_field(document_to_parse, x))>0) parse_field(document_to_parse, x) else NA)
 }
 
-# Function to turn batch_list item containing a file path in to list of documents
+# Function to turn batch_list item containing a file path in to list of documents (should not be parallelised with mclapply)
 find_documents_in_this_batch <- function(batch_list_item){
   # Debugging: batch_list_item <- batch_list[[1]]
-  # documents_in_this_batch <- lapply(batch_list_item, load_documents_from_file) # Better to parallelize as below
-  documents_in_this_batch <- mclapply(batch_list_item, load_documents_from_file, mc.cores = number_of_cores, mc.preschedule = T)
+  documents_in_this_batch <- lapply(batch_list_item, load_documents_from_file) # Better to parallelize as below
+  # documents_in_this_batch <- mclapply(batch_list_item, load_documents_from_file, mc.cores = number_of_cores, mc.preschedule = T) # RETURNS NO DATA!
   documents_in_this_batch <- unlist(remove_empty_lists(documents_in_this_batch), recursive = FALSE)
 }
 
-# Function to process the whole batch at once in to key-value pairs
+# Function to process the whole batch at once in to key-value pairs (can be parallelised using mclapply)
 process_batch_key_value <- function(batch_to_process, batch_sequence){
   # Debugging batch_to_process <- batch_list[[1]]
   documents_in_this_batch <- find_documents_in_this_batch(batch_to_process)
-  # batch_output <- lapply(documents_in_this_batch, output_document_key_value, fields_to_parse = fields_to_parse) # Better to parallelize as below
-  batch_output <- mclapply(documents_in_this_batch, output_document_key_value, fields_to_parse = fields_to_parse, mc.cores = number_of_cores, mc.preschedule = T)
+  batch_output <- lapply(documents_in_this_batch, output_document_key_value, fields_to_parse = fields_to_parse) # Better to parallelize as below
+  # batch_output <- mclapply(documents_in_this_batch, output_document_key_value, fields_to_parse = fields_to_parse, mc.cores = number_of_cores, mc.preschedule = T)
   batch_output <- do.call("rbind", batch_output)
   rm("documents_in_this_batch")
   return(batch_output)

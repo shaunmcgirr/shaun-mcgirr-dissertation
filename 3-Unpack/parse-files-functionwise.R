@@ -23,6 +23,7 @@ data_parsed_directory <- set_data_subdirectory(data_directory, data_download_dat
 # regions_list <- generate_regions_list(data_parsed_directory)
 regions_list <- as.list("Adygeja_Resp")
 # regions_list <- as.list("Burjatija_Resp")
+# regions_list <- as.list("Leningradskaja_obl")
 # regions_list <- as.list("Moskva")
 # regions_list <- as.list(c("Adygeja_Resp", "Moskva"))
 regions_number <- length(regions_list)
