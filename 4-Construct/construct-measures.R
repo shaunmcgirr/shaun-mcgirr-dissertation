@@ -74,6 +74,62 @@ for(r in 1:regions_number){
       group_by(BusinessKey) %>%
       summarise(NotificationTotalMaxPrice = sum(as.numeric(Value)))
     
+    notification_attributes_numeric <- c("oos:lots/oos:lot/oos:customerRequirements/oos:customerRequirement/oos:maxPrice")
+    
+    notification_attributes_character <- c("oos:order/oos:placer/oos:fullName")
+    
+    # Create a data frame with measures that are one-per-notification (so need to first aggregate things like maxPrice)
+    notifications_wide <- notifications_cleaned %>%
+      filter(Key %in% notification_attributes_singular) %>%
+      spread_(key_col = "Key", value_col = "Value")
+
+    notifications_wide <- notifications_cleaned %>%
+      filter(Key %in% notification_attributes_numeric) %>%
+      group_by(BusinessKey) %>%
+      summarise(NotificationTotalMaxPrice = sum(as.numeric(Value)))
+    
+    notifications_numeric <- notifications_cleaned %>%
+      filter(Key %in% notification_attributes_numeric) %>%
+      group_by(BusinessKey, Key) %>%
+        transmute(Value = as.numeric(Value)) %>%
+        summarise(Value = sum(Value)) %>% # Could be combined with above
+      ungroup() %>%
+      spread(key = Key, value = Value) %>%
+        rename(maxPrice = `oos:lots/oos:lot/oos:customerRequirements/oos:customerRequirement/oos:maxPrice`) # Move earlier
+      
+    test <- notifications_cleaned %>%
+      group_by(BusinessKey, Key) %>%
+      tally()
+    
+    
+    # Split the data in to separate tables with appropriate grain
+    
+    # Add a counter argument to this
+    select_keys_to_split <- function(OutputTable){
+      keys_to_split <- parsing_configuration[parsing_configuration$OutputTable == OutputTable, 4]
+    }
+    
+    # Easy case
+    keys_to_split <- select_keys_to_split("notifications")
+    output_table_easy <- notifications_cleaned %>%
+      filter(Key %in% keys_to_split) %>%
+      spread(key = Key, value = Value)
+    
+    # Tough case (needs counter argument)
+    keys_to_split <- select_keys_to_split("notification_lots")
+        
+    output_table_hard <- notifications_cleaned %>%
+      filter(Key %in% keys_to_split) %>%
+      mutate(Counter = ifelse(Key == "oos:lots/oos:lot/oos:ordinalNumber", Value, NA))
+    
+    rows_with_UniqueID <- batch_output_key_value %>%
+      add_rownames() %>%
+      filter(Key == "oos:id") %>%
+      select(rowname) %>%
+      cbind(UniqueID)
+    
+ 
+          
     contracts <- contracts_cleaned %>%
       filter(Key == "oos:price") %>%
       group_by(BusinessKey) %>%
@@ -93,6 +149,7 @@ for(r in 1:regions_number){
     hist(log(notifications_and_contracts$NotificationMaxPriceMinusContractPrice), breaks = 100)
     hist((notifications_and_contracts$AuctionEfficiency), breaks = 500)
     
+    # Draw one histogram of efficiency measure per organisation
     
     
   } # Closes control loop over document_types_list in this region
