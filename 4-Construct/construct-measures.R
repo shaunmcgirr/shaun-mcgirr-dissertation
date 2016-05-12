@@ -10,7 +10,8 @@
 ###################
 
 # Load functions
-source(file="3-Unpack/parse-files-functions.R")
+# source(file="3-Unpack/parse-files-functions.R")
+source(file="4-Construct/construct-measures-functions.R")
 
 # Change in to the directory where parsed data are stored (at the end of step 3)
 # setwd('~/data/zakupki/2015-06-13/zakupki-2015-06-13-parsed-data/')
@@ -23,22 +24,31 @@ data_parsed_directory <- set_data_subdirectory(data_directory, data_download_dat
 # Obtain list of regions for which consolidated data is available
 # regions_list <- generate_regions_list(data_parsed_directory)
 regions_list <- as.list("Adygeja_Resp")
+# regions_list <- as.list("Moskva")
 regions_number <- length(regions_list)
 
 # Define target of cleaned data
 data_cleaned_directory <- set_data_subdirectory(data_directory, data_download_date, "cleaned")
+# Define where outputs (eg graphs) should go
+data_output_directory <- set_data_subdirectory(data_directory, data_download_date, "output")
 
 ##############################################
 # 3. Define functions to process each region #
 ##############################################
 
-# Wrap the code written below in to functions
+# Wrap the code written below in to functions, as much as possible
 
+# Loop over regions, processing them in turn
 for(r in 1:regions_number){
   # r <- 1
   current_region <- as.character(regions_list[r])
+  current_region_english <- generate_english_region_name(current_region)
+  
+  # Create output directory
+  data_output_directory_region <- paste0(data_output_directory, current_region, "/")
+    suppressWarnings(dir.create(data_output_directory_region, recursive = T))
 
-  # Begin control loop over document types
+  # Begin control loop over document types to load both datasets for the region
   for(d in 1:length(document_types_list)){
       # document_type <- "notifications"; # document_type <- "contracts"
     document_type <- as.character(document_types_list[d])
@@ -49,24 +59,94 @@ for(r in 1:regions_number){
                               data_download_date, ".rda")
     load(file=file_to_process)
   } # Closes control loop over document types loaded
-    
+
+      
   # Distributions of the raw variables of interest
   notifications_maxPrice <- notifications_cleaned %>% 
     filter(Key == "oos:lots/oos:lot/oos:customerRequirements/oos:customerRequirement/oos:maxPrice") %>%
     mutate(NotificationMaxPrice = as.numeric(Value)) %>%
     select(NotificationMaxPrice)
-  hist(log(notifications_maxPrice$NotificationMaxPrice), breaks = 100, col=rgb(1, 0, 0, 0.5))
-  
-  notifications_maxPrice_three_quartiles <- notifications_maxPrice %>%
-    filter(NotificationMaxPrice <= as.numeric(summary(notifications_maxPrice$NotificationMaxPrice)[5]))
-  hist((notifications_maxPrice_three_quartiles$NotificationMaxPrice), breaks = 100)
-  # A lot of notifications right below 500,000 rubles, see http://www.otc.ru/academy/articles/Kak_rabotat_s_zakupkami
+  # hist(log(notifications_maxPrice$NotificationMaxPrice), breaks = 100, col=rgb(1, 0, 0, 0.5))
 
   contracts_price <- contracts_cleaned %>% 
     filter(Key == "oos:price") %>%
     mutate(ContractsPrice = as.numeric(Value)) %>%
     select(ContractsPrice)
-  hist(log(contracts_price$ContractsPrice), breaks = 100, col=rgb(0, 0, 1, 0.5), add=T)  
+  # hist(log(contracts_price$ContractsPrice), breaks = 100, col=rgb(0, 0, 1, 0.5), add=T)  
+  
+  # HISTOGRAMS OF NOTIFICATION PRICES
+  # Output three histograms for this region: listed price of notifications; same but only bottom three quartiles to show discontinuity at 500k; logged values across all dist
+  notifications_maxPrice_three_quartiles <- notifications_maxPrice %>%
+    filter(NotificationMaxPrice <= as.numeric(summary(notifications_maxPrice$NotificationMaxPrice)[5]))
+  hist((notifications_maxPrice_three_quartiles$NotificationMaxPrice), breaks = 100)
+  # A lot of notifications right below 500,000 rubles, see http://www.otc.ru/academy/articles/Kak_rabotat_s_zakupkami
+
+  # All notifications
+  graph_title <- paste0("Distribution of initial listing prices for tenders in ", current_region_english, " (all quartiles)\n")
+    graph_file_name <- paste0(data_output_directory_region, current_region, "_notification_maxPrice_histogram_raw_all_quartiles.pdf")
+  notification_maxPrice_histogram_raw_all_quartiles <- ggplot(notifications_maxPrice, aes(x=NotificationMaxPrice)) +
+                                                        geom_histogram(bins = 200) +
+                                                        labs(title = graph_title, x = "\nInitial listing price (rubles)") +
+                                                        scale_x_continuous(labels = comma) +
+                                                        theme_bw() +
+                                                        annotate("text", x = 0.95*(max(notifications_maxPrice$NotificationMaxPrice, na.rm = T)), y = 0, label = "\nA few very large\ntenders in each\nregion skew the\ndistribution right", vjust = 0, hjust = 1)
+  print(notification_maxPrice_histogram_raw_all_quartiles)
+  ggsave(plot = notification_maxPrice_histogram_raw_all_quartiles, filename = graph_file_name, device = "pdf")
+  
+  # Bottom three quarters of notifications
+  graph_title <- paste0("Distribution of initial listing prices for tenders in ", current_region_english, " (excluding fourth quartile)\n")
+    graph_file_name <- paste0(data_output_directory_region, current_region, "_notification_maxPrice_histogram_raw_three_quartiles.pdf")
+  notification_maxPrice_histogram_raw_three_quartiles <- ggplot(notifications_maxPrice_three_quartiles, aes(x=NotificationMaxPrice)) +
+    geom_histogram(bins = 200) +
+    labs(title = graph_title, x = "\nInitial listing price (rubles)") +
+    scale_x_continuous(labels = comma) +
+    theme_bw() +
+    annotate("text", x = 450000, y = Inf, label = "\nRules change for\ntenders > 500k", vjust = 1, hjust = 1)
+  print(notification_maxPrice_histogram_raw_three_quartiles)
+  ggsave(plot = notification_maxPrice_histogram_raw_three_quartiles, filename = graph_file_name, device = "pdf")
+  
+  # All notifications, logged
+  graph_title <- paste0("Distribution of initial listing prices (log base 10) for tenders in ", current_region_english, " (all quartiles)\n")
+    graph_file_name <- paste0(data_output_directory_region, current_region, "_notification_maxPrice_histogram_log_all_quartiles.pdf")
+  notification_maxPrice_histogram_log_all_quartiles <- ggplot(notifications_maxPrice, aes(x=NotificationMaxPrice)) +
+    geom_histogram(bins = 200) +
+    labs(title = graph_title, x = "\nInitial listing price (rubles, log base 10)") +
+    scale_x_continuous(labels = comma, trans = "log10") +
+    theme_bw() +
+    annotate("text", x = 350000, y = Inf, label = "\nRules change for\ntenders > 500k", vjust = 1, hjust = 1)
+  print(notification_maxPrice_histogram_log_all_quartiles)
+  ggsave(plot = notification_maxPrice_histogram_log_all_quartiles, filename = graph_file_name, device = "pdf")
+  
+  
+  # SUBSET DATA TO JUST NOTIFICATIONS/CONTRACTS WITH ONE LOT
+  # Identify and assess size of multiple-lot notifications
+  notifications_lots_number <- notifications_cleaned %>%
+                                filter(Key == "oos:lots/oos:lot/oos:ordinalNumber") %>%
+                                group_by(BusinessKey) %>%
+                                summarize(NumberOfLots = as.numeric(max(Value)))
+  # table(notifications_lots_number$NumberOfLots) # 99.5% of Adygeja_Resp notifications had 1 lot; 98.9% of Moskva
+  
+  # Subset to just the single-lot notifications
+  notifications_with_one_lot <- notifications_lots_number %>% filter(NumberOfLots == 1) %>% select(BusinessKey)
+  notifications_single_lot <- notifications_cleaned %>%
+                                right_join(notifications_with_one_lot)
+  
+  # Identify and assess size of multiple-product notifications (within multiple-lot subset)
+  notifications_products_number <- notifications_single_lot %>%
+                                    filter(Key == "oos:lots/oos:lot/oos:products/oos:product/oos:code") %>%
+                                    group_by(BusinessKey) %>%
+                                    summarize(NumberOfProducts = n())
+  # table(notifications_products_number$NumberOfProducts) 
+    # 85.4% of Adygeja_Resp single-lot notifications had one product code
+    # eg Notification 0176200000113002872 has 42, but only one maxPrice, so can't easily split accross the products
+    # (maybe possible later at higher level of product classification, eg these all start with 2423)
+  
+  notifications_with_one_lot_one_product <- notifications_products_number %>% filter(NumberOfProducts == 1) %>% select(BusinessKey)
+  notifications_single_lot_single_product <- notifications_single_lot %>%
+                                              right_join(notifications_with_one_lot_one_product)
+  
+  
+  
   
     # Measure 1: what is the difference between notified and contracted price?
     notifications <- notifications_cleaned %>%

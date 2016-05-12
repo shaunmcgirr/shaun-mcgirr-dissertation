@@ -13,6 +13,14 @@
 # 2. Helper functions #
 #######################
 
+# Transform region names in to English for graphing purposes
+generate_english_region_name <- function(region){
+                                  current_region_english <- gsub("_", " ", region) 
+                                  current_region_english <- gsub("Resp", "Republic", current_region_english)
+                                  current_region_english <- gsub("obl", "Oblast", current_region_english)
+                                  current_region_english <- gsub("kraj", "Krai", current_region_english)
+                                  current_region_english <- gsub("Moskva", "Moscow", current_region_english)
+                                  }
 
 
 ###########################

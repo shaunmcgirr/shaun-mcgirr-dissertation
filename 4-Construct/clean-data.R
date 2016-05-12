@@ -112,7 +112,7 @@ for(r in 1:regions_number){
     
     # Save the cleaned data (renaming object to something useful beforehand)
     to_directory <- paste0(data_cleaned_directory, current_region)
-      dir.create(to_directory, recursive=TRUE)
+      suppressWarnings(dir.create(to_directory, recursive=TRUE))
     filename <- paste0(to_directory, "/", current_region, "_", document_type, "_cleaned_",
                        data_download_date, ".rda")
     if(document_type == "contracts"){contracts_cleaned <- one_version_per_document; save(contracts_cleaned, file=filename); rm(contracts_cleaned)}

@@ -15,6 +15,9 @@ library(parallel)     # install.packages('parallel')
 # library(rlist)      # install.packages('rlist')
 library(zoo)
 library(tidyr)        # install.packages('tidyr')
+library(ggplot2)      # install.packages('ggplot2')
+library(scales)       # install.packages('scales')
+library(ggthemes)     # install.packages('ggthemes')
 # Always load dplyr last!  
 library(dplyr)        # install.packages('dplyr')
 

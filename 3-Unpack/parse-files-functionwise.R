@@ -58,7 +58,7 @@ for(r in 1:regions_number){
     # Create directories and find the files
     from_directory <- set_data_subdirectory_region(current_region, document_type, "from")
     to_directory <- set_data_subdirectory_region(current_region, document_type, "to")
-      dir.create(to_directory, recursive=TRUE)
+      suppressWarnings(dir.create(to_directory, recursive=TRUE))
     files_list <- generate_files_list(from_directory)
       files_list_length <- length(files_list) 
     namespace <- xml_ns(read_xml(files_list[[1]])) # Hardcode namespace based on  first file in list
