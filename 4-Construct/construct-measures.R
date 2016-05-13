@@ -10,7 +10,7 @@
 ###################
 
 # Load functions
-# source(file="3-Unpack/parse-files-functions.R")
+source(file="3-Unpack/parse-files-functions.R")
 source(file="4-Construct/construct-measures-functions.R")
 
 # Change in to the directory where parsed data are stored (at the end of step 3)
@@ -60,7 +60,14 @@ for(r in 1:regions_number){
     load(file=file_to_process)
   } # Closes control loop over document types loaded
 
-      
+  # REMOVE Keys found to be of no value (could also be moved to clean-data.R, would save memory)
+  notifications_cleaned <- notifications_cleaned %>% filter(Key != "oos:lots/oos:lot/oos:notificationFeatures/oos:notificationFeature/oos:placementFeature/oos:name")
+  contracts_cleaned <- contracts_cleaned %>% filter(BusinessKey != "")
+  
+  ###################
+  ## Notifications ##
+  ###################
+  
   # Distributions of the raw variables of interest
   notifications_maxPrice <- notifications_cleaned %>% 
     filter(Key == "oos:lots/oos:lot/oos:customerRequirements/oos:customerRequirement/oos:maxPrice") %>%
@@ -118,7 +125,7 @@ for(r in 1:regions_number){
   ggsave(plot = notification_maxPrice_histogram_log_all_quartiles, filename = graph_file_name, device = "pdf")
   
   
-  # SUBSET DATA TO JUST NOTIFICATIONS/CONTRACTS WITH ONE LOT
+  # SUBSET DATA TO JUST NOTIFICATIONS/CONTRACTS WITH ONE LOT/PRODUCT/CUSTOMER
   # Identify and assess size of multiple-lot notifications
   notifications_lots_number <- notifications_cleaned %>%
                                 filter(Key == "oos:lots/oos:lot/oos:ordinalNumber") %>%
@@ -145,10 +152,159 @@ for(r in 1:regions_number){
   notifications_single_lot_single_product <- notifications_single_lot %>%
                                               right_join(notifications_with_one_lot_one_product)
   
+  # Count fields per business key (to check for remaining duplicate attributes)
+  fields_per_business_key <- notifications_single_lot_single_product %>%
+                              group_by(BusinessKey, Key) %>%
+                              summarise(KeysPerBusinessKey = n())
+  # Still a lot of duplicate fields! Eg http://zakupki.gov.ru/pgz/public/action/orders/info/common_info/show?notificationId=4853921
+  # This is an auction for electricity covering many different departments, all at once, made by ministry of finance
+  # Auction was cancelled by Federal Antimonopoly Service, so should be no contract
+  # Good news: sum of max prices across the various parties equals published max price
+  
+  # Another example of pooled purchasing: http://zakupki.gov.ru/pgz/public/action/orders/info/common_info/show?notificationId=2501511
+  # Many contracts resulted, sum of max prices across notifications equals published max price
+  # DIFFICULTY IS OBVIOUSLY IN DETERMINING LINK BETWEEN NOTIFICATION AND CONTRACT, may need to sum contracts?
+  # max_notification <- notifications_cleaned %>% filter(BusinessKey == "0176200000111001357" & Key == "oos:lots/oos:lot/oos:customerRequirements/oos:customerRequirement/oos:maxPrice")
+    # sum(as.numeric(max_notification$Value))
+  # max_contract <- contracts_cleaned %>% filter(BusinessKey == "0176200000111001357" & grepl("oos:product/oos:price", Key))
+    # sum(as.numeric(max_contract$Value))
+  # Notification max price: 1 639 423,44; but not as many linked contracts created as there should be, so need to restrict further
+ 
+  # Examine which fields from notifications file are duplicated
+  fields_with_duplicates <- fields_per_business_key %>%
+                              filter(KeysPerBusinessKey > 1) %>%
+                              group_by(Key) %>%
+                              summarise(NumberOfTimesDuplicated = n())
+  # Shows some cases come from notifications for more than one customer at a time, as the case above
+  # Most come from oos:lots/oos:lot/oos:notificationFeatures/oos:notificationFeature/oos:placementFeature/oos:name
+  # This appears to just be free-text commentary anyway, so can drop (added back in clean step)
+  
+  # Final restriction to the simplest notfications
+  notifications_with_one_lot_one_product_one_customer <- notifications_single_lot_single_product %>%
+                                                          group_by(BusinessKey, Key) %>%
+                                                            summarise(ValuesPerKey = n()) %>% ungroup() %>%
+                                                          group_by(BusinessKey) %>%
+                                                            summarise(MaxFieldsPerNotification = max(ValuesPerKey)) %>% ungroup() %>%
+                                                          filter(MaxFieldsPerNotification == 1) %>%
+                                                          select(BusinessKey)
+                                                          
+  notifications_single_lot_single_product_single_customer <- notifications_single_lot_single_product %>%
+                                                              right_join(notifications_with_one_lot_one_product_one_customer)
+  
+  # What percentage of all notifications remain? 84.7% for Adygeja, 90.7% for Moscow
+  length(unique(notifications_single_lot_single_product_single_customer$BusinessKey)) / length(unique(notifications_cleaned$BusinessKey))
+    
+  ## PIVOT THE DEDUPLICATED DATA IN TO ONE ROW PER NOTIFICATION
+  notifications <- notifications_single_lot_single_product_single_customer %>%
+                    spread(key = Key, value = Value)
+
+      
+  ###################
+  ## Contracts     ##
+  ###################    
+  
+  # SUBSET DATA TO JUST NOTIFICATIONS/CONTRACTS WITH ONE LOT/PRODUCT/CUSTOMER
+  # Identify and assess size of multiple-product contracts
+  contracts_products_number <- contracts_cleaned %>%
+                                filter(Key == "oos:products/oos:product/oos:OKDP/oos:code") %>%
+                                group_by(BusinessKey) %>%
+                                  summarize(NumberOfProducts = n())
+  # table(contracts_products_number$NumberOfProducts) 
+  # 60.8% of Adygeja_Resp contracts had one product code, means we are losing too much
+  # Eg 0176200000112000978 hows two product codes, but they are the same (and appear as a single lot/product/customer in notification)
+  # Worst offenders seem to be libraries contracting for lots of books at once, probably all same product!
+  
+  contracts_products_number_unique <- contracts_cleaned %>%
+                                        filter(Key == "oos:products/oos:product/oos:OKDP/oos:code") %>%
+                                        group_by(BusinessKey) %>%
+                                          summarize(NumberOfUniqueProducts = n_distinct(Value))
+  # table(contracts_products_number_unique$NumberOfUniqueProducts)
+  # 82.8% of Adygeja_Resp contracts had one unique product code
+  
+  contracts_products_combined <- contracts_cleaned %>%
+                                   filter(Key == "oos:products/oos:product/oos:OKDP/oos:code") %>%
+                                   group_by(BusinessKey) %>%
+                                   summarize(NumberOfProducts = n(), NumberOfUniqueProducts = n_distinct(Value))
+  # Notification 0376300000112000347 is good example: passed my checks to make it in to notifications dataset
+  # When in contract stage the product codes become more diversified (from 1520000 to eg 1520111), still best to discard now
+  # We can safely sum across prices for the same product code though
+
+  # Subset to just the single-product (code) contracts  
+  contracts_with_one_product <- contracts_products_combined %>% filter(NumberOfUniqueProducts == 1) %>% select(BusinessKey)
+  contracts_single_product <- contracts_cleaned %>%
+                                right_join(contracts_with_one_product)
+  
+  # Count fields per business key (to check for remaining duplicate attributes)
+  fields_per_business_key <- contracts_single_product %>%
+                              group_by(BusinessKey, Key) %>%
+                              summarise(KeysPerBusinessKey = n())
+  
+  # Examine which fields from notifications file are duplicated
+  fields_with_duplicates <- fields_per_business_key %>%
+                              filter(KeysPerBusinessKey > 1) %>%
+                              group_by(Key) %>%
+                              summarise(NumberOfTimesDuplicated = n())
+  # Duplicate fields related to finance, products, and a few multiple-supplier contracts
+  # Eg contract 0876100000413000002
+  
+  # SIMPLE FIX FOR NOW - DROP ALL THOSE CASES
+  contracts_with_one_product_no_duplicates <- contracts_single_product %>%
+                                                group_by(BusinessKey, Key) %>%
+                                                  summarise(ValuesPerKey = n()) %>% ungroup() %>%
+                                                group_by(BusinessKey) %>%
+                                                  summarise(MaxFieldsPerContract = max(ValuesPerKey)) %>% ungroup() %>%
+                                                filter(MaxFieldsPerContract == 1) %>%
+                                                select(BusinessKey)
+  
+  contracts_single_product_no_duplicates <- contracts_single_product %>%
+                                              right_join(contracts_with_one_product_no_duplicates)
+  
+  # What percentage of all contracts remain? 57.8% for Adygeja, 74.7% for Moscow
+  length(unique(contracts_single_product_no_duplicates$BusinessKey)) / length(unique(contracts_cleaned$BusinessKey))
+  
+  ## PIVOT THE DEDUPLICATED DATA IN TO ONE ROW PER NOTIFICATION
+  contracts <- contracts_single_product_no_duplicates %>%
+                spread(key = Key, value = Value)
+  
+
+  ###################
+  ## Merge         ##
+  ###################  
+  
+  merged <- notifications %>% left_join(contracts, by = c("oos:notificationNumber" = "oos:foundation/oos:order/oos:notificationNumber"))
+  # Gives about a 50% match rate in Adygeja, almost 60% in Moscow
+  
+  matched <- merged %>% 
+    filter(!is.na(BusinessKey.y)) %>%
+    mutate(PriceChange = as.numeric(`oos:lots/oos:lot/oos:customerRequirements/oos:customerRequirement/oos:maxPrice`) - as.numeric(`oos:products/oos:product/oos:price`),
+           PriceChangePercent = -100 * PriceChange / as.numeric(`oos:lots/oos:lot/oos:customerRequirements/oos:customerRequirement/oos:maxPrice`)) %>%
+    filter(PriceChangePercent <= 5)
+  
+  # Quick graph
+  hist(matched$PriceChangePercent, breaks = 100, main = "Moscow: change in price between tender notification and final contract (all procedures)",
+       xlab = "Percentage difference between initial notification of tender and final contract")
+  
+  auctions <- matched %>% filter(`oos:placingWay/oos:name` == "Открытый аукцион в электронной форме")
+  
+  hist(auctions$PriceChangePercent, breaks = 100, main = "Moscow: change in price between tender notification and final contract (auction procedures)",
+       xlab = "Percentage difference between initial notification of tender and final contract")
+  
+  # TO DO 
+  # Roll back "single lot" on notifications, may not be necessary
+  # Go back and sum over the unique products to improve match rate
+  # Double-check uniqueness on both sides of merge
+  # Translate agency names to English
+  # Recode the variables I will split by in to factor variables
+  # Split by agency, procedure, then both
+  # Then zoom in on canonical products
+  
+  #####
+#  OLD CODE
+  ####
   
   
   
-    # Measure 1: what is the difference between notified and contracted price?
+      # Measure 1: what is the difference between notified and contracted price?
     notifications <- notifications_cleaned %>%
       filter(Key == "oos:lots/oos:lot/oos:customerRequirements/oos:customerRequirement/oos:maxPrice") %>%
       group_by(BusinessKey) %>%

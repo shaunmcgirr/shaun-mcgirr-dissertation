@@ -1,0 +1,17 @@
+DESCRIPTIVE STATISTICS
+
+Whole database
+- January 2012 - June 2015
+- Dump of back-end data from the federal procurement portal at www.zakupki.gov.ru
+- Tenders under Federal Law 94
+- Russian Federation fiscal year is calendar year
+- Database is broken down in to each of Russia's 70+ regions, based on location of (bureaucrat, delivery?)
+- When a tender is notified, bureaucrat also decides procedure, along spectrum of competitiveness
+- Some procedures are restricted to certain price ranges, and tenders above certain levels attract more oversight
+
+Moscow
+- 548,436 notifications of tender
+  - X of these are for a single product and a single customer
+- 414,383 contracts entered
+  - X of these are for a signle product and a single customer
+- Y total matches between notifications and a subsequent contract

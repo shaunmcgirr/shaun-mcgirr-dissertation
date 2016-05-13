@@ -1,6 +1,6 @@
 Numbers of tenders according to web search
 
-94-FZ Moscow: Всего записей: более 520000
+94-FZ Moscow: Всего записей: более 520000 (my files give 548436, good)
 http://old.zakupki.gov.ru/epz/order/extendedsearch/search.html?placeOfSearch=FZ_94&orderPriceCurrencyId=-1&regionIds=5277335&orderStages=AF&orderStages=CA&orderStages=PC&orderStages=PA&contractPriceCurrencyId=-1&matchingWordPlace94=NOTIFICATIONS&strictEqual=false#
 
 94-FZ Adygeja: Всего записей: более 14000 (my files give 14853, good)
