@@ -15,6 +15,8 @@ library(parallel)     # install.packages('parallel')
 # library(plyr)       # install.packages('plyr')
 # library(rlist)      # install.packages('rlist')
 library(foreign)      # install.packages('foreign')
+library(countrycode)  # install.packages('countrycode')
+# library(WDI)          # install.packages('WDI')
 library(zoo)
 library(tidyr)        # install.packages('tidyr')
 library(ggplot2)      # install.packages('ggplot2')
@@ -42,7 +44,6 @@ document_types_list <- as.list(c("contracts", "notifications"))
 # Configure number of cores available (will default to 1 on Windows due to non-availability of easy parallelisation via library(parallel))
 number_of_cores <- max(1, detectCores() - 1) # Can change last number to 1 or 2 depending on tolerance for responsiveness of other processes
 
-
 # Are we running on a Mac/Linux machine, which allows for easy parallelisation (eg mclapply for lapply?)
 # Probably not needed as mclapply can run with mc.cores = 1
 # arch <- "Mac/Linux"
@@ -52,6 +53,14 @@ number_of_cores <- max(1, detectCores() - 1) # Can change last number to 1 or 2 
 Sys.setlocale("LC_CTYPE", "Russian") # This may not be necessary on Mac/Linux
 
 #----- 3. Run scripts for each step -----
+
+# Procurement data
 # source("3-Unpack//unzip-files.R") # unzips files from raw-data to unzipped-data
-# source("3-Unpack//parse-files.R") # parses the unzipped xml files from unzipped-data to parsed-data
+# source("3-Unpack//parse-files-functionwise.R") # parses the unzipped xml files from unzipped-data to parsed-data
+# source("4-Construct//clean-data.R") # Cleans the parsed data (mostly deduplicating)
+# source("4-Construct//construct-measures.R") # Builds measures for the procurement data
+
+# Other data
+# source("3-Unpack//load-other-data.R") # Loads non-procurement data sources
+# source("6-Present//scatterplots-GCB.R") # Draws the GCB scatterplots for introduction
 
