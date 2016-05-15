@@ -11,6 +11,7 @@
 
 # Tell R where unzipped data is stored (at the end of 3-Unpack/unzip-files.R) and where to send it
 data_other_directory <- "2-Obtain/data_other/"
+# Recall that integrate.R defines a "downloads_directory" for files not tracked by Git
 
 ############################################
 # 2. Gather parameters about the job ahead #
@@ -34,5 +35,28 @@ test_import <- read.csv(file = "2-Obtain/data_other/clearspending/clearspending-
                         sep = ";", encoding = "UTF-8", strip.white = T)
 # Need to run over columns and overwrite without spaces 
 # http://stackoverflow.com/questions/5992082/how-to-remove-all-whitespace-from-a-string
+
+
+############################################
+# 4. Load Global Corruption Barometer data #
+############################################
+
+## Prepackaged survey responses for the intro
+
+gcb_data_aggregated_file <- paste0(data_other_directory, "gcb/GCB2013_DataPack/GCB2013_Data.xls")
+  gcb_data_aggregated_columns <- c("Country", "ISO", "Education", "Judiciary", "Medical and health", "Police", "Registry and permit services", "Utilities", "Tax revenue and/or customs", "Land Services", "Any")
+gcb_data_aggregated_raw <- read_excel(gcb_data_aggregated_file, 
+                                      sheet = 8, skip = 5, 
+                                      col_names = F)
+# Add column names
+colnames(gcb_data_aggregated_raw) <- gcb_data_aggregated_columns
+# Lop off end of file about contact rates
+gcb_data_aggregated_cleaned <- gcb_data_aggregated_raw[1:107,] %>%
+                                filter(!is.na(Any))
+rm(gcb_data_aggregated_raw)
+
+## Raw survey data
+# gcb_data_file <- paste0(downloads_directory, "GCB data set/GCB full data 2003-2013/2003-2013fullgcbdata.dta")
+# gcb_data_raw <- read.dta(gcb_data_file)
 
 # ENDS

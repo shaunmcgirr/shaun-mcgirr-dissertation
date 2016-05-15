@@ -7,12 +7,14 @@
 # Packages are loaded here unless there is a special reason to load them in the scripts below
 library(xml2)         # install.packages('xml2')
 library(magrittr)     # install.packages('magrittr')
+library(readxl)       # install.packages('readxl')
 library(openxlsx)     # install.packages('openxlsx')
 library(parallel)     # install.packages('parallel')
 # library(foreach)      # install.packages('foreach')
 # library(doParallel)   # install.packages('doParallel')
 # library(plyr)       # install.packages('plyr')
 # library(rlist)      # install.packages('rlist')
+library(foreign)      # install.packages('foreign')
 library(zoo)
 library(tidyr)        # install.packages('tidyr')
 library(ggplot2)      # install.packages('ggplot2')
@@ -32,6 +34,7 @@ data_directory <- "~/data/zakupki/" # When running on internal laptop HDD
 #data_directory <- "../../SHAUN-HDD/Data/zakupki/" # When running ext HDD on an unrelated Mac
 data_download_date <- "2015-06-13"
 #setwd("~/git/shaun-mcgirr-dissertation/") # Only needed when running in batch on Linux
+downloads_directory <- "~/Downloads/" # For data not tracked by Git
 
 # What kind of documents to parse?
 document_types_list <- as.list(c("contracts", "notifications"))
