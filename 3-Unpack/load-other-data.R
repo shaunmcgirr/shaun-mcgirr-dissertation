@@ -44,7 +44,7 @@ test_import <- read.csv(file = "2-Obtain/data_other/clearspending/clearspending-
 ## Prepackaged survey responses for the intro
 
 gcb_data_aggregated_file <- paste0(data_other_directory, "gcb/GCB2013_DataPack/GCB2013_Data.xls")
-  gcb_data_aggregated_columns <- c("Country", "ISO", "Education", "Judiciary", "Medical and health", "Police", "Registry and permit services", "Utilities", "Tax revenue and/or customs", "Land Services", "Any")
+  gcb_data_aggregated_columns <- c("Country", "ISO", "Education", "Judiciary", "Medical and health", "Police", "Registry and permit services", "Utilities", "Tax revenue and/or customs", "Land Services", "Any sector")
 gcb_data_aggregated_raw <- read_excel(gcb_data_aggregated_file, 
                                       sheet = 8, skip = 5, 
                                       col_names = F)
@@ -52,7 +52,7 @@ gcb_data_aggregated_raw <- read_excel(gcb_data_aggregated_file,
 colnames(gcb_data_aggregated_raw) <- gcb_data_aggregated_columns
 # Lop off end of file about contact rates
 gcb_data_aggregated_cleaned <- gcb_data_aggregated_raw[1:107,] %>%
-                                filter(!is.na(Any))
+                                filter(!is.na(`Any sector`))
 rm(gcb_data_aggregated_raw)
 
 
