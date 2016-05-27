@@ -55,6 +55,10 @@ gcb_data_aggregated_cleaned <- gcb_data_aggregated_raw[1:107,] %>%
                                 filter(!is.na(`Any sector`))
 rm(gcb_data_aggregated_raw)
 
+## Raw survey data
+# gcb_data_file <- paste0(downloads_directory, "GCB data set/GCB full data 2003-2013/2003-2013fullgcbdata.dta")
+# gcb_data_raw <- read.dta(gcb_data_file)
+
 
 ###############################################
 # 5. Load V-Dem and other cross-national data #
@@ -69,8 +73,6 @@ rm(gcb_data_aggregated_raw)
 v_dem_data_file <- paste0(downloads_directory, "/Country_Year_V-Dem_other_SPSS_v6.1/V-Dem-DS-CY+Others-v6.1.sav")
 v_dem_data_raw <- read.spss(v_dem_data_file, to.data.frame = T)
 
-## Raw survey data
-# gcb_data_file <- paste0(downloads_directory, "GCB data set/GCB full data 2003-2013/2003-2013fullgcbdata.dta")
-# gcb_data_raw <- read.dta(gcb_data_file)
+
 
 # ENDS

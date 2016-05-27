@@ -20,7 +20,7 @@ data_parsed_directory <- set_data_subdirectory(data_directory, data_download_dat
 ############################################
 
 # Gather metadata about the regions to be worked on
-# regions_list <- generate_regions_list(data_parsed_directory)
+# regions_list <- generate_regions_list(data_unzipped_directory)
 regions_list <- as.list("Adygeja_Resp")
 # regions_list <- as.list("Burjatija_Resp")
 # regions_list <- as.list("Leningradskaja_obl")

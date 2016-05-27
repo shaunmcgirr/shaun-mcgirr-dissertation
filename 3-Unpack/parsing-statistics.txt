@@ -41,10 +41,10 @@ Adygeja_Resp (1.4GB): ~ 2.5 mins
 Burjatija_Resp (3.6GB): ~ 6:45 mins top-level MC, 
 Leningradskaja_obl (5.1GB): 9:30
 Irkutskaja_obl (9.3GB): 19.26
-Krasnojarskij_kraj (14.0GB): 
+Krasnojarskij_kraj (14.0GB): 29 mins
 Moskovskaja_obl (22.8GB): 45 mins
 Sankt-Peterburg (29.6GB): 1.3 hrs
-Krasnodarskij_kraj (30.0GB): 
+Krasnodarskij_kraj (30.0GB): 1.01 hours
 Moskva (63.8GB): 2.5 hours (contracts 2, notifications 0.5 but maybe interrupted, parallel 2 hrs)
   contracts: same as below!
   notifications: same as below!
@@ -69,3 +69,45 @@ Counts and amounts (good complex one is 0376100001911000004, many products)
 http://zakupki.gov.ru/pgz/public/action/orders/info/common_info/show?notificationId=204952
 - lots per notification
 - products per lot
+
+
+# Timings from batch processing
+
+[1] "Processing contracts from Altaj_Resp took"
+Time difference of 1.06983558336894 mins
+[1] "Processing notifications from Altaj_Resp took"
+Time difference of 26.9328088760376 secs
+[1] "Processing Altaj_Resp took"
+Time difference of 1.51874024868011 mins
+[1] "Processing contracts from Altajskij_kraj took"
+Time difference of 13.9668044010798 mins
+[1] "Processing notifications from Altajskij_kraj took"
+Time difference of 2.16747630039851 mins
+[1] "Processing Altajskij_kraj took"
+Time difference of 16.1343026161194 mins
+[1] "Processing contracts from Amurskaja_obl took"
+Time difference of 6.69090261856715 mins
+[1] "Processing notifications from Amurskaja_obl took"
+Time difference of 1.72228188514709 mins
+[1] "Processing Amurskaja_obl took"
+Time difference of 8.41320428450902 mins
+[1] "Processing contracts from Arkhangelskaja_obl took"
+Time difference of 9.6717099348704 mins
+[1] "Processing notifications from Arkhangelskaja_obl took"
+Time difference of 2.51892473300298 mins
+[1] "Processing Arkhangelskaja_obl took"
+Time difference of 12.1906630357107 mins
+[1] "Processing contracts from Astrakhanskaja_obl took"
+Time difference of 6.81305036942164 mins
+[1] "Processing notifications from Astrakhanskaja_obl took"
+Time difference of 1.49253714879354 mins
+[1] "Processing Astrakhanskaja_obl took"
+Time difference of 8.30560895204544 mins
+[1] "Processing contracts from Bajkonur_g took"
+Time difference of 20.2789559364319 secs
+[1] "Processing notifications from Bajkonur_g took"
+Time difference of 9.91507601737976 secs
+[1] "Processing Bajkonur_g took"
+Time difference of 30.1951820850372 secs
+
+
