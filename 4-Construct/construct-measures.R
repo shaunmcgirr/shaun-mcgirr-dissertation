@@ -145,6 +145,7 @@ for(r in 1:regions_number){
                                     summarize(NumberOfProducts = n())
   # table(notifications_products_number$NumberOfProducts) 
     # 85.4% of Adygeja_Resp single-lot notifications had one product code
+    # 92.3% in Moscow
     # eg Notification 0176200000113002872 has 42, but only one maxPrice, so can't easily split accross the products
     # (maybe possible later at higher level of product classification, eg these all start with 2423)
   
@@ -197,7 +198,10 @@ for(r in 1:regions_number){
   ## PIVOT THE DEDUPLICATED DATA IN TO ONE ROW PER NOTIFICATION
   notifications <- notifications_single_lot_single_product_single_customer %>%
                     spread(key = Key, value = Value)
-
+  
+  # 497,844 notifications in Moscow
+  notifications_wide_file_name <- paste0(data_output_directory_region, current_region, "_notifications_wide.rda")
+  save(notifications, file = notifications_wide_file_name)
       
   ###################
   ## Contracts     ##
@@ -209,17 +213,19 @@ for(r in 1:regions_number){
                                 filter(Key == "oos:products/oos:product/oos:OKDP/oos:code") %>%
                                 group_by(BusinessKey) %>%
                                   summarize(NumberOfProducts = n())
-  # table(contracts_products_number$NumberOfProducts) 
+  # table(contracts_products_number$NumberOfProducts)[1]/length(unique(contracts_cleaned$BusinessKey))
   # 60.8% of Adygeja_Resp contracts had one product code, means we are losing too much
-  # Eg 0176200000112000978 hows two product codes, but they are the same (and appear as a single lot/product/customer in notification)
+  # 81% for Moscow
+  # Eg 0176200000112000978 shows two product codes, but they are the same (and appear as a single lot/product/customer in notification)
   # Worst offenders seem to be libraries contracting for lots of books at once, probably all same product!
   
   contracts_products_number_unique <- contracts_cleaned %>%
                                         filter(Key == "oos:products/oos:product/oos:OKDP/oos:code") %>%
                                         group_by(BusinessKey) %>%
                                           summarize(NumberOfUniqueProducts = n_distinct(Value))
-  # table(contracts_products_number_unique$NumberOfUniqueProducts)
+  # table(contracts_products_number_unique$NumberOfUniqueProducts)[1]/length(unique(contracts_cleaned$BusinessKey))
   # 82.8% of Adygeja_Resp contracts had one unique product code
+  # 92% for Moscow
   
   contracts_products_combined <- contracts_cleaned %>%
                                    filter(Key == "oos:products/oos:product/oos:OKDP/oos:code") %>%
@@ -227,7 +233,7 @@ for(r in 1:regions_number){
                                    summarize(NumberOfProducts = n(), NumberOfUniqueProducts = n_distinct(Value))
   # Notification 0376300000112000347 is good example: passed my checks to make it in to notifications dataset
   # When in contract stage the product codes become more diversified (from 1520000 to eg 1520111), still best to discard now
-  # We can safely sum across prices for the same product code though
+  # We can safely sum across prices for the same product code though, if needed later
 
   # Subset to just the single-product (code) contracts  
   contracts_with_one_product <- contracts_products_combined %>% filter(NumberOfUniqueProducts == 1) %>% select(BusinessKey)
@@ -262,9 +268,15 @@ for(r in 1:regions_number){
   # What percentage of all contracts remain? 57.8% for Adygeja, 74.7% for Moscow
   length(unique(contracts_single_product_no_duplicates$BusinessKey)) / length(unique(contracts_cleaned$BusinessKey))
   
+  # Can we do better by summing across same products? (or more problems because often for different orgs...)
+  
   ## PIVOT THE DEDUPLICATED DATA IN TO ONE ROW PER NOTIFICATION
   contracts <- contracts_single_product_no_duplicates %>%
                 spread(key = Key, value = Value)
+  
+  # 309,727 contracts in Moscow
+  contracts_wide_file_name <- paste0(data_output_directory_region, current_region, "_contracts_wide.rda")
+  save(contracts, file = contracts_wide_file_name)
   
 
   ###################
