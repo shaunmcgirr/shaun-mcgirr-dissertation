@@ -290,13 +290,14 @@ for(r in 1:regions_number){
        xlab = "Percentage difference between initial notification of tender and final contract")
   
   # TO DO 
-  # Roll back "single lot" on notifications, may not be necessary
+  # Roll back "single lot" on notifications, may not be necessary (LEAVE, don't lose much by it)
   # Go back and sum over the unique products to improve match rate
   # Double-check uniqueness on both sides of merge
   # Translate agency names to English
   # Recode the variables I will split by in to factor variables
   # Split by agency, procedure, then both
   # Then zoom in on canonical products
+  # Reproduce the old scatterplot of agency budget by single-supplier
   
   #####
 #  OLD CODE

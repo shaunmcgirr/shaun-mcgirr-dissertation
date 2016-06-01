@@ -35,7 +35,7 @@ v_dem_years_matching_gcb <- v_dem_data_raw %>%
 v_dem_data_2012_2013 <- v_dem_data_raw %>%
                           select(country_name, country_id, country_text_id, year,
                                  v2x_polyarchy, v2x_libdem, v2xme_altinf, v2xlg_legcon,
-                                 v2x_corr, v2x_pubcorr, v2x_execorr, v2psoppaut,
+                                 v2x_corr, v2x_pubcorr, v2x_execorr, v2psoppaut, v2excrptps,
                                  e_dpi_checks, e_boix_regime, e_fh_polity2, e_wbgi_cce, 
                                  e_Regime, e_polity_s, e_uds_mean, e_polity2, e_exconst, e_ti_cpi,
                                  e_migdppc, e_GDP_Per_Cap_Haber_Men_2) %>%
@@ -56,7 +56,8 @@ gcb_data_aggregated_joined$ISO <- factor(gcb_data_aggregated_joined$ISO,
 #########################################
 
 gcb_agencies_only_long <- gcb_data_aggregated_joined %>%
-                            select(ISO:`Mean bribery rate across sectors`, v2x_polyarchy, v2x_pubcorr, v2psoppaut, v2xlg_legcon) %>%
+                            select(ISO:`Mean bribery rate across sectors`, v2x_polyarchy,
+                                   v2x_pubcorr, v2psoppaut, v2xlg_legcon, v2excrptps) %>%
                             rename(Country = ISO) %>%
                             gather(key = Sector, value = `Bribery rate`, Education:`Mean bribery rate across sectors`)
 
@@ -90,6 +91,13 @@ gcb_agencies_vs_oppaut <- gcb_agencies_only_long %>% filter(Country != "VNM") %>
 print(gcb_agencies_vs_oppaut)          
 ggsave(plot = gcb_agencies_vs_oppaut, filename = "6-Present/GCB-scatterplots/gcb_agencies_vs_oppaut.pdf", device = "pdf")
 
+gcb_agencies_vs_excrptps <- ggplot(gcb_agencies_only_long, aes(x = v2excrptps, y = `Bribery rate`)) +
+  geom_point() + # geom_point(aes(colour = Country)) + theme(legend.position = "none")
+  labs(title = "Sector-specific bribery rates vs overall public sector corrupt exchanges,\nGlobal Corruption Barometer and V-Dem 2013\n",
+       x = "\nV-Dem expert assessment of prevalence of public sector corrupt exchanges",
+       y = "Citizen-reported bribery rate per sector\n")
+print(gcb_agencies_vs_excrptps)          
+ggsave(plot = gcb_agencies_vs_excrptps, filename = "6-Present/GCB-scatterplots/gcb_agencies_vs_excrptps.pdf", device = "pdf")
 
 
 gcb_agencies_any <- gcb_agencies_only_long %>%
