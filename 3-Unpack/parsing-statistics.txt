@@ -109,5 +109,367 @@ Time difference of 20.2789559364319 secs
 Time difference of 9.91507601737976 secs
 [1] "Processing Bajkonur_g took"
 Time difference of 30.1951820850372 secs
+[1] "Processing Kaliningradskaja_obl took"
+Time difference of 9.21980983416239 mins
 
+# On home computer for comparison with UM lab
+[1] "Processing Altaj_Resp took"
+Time difference of 2.49431531429291 mins (65% longer)
+[1] "Processing Astrakhanskaja_obl took"
+Time difference of 13.4264722585678 mins (61% longer)
+
+# Only done on home computer
+[1] "Processing Brjanskaja_obl took"
+Time difference of 11.0141234000524 mins
+[1] "Processing Burjatija_Resp took"
+Time difference of 9.91166367530823 mins
+[1] "Processing Chechenskaja_Resp took"
+Time difference of 5.4309309720993 mins
+[1] "Processing Chukotskij_AO took"
+Time difference of 2.0629195133845 mins
+[1] "Processing Chuvashskaja_Respublika_-_Chuvashija took"
+Time difference of 18.2637370705605 mins
+[1] "Processing Dagestan_Resp took"
+Time difference of 6.07417451540629 mins
+[1] "Processing Evrejskaja_Aobl took"
+Time difference of 2.87724877198537 mins
+[1] "Processing Ingushetija_Resp took"
+Time difference of 1.28628547986348 mins
+[1] "Processing Irkutskaja_obl took"
+Time difference of 31.0570242365201 mins
+[1] "Processing Irkutskaja_obl_Ust-Ordynskij_Burjatskij_okrug took"
+Time difference of 27.5217878818512 secs
+[1] "Processing Ivanovskaja_obl took"
+Time difference of 13.2252180457115 mins
+[1] "Processing Jamalo-Neneckij_AO took"
+Time difference of 22.3711504220963 mins
+[1] "Processing Jaroslavskaja_obl took"
+Time difference of 21.2720505515734 mins
+[1] "Processing Kabardino-Balkarskaja_Resp took"
+Time difference of 4.62778172890345 mins
+
+[1] "Processing Kalmykija_Resp took"
+Time difference of 4.01200704971949 mins
+[1] "Processing Kaluzhskaja_obl took"
+Time difference of 21.6360329031944 mins
+[1] "Processing Kamchatskij_kraj took"
+Time difference of 6.91460212469101 mins
+
+# Remaining
+29-37, 40-46, 49-53, 54:NULL, 55-66, 68-86
+regions_list[c(29:37, 40:46, 49:53, 55:66, 68:86)]
+
+[1] "Processing contracts from Karachaevo-Cherkesskaja_Resp took"
+Time difference of 1.32730005979538 mins
+[1] "Processing notifications from Karachaevo-Cherkesskaja_Resp took"
+Time difference of 59.2789793014526 secs
+[1] "Processing Karachaevo-Cherkesskaja_Resp took"
+Time difference of 2.31531589428584 mins
+[1] "Processing contracts from Karelija_Resp took"
+Time difference of 8.14480100870133 mins
+[1] "Processing notifications from Karelija_Resp took"
+Time difference of 2.33518205881119 mins
+[1] "Processing Karelija_Resp took"
+Time difference of 10.480014804999 mins
+[1] "Processing contracts from Kemerovskaja_obl took"
+Time difference of 29.8502379139264 mins
+[1] "Processing notifications from Kemerovskaja_obl took"
+Time difference of 5.97568591038386 mins
+[1] "Processing Kemerovskaja_obl took"
+Time difference of 35.8259998599688 mins
+[1] "Processing contracts from Khabarovskij_kraj took"
+Time difference of 23.5189305345217 mins
+[1] "Processing notifications from Khabarovskij_kraj took"
+Time difference of 5.60216241677602 mins
+[1] "Processing Khabarovskij_kraj took"
+Time difference of 29.1211231350899 mins
+[1] "Processing contracts from Khakasija_Resp took"
+Time difference of 5.88455371459325 mins
+[1] "Processing notifications from Khakasija_Resp took"
+Time difference of 1.87311161756515 mins
+[1] "Processing Khakasija_Resp took"
+Time difference of 7.75769902865092 mins
+[1] "Processing contracts from Khanty-Mansijskij_Avtonomnyj_okrug_-_Jugra_AO took"
+Time difference of 40.7517733534177 mins
+[1] "Processing notifications from Khanty-Mansijskij_Avtonomnyj_okrug_-_Jugra_AO took"
+Time difference of 7.90891384681066 mins
+[1] "Processing Khanty-Mansijskij_Avtonomnyj_okrug_-_Jugra_AO took"
+Time difference of 48.6607717553775 mins
+[1] "Processing contracts from Kirovskaja_obl took"
+Time difference of 17.0907045523326 mins
+[1] "Processing notifications from Kirovskaja_obl took"
+Time difference of 3.79462756713231 mins
+[1] "Processing Kirovskaja_obl took"
+Time difference of 20.8853592952092 mins
+[1] "Processing contracts from Komi_Resp took"
+Time difference of 12.0264654636383 mins
+[1] "Processing notifications from Komi_Resp took"
+Time difference of 3.07059885660807 mins
+[1] "Processing Komi_Resp took"
+Time difference of 15.097089501222 mins
+[1] "Processing contracts from Kostromskaja_obl took"
+Time difference of 7.75407724777857 mins
+[1] "Processing notifications from Kostromskaja_obl took"
+Time difference of 1.93969877560933 mins
+[1] "Processing Kostromskaja_obl took"
+Time difference of 9.69381659825643 mins
+[1] "Processing contracts from Kurganskaja_obl took"
+Time difference of 8.89063059886297 mins
+[1] "Processing notifications from Kurganskaja_obl took"
+Time difference of 2.43287948767344 mins
+[1] "Processing Kurganskaja_obl took"
+Time difference of 11.3235350529353 mins
+[1] "Processing contracts from Kurskaja_obl took"
+Time difference of 9.07844245036443 mins
+[1] "Processing notifications from Kurskaja_obl took"
+Time difference of 2.58334526618322 mins
+[1] "Processing Kurskaja_obl took"
+Time difference of 11.6618111809095 mins
+[1] "Processing contracts from Leningradskaja_obl took"
+Time difference of 14.2903262933095 mins
+[1] "Processing notifications from Leningradskaja_obl took"
+Time difference of 3.39044385751088 mins
+[1] "Processing Leningradskaja_obl took"
+Time difference of 17.6807961463928 mins
+[1] "Processing contracts from Lipeckaja_obl took"
+Time difference of 21.1817509214083 mins
+[1] "Processing notifications from Lipeckaja_obl took"
+Time difference of 4.21670719385147 mins
+[1] "Processing Lipeckaja_obl took"
+Time difference of 25.3984823306402 mins
+[1] "Processing contracts from Magadanskaja_obl took"
+Time difference of 2.93548512458801 mins
+[1] "Processing notifications from Magadanskaja_obl took"
+Time difference of 1.53299949566523 mins
+[1] "Processing Magadanskaja_obl took"
+Time difference of 4.46851663986842 mins
+[1] "Processing contracts from Marij_El_Resp took"
+Time difference of 8.41017796198527 mins
+[1] "Processing notifications from Marij_El_Resp took"
+Time difference of 2.08329681952794 mins
+[1] "Processing Marij_El_Resp took"
+Time difference of 10.4935329079628 mins
+[1] "Processing contracts from Mordovija_Resp took"
+Time difference of 5.56537412802378 mins
+[1] "Processing notifications from Mordovija_Resp took"
+Time difference of 2.02244383494059 mins
+[1] "Processing Mordovija_Resp took"
+Time difference of 7.58786806265513 mins
+[1] "Processing contracts from Murmanskaja_obl took"
+Time difference of 11.4099510272344 mins
+[1] "Processing notifications from Murmanskaja_obl took"
+Time difference of 3.13308532635371 mins
+[1] "Processing Murmanskaja_obl took"
+Time difference of 14.5430599530538 mins
+[1] "Processing contracts from Neneckij_AO took"
+Time difference of 1.15345848798752 mins
+[1] "Processing notifications from Neneckij_AO took"
+Time difference of 57.0205414295197 secs
+[1] "Processing Neneckij_AO took"
+Time difference of 2.10383270184199 mins
+[1] "Processing contracts from Nizhegorodskaja_obl took"
+Time difference of 36.161164132754 mins
+[1] "Processing notifications from Nizhegorodskaja_obl took"
+Time difference of 7.20727593898773 mins
+[1] "Processing Nizhegorodskaja_obl took"
+Time difference of 43.3684678713481 mins
+[1] "Processing contracts from Novgorodskaja_obl took"
+Time difference of 3.30633107026418 mins
+[1] "Processing notifications from Novgorodskaja_obl took"
+Time difference of 1.57225213050842 mins
+[1] "Processing Novgorodskaja_obl took"
+Time difference of 4.8786266764005 mins
+[1] "Processing contracts from Novosibirskaja_obl took"
+Time difference of 38.1495364427567 mins
+[1] "Processing notifications from Novosibirskaja_obl took"
+Time difference of 9.24269191026688 mins
+[1] "Processing Novosibirskaja_obl took"
+Time difference of 47.3922584493955 mins
+[1] "Processing contracts from Omskaja_obl took"
+Time difference of 22.8805254101753 mins
+[1] "Processing notifications from Omskaja_obl took"
+Time difference of 5.37996781269709 mins
+[1] "Processing Omskaja_obl took"
+Time difference of 28.2605191191038 mins
+[1] "Processing contracts from Orenburgskaja_obl took"
+Time difference of 14.8080369393031 mins
+[1] "Processing notifications from Orenburgskaja_obl took"
+Time difference of 4.92192091147105 mins
+[1] "Processing Orenburgskaja_obl took"
+Time difference of 19.7299892346064 mins
+[1] "Processing contracts from Orlovskaja_obl took"
+Time difference of 8.06475751797358 mins
+[1] "Processing notifications from Orlovskaja_obl took"
+Time difference of 2.55138407150904 mins
+[1] "Processing Orlovskaja_obl took"
+Time difference of 10.6161995132764 mins
+[1] "Processing contracts from Penzenskaja_obl took"
+Time difference of 11.7464194734891 mins
+[1] "Processing notifications from Penzenskaja_obl took"
+Time difference of 2.90768075386683 mins
+[1] "Processing Penzenskaja_obl took"
+Time difference of 14.6541570822398 mins
+[1] "Processing contracts from Permskij_kraj took"
+Time difference of 28.7229538957278 mins
+[1] "Processing notifications from Permskij_kraj took"
+Time difference of 6.9112828930219 mins
+[1] "Processing Permskij_kraj took"
+Time difference of 35.6342620889346 mins
+[1] "Processing contracts from Primorskij_kraj took"
+Time difference of 26.489363527298 mins
+[1] "Processing notifications from Primorskij_kraj took"
+Time difference of 5.72324225107829 mins
+[1] "Processing Primorskij_kraj took"
+Time difference of 32.2126329342524 mins
+[1] "Processing contracts from Pskovskaja_obl took"
+Time difference of 5.24598063230515 mins
+[1] "Processing notifications from Pskovskaja_obl took"
+Time difference of 2.05186680157979 mins
+[1] "Processing Pskovskaja_obl took"
+Time difference of 7.29791161616643 mins
+[1] "Processing contracts from Rjazanskaja_obl took"
+Time difference of 11.3818153858185 mins
+[1] "Processing notifications from Rjazanskaja_obl took"
+Time difference of 3.08303338289261 mins
+[1] "Processing Rjazanskaja_obl took"
+Time difference of 14.4648724794388 mins
+[1] "Processing contracts from Rostovskaja_obl took"
+Time difference of 1.22154875695705 hours
+[1] "Processing notifications from Rostovskaja_obl took"
+Time difference of 18.5217713276545 mins
+[1] "Processing Rostovskaja_obl took"
+Time difference of 1.53024544417858 hours
+[1] "Processing contracts from Sakha_Jakutija_Resp took"
+Time difference of 12.7903131922086 mins
+[1] "Processing notifications from Sakha_Jakutija_Resp took"
+Time difference of 4.4249170700709 mins
+[1] "Processing Sakha_Jakutija_Resp took"
+Time difference of 17.2152879397074 mins
+[1] "Processing contracts from Sakhalinskaja_obl took"
+Time difference of 10.8689857443174 mins
+[1] "Processing notifications from Sakhalinskaja_obl took"
+Time difference of 4.04754201968511 mins
+[1] "Processing Sakhalinskaja_obl took"
+Time difference of 14.9166327039401 mins
+[1] "Processing contracts from Samarskaja_obl took"
+Time difference of 35.3509635051091 mins
+[1] "Processing notifications from Samarskaja_obl took"
+Time difference of 6.6474991162618 mins
+[1] "Processing Samarskaja_obl took"
+Time difference of 41.9984941879908 mins
+[1] "Processing contracts from Saratovskaja_obl took"
+Time difference of 46.8181619882584 mins
+[1] "Processing notifications from Saratovskaja_obl took"
+Time difference of 9.66776963075002 mins
+[1] "Processing Saratovskaja_obl took"
+Time difference of 56.4859601696332 mins
+[1] "Processing contracts from Severnaja_Osetija_-_Alanija_Resp took"
+Time difference of 2.03935294151306 mins
+[1] "Processing notifications from Severnaja_Osetija_-_Alanija_Resp took"
+Time difference of 1.97115800778071 mins
+[1] "Processing Severnaja_Osetija_-_Alanija_Resp took"
+Time difference of 4.01053988138835 mins
+[1] "Processing contracts from Smolenskaja_obl took"
+Time difference of 11.1603145798047 mins
+[1] "Processing notifications from Smolenskaja_obl took"
+Time difference of 3.3598329782486 mins
+[1] "Processing Smolenskaja_obl took"
+Time difference of 14.5202705899874 mins
+
+[1] "Processing contracts from Stavropolskij_kraj took"
+Time difference of 37.1235359748205 mins
+[1] "Processing notifications from Stavropolskij_kraj took"
+Time difference of 8.1760386188825 mins
+[1] "Processing Stavropolskij_kraj took"
+Time difference of 45.2996057430903 mins
+[1] "Processing contracts from Sverdlovskaja_obl took"
+Time difference of 57.7344960014025 mins
+[1] "Processing notifications from Sverdlovskaja_obl took"
+Time difference of 15.6059700330098 mins
+[1] "Processing Sverdlovskaja_obl took"
+Time difference of 1.22234310401811 hours
+[1] "Processing contracts from Tambovskaja_obl took"
+Time difference of 7.96615227063497 mins
+[1] "Processing notifications from Tambovskaja_obl took"
+Time difference of 2.96365919510523 mins
+[1] "Processing Tambovskaja_obl took"
+Time difference of 10.9298684636752 mins
+[1] "Processing contracts from Tatarstan_Resp took"
+Time difference of 31.7851591507594 mins
+[1] "Processing notifications from Tatarstan_Resp took"
+Time difference of 6.14312357107798 mins
+[1] "Processing Tatarstan_Resp took"
+Time difference of 37.9283618132273 mins
+[1] "Processing contracts from Tjumenskaja_obl took"
+Time difference of 16.6073243220647 mins
+[1] "Processing notifications from Tjumenskaja_obl took"
+Time difference of 4.53845924536387 mins
+[1] "Processing Tjumenskaja_obl took"
+Time difference of 21.14584445556 mins
+[1] "Processing contracts from Tomskaja_obl took"
+Time difference of 23.5109826366107 mins
+[1] "Processing notifications from Tomskaja_obl took"
+Time difference of 4.62487251758575 mins
+[1] "Processing Tomskaja_obl took"
+Time difference of 28.1359161734581 mins
+[1] "Processing contracts from Tulskaja_obl took"
+Time difference of 16.8844897786776 mins
+[1] "Processing notifications from Tulskaja_obl took"
+Time difference of 4.11234758297602 mins
+[1] "Processing Tulskaja_obl took"
+Time difference of 20.9968592246374 mins
+[1] "Processing contracts from Tverskaja_obl took"
+Time difference of 16.3152139027913 mins
+[1] "Processing notifications from Tverskaja_obl took"
+Time difference of 3.95297996600469 mins
+[1] "Processing Tverskaja_obl took"
+Time difference of 20.2682276089986 mins
+[1] "Processing contracts from Tyva_Resp took"
+Time difference of 2.17820974985758 mins
+[1] "Processing notifications from Tyva_Resp took"
+Time difference of 1.90185568332672 mins
+[1] "Processing Tyva_Resp took"
+Time difference of 4.08009161551793 mins
+[1] "Processing contracts from Udmurtskaja_Resp took"
+Time difference of 23.7809492468834 mins
+[1] "Processing notifications from Udmurtskaja_Resp took"
+Time difference of 5.55595031579336 mins
+[1] "Processing Udmurtskaja_Resp took"
+Time difference of 29.3369249184926 mins
+[1] "Processing contracts from Uljanovskaja_obl took"
+Time difference of 22.4009722908338 mins
+[1] "Processing notifications from Uljanovskaja_obl took"
+Time difference of 3.74467997948329 mins
+[1] "Processing Uljanovskaja_obl took"
+Time difference of 26.1456790010134 mins
+[1] "Processing contracts from Vladimirskaja_obl took"
+Time difference of 18.1126209417979 mins
+[1] "Processing notifications from Vladimirskaja_obl took"
+Time difference of 4.9865492105484 mins
+[1] "Processing Vladimirskaja_obl took"
+Time difference of 23.0991925477982 mins
+[1] "Processing contracts from Volgogradskaja_obl took"
+Time difference of 32.37447570165 mins
+[1] "Processing notifications from Volgogradskaja_obl took"
+Time difference of 7.05020951827367 mins
+[1] "Processing Volgogradskaja_obl took"
+Time difference of 39.4247644941012 mins
+[1] "Processing contracts from Voronezhskaja_obl took"
+Time difference of 31.0280778924624 mins
+[1] "Processing notifications from Voronezhskaja_obl took"
+Time difference of 5.56642642418544 mins
+[1] "Processing Voronezhskaja_obl took"
+Time difference of 36.5945825139681 mins
+[1] "Processing contracts from Zabajkalskij_kraj took"
+Time difference of 10.7260417064031 mins
+[1] "Processing notifications from Zabajkalskij_kraj took"
+Time difference of 3.20670198599497 mins
+[1] "Processing Zabajkalskij_kraj took"
+Time difference of 13.9327948490779 mins
+[1] "Processing contracts from Zabajkalskij_kraj_Aginskij_Burjatskij_okrug took"
+Time difference of 6.43190288543701 secs
+[1] "Processing notifications from Zabajkalskij_kraj_Aginskij_Burjatskij_okrug took"
+Time difference of 1.31173325777054 mins
+[1] "Processing Zabajkalskij_kraj_Aginskij_Burjatskij_okrug took"
+Time difference of 1.41896000703176 mins
 
