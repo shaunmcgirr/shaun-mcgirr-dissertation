@@ -253,7 +253,7 @@ for(r in 1:regions_number){
                               filter(KeysPerBusinessKey > 1) %>%
                               group_by(Key) %>%
                               summarise(NumberOfTimesDuplicated = n())
-  # Duplicate fields related to finance, products, and a few multiple-supplier contracts
+  # Duplicate fields related to finance/budgets, products, and a few multiple-supplier contracts
   # Eg contract 0876100000413000002
   
   # SIMPLE FIX FOR NOW - DROP ALL THOSE CASES
@@ -324,7 +324,7 @@ for(r in 1:regions_number){
                                                   filter(row_number() == 1) %>% ungroup() %>%
                                                 right_join(contracts_with_one_product_fields_collapsed)
                                                 
-  # What percentage of all contracts remain? 82.9% for Adygeja, % for Moscow (way better than brute force!)
+  # What percentage of all contracts remain? 82.9% for Adygeja, 92% for Moscow (way better than brute force!)
   length(unique(contracts_single_product_fields_collapsed$BusinessKey)) / length(unique(contracts_cleaned$BusinessKey))
   
   ## PIVOT THE DEDUPLICATED DATA IN TO ONE ROW PER NOTIFICATION
@@ -341,11 +341,15 @@ for(r in 1:regions_number){
   ###################  
   
   merged <- notifications %>% left_join(contracts, by = c("oos:notificationNumber" = "oos:foundation/oos:order/oos:notificationNumber"))
-  # Gives about a 50% match rate in Adygeja, almost 60% in Moscow
+  # Gives about a 50% match rate in Adygeja, 73% in Moscow (now we are holding on to single-product auctions)
+  
+  # Test that the merge behaved as expected
+  if(length(merged$BusinessKey.x) != length(unique(notifications$BusinessKey))) print("Merge failed: number of notifications != number of merged records")
+  
   
   matched <- merged %>% 
     filter(!is.na(BusinessKey.y)) %>%
-    mutate(PriceChange = as.numeric(`oos:lots/oos:lot/oos:customerRequirements/oos:customerRequirement/oos:maxPrice`) - as.numeric(`oos:products/oos:product/oos:price`),
+    mutate(PriceChange = as.numeric(`oos:lots/oos:lot/oos:customerRequirements/oos:customerRequirement/oos:maxPrice`) - as.numeric(`oos:price`),
            PriceChangePercent = -100 * PriceChange / as.numeric(`oos:lots/oos:lot/oos:customerRequirements/oos:customerRequirement/oos:maxPrice`)) %>%
     filter(PriceChangePercent <= 5)
   
@@ -361,8 +365,8 @@ for(r in 1:regions_number){
   # TO DO 
   # Roll back "single lot" on notifications, may not be necessary (LEAVE, don't lose much by it)
   # Go back and sum over the unique products to improve match rate (oos:products/oos:product/oos:price or oos:products/oos:product/oos:sum)
-    # Also creates more problems than solves, for creating matches just use oos:price and drop the offending price/sum attributes
-  # Double-check uniqueness on both sides of merge
+    # Also creates more problems than solves, for creating matches just use oos:price and drop the offending price/sum attributes (DONE)
+  # Double-check uniqueness on both sides of merge (DONE)
   # Translate agency names to English
   # Recode the variables I will split by in to factor variables
   # Split by agency, procedure, then both
