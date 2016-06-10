@@ -162,6 +162,8 @@ for(r in 1:regions_number){
   # This is an auction for electricity covering many different departments, all at once, made by ministry of finance
   # Auction was cancelled by Federal Antimonopoly Service, so should be no contract
   # Good news: sum of max prices across the various parties equals published max price
+  # Good example from Moscow: http://zakupki.gov.ru/pgz/public/action/orders/info/common_info/show?notificationId=2293597
+  # One tender for many different contracts covering transport
   
   # Another example of pooled purchasing: http://zakupki.gov.ru/pgz/public/action/orders/info/common_info/show?notificationId=2501511
   # Many contracts resulted, sum of max prices across notifications equals published max price
@@ -180,6 +182,13 @@ for(r in 1:regions_number){
   # Shows some cases come from notifications for more than one customer at a time, as the case above
   # Most come from oos:lots/oos:lot/oos:notificationFeatures/oos:notificationFeature/oos:placementFeature/oos:name
   # This appears to just be free-text commentary anyway, so can drop (now done back in clean-data.R)
+  # Duplicates in Moscow from:
+  # oos:lots/oos:lot/oos:customerRequirements/oos:customerRequirement/oos:customer/oos:fullName
+  # oos:lots/oos:lot/oos:customerRequirements/oos:customerRequirement/oos:customer/oos:regNum
+  # oos:lots/oos:lot/oos:customerRequirements/oos:customerRequirement/oos:maxPrice
+  # oos:lots/oos:lot/oos:customerRequirements/oos:customerRequirement/oos:quantity
+  # Eg http://zakupki.gov.ru/pgz/public/action/orders/info/common_info/show?notificationId=2293597
+  # Easiest to drop these
   
   # Final restriction to the simplest notfications
   notifications_with_one_lot_one_product_one_customer <- notifications_single_lot_single_product %>%
@@ -340,12 +349,14 @@ for(r in 1:regions_number){
   ## Merge         ##
   ###################  
   
-  merged <- notifications %>% left_join(contracts, by = c("oos:notificationNumber" = "oos:foundation/oos:order/oos:notificationNumber"))
-  # Gives about a 50% match rate in Adygeja, 73% in Moscow (now we are holding on to single-product auctions)
+  merged <- notifications %>% 
+    left_join(contracts, by = c("oos:notificationNumber" = "oos:foundation/oos:order/oos:notificationNumber"))
+  # Gives about a 50% match rate in Adygeja, 60% in Moscow
+  # With improvements above, 73% in Adygeja, 73% in Moscow (now we are holding on to single-product auctions)  
   
   # Test that the merge behaved as expected
   if(length(merged$BusinessKey.x) != length(unique(notifications$BusinessKey))) print("Merge failed: number of notifications != number of merged records")
-  
+
   
   matched <- merged %>% 
     filter(!is.na(BusinessKey.y)) %>%
