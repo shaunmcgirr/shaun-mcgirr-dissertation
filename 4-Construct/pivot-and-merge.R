@@ -143,7 +143,8 @@ for(r in 1:regions_number){
   print(paste0("Proportion of tidy notifications in ", current_region, " is ", tidy_notifications_percentage))
   
   # Save the 'wide' format file with a sensible name and clean up
-  notifications_wide_file_name <- paste0(data_output_directory_region, current_region, "_notifications_wide.rda")
+  notifications_wide_file_name <- paste0(data_output_directory_region, current_region,
+                                         "_notifications_wide_", data_download_date, ".rda")
   save(notifications, file = notifications_wide_file_name)
   # rm(notifications)
       
@@ -245,7 +246,8 @@ for(r in 1:regions_number){
   print(paste0("Proportion of tidy contracts in ", current_region, " is ", tidy_contracts_percentage))
   
   # Save the 'wide' format file with a sensible name and clean up
-  contracts_wide_file_name <- paste0(data_output_directory_region, current_region, "_contracts_wide.rda")
+  contracts_wide_file_name <- paste0(data_output_directory_region, current_region,
+                                     "_contracts_wide_", data_download_date, ".rda")
   save(contracts, file = contracts_wide_file_name)
   # rm(contracts)
   
@@ -304,15 +306,18 @@ for(r in 1:regions_number){
                                contracts_without_notification_proportion))
   colnames(matching_statistics) <- c("Region", "Date", "Type", "Count", "Proportion")
   suppressWarnings(write.table(matching_statistics, file = "4-Construct/matching_statistics.csv",
-                               sep = ",", row.names = F, append = T, col.names = T))
+                               sep = ",", row.names = F, append = T, col.names = F))
   rm(matching_statistics)
   
   # Save files of matches/non-matches with sensible names and clean up this region
-  matches_file_name <- paste0(data_output_directory_region, current_region, "_notification_contract_matches.rda")
+  matches_file_name <- paste0(data_output_directory_region, current_region,
+                              "_notification_contract_matches_", data_download_date, ".rda")
     save(notification_contract_matches, file = matches_file_name)
-  notifications_without_contract_file_name <- paste0(data_output_directory_region, current_region, "_notifications_without_contract.rda")
+  notifications_without_contract_file_name <- paste0(data_output_directory_region, current_region, 
+                                                     "_notifications_without_contract_", data_download_date, ".rda")
     save(notifications_without_contract, file = notifications_without_contract_file_name)
-  contracts_without_notification_file_name <- paste0(data_output_directory_region, current_region, "_contracts_without_notification.rda")
+  contracts_without_notification_file_name <- paste0(data_output_directory_region, current_region, 
+                                                     "_contracts_without_notification", data_download_date, ".rda")
     save(contracts_without_notification, file = contracts_without_notification_file_name)
     
   rm(contracts); rm(contracts_without_notification)
@@ -320,130 +325,5 @@ for(r in 1:regions_number){
   
     
 } # Closes control loop over this region
-
-  matched <- merged %>% 
-    filter(!is.na(BusinessKey.y)) %>%
-    mutate(PriceChange = as.numeric(`oos:lots/oos:lot/oos:customerRequirements/oos:customerRequirement/oos:maxPrice`) - as.numeric(`oos:price`),
-           PriceChangePercent = -100 * PriceChange / as.numeric(`oos:lots/oos:lot/oos:customerRequirements/oos:customerRequirement/oos:maxPrice`)) %>%
-    filter(PriceChangePercent <= 5)
-  
-  # Quick graph
-  hist(matched$PriceChangePercent, breaks = 100, main = "Moscow: change in price between tender notification and final contract (all procedures)",
-       xlab = "Percentage difference between initial notification of tender and final contract")
-  
-  auctions <- matched %>% filter(`oos:placingWay/oos:name` == "Открытый аукцион в электронной форме")
-  
-  hist(auctions$PriceChangePercent, breaks = 100, main = "Moscow: change in price between tender notification and final contract (auction procedures)",
-       xlab = "Percentage difference between initial notification of tender and final contract")
-  
-  # TO DO 
-  # Roll back "single lot" on notifications, may not be necessary (LEAVE, don't lose much by it)
-  # Go back and sum over the unique products to improve match rate (oos:products/oos:product/oos:price or oos:products/oos:product/oos:sum)
-    # Also creates more problems than solves, for creating matches just use oos:price and drop the offending price/sum attributes (DONE)
-  # Double-check uniqueness on both sides of merge (DONE)
-  # Translate agency names to English
-  # Recode the variables I will split by in to factor variables
-  # Split by agency, procedure, then both
-  # Then zoom in on canonical products
-  # Reproduce the old scatterplot of agency budget by single-supplier
-  
-  #####
-#  OLD CODE
-  ####
-  
-  
-  
-      # Measure 1: what is the difference between notified and contracted price?
-    notifications <- notifications_cleaned %>%
-      filter(Key == "oos:lots/oos:lot/oos:customerRequirements/oos:customerRequirement/oos:maxPrice") %>%
-      group_by(BusinessKey) %>%
-      summarise(NotificationTotalMaxPrice = sum(as.numeric(Value)))
-    
-    notification_attributes_numeric <- c("oos:lots/oos:lot/oos:customerRequirements/oos:customerRequirement/oos:maxPrice")
-    
-    notification_attributes_character <- c("oos:order/oos:placer/oos:fullName")
-    
-    # Create a data frame with measures that are one-per-notification (so need to first aggregate things like maxPrice)
-    notifications_wide <- notifications_cleaned %>%
-      filter(Key %in% notification_attributes_singular) %>%
-      spread_(key_col = "Key", value_col = "Value")
-
-    notifications_wide <- notifications_cleaned %>%
-      filter(Key %in% notification_attributes_numeric) %>%
-      group_by(BusinessKey) %>%
-      summarise(NotificationTotalMaxPrice = sum(as.numeric(Value)))
-    
-    notifications_numeric <- notifications_cleaned %>%
-      filter(Key %in% notification_attributes_numeric) %>%
-      group_by(BusinessKey, Key) %>%
-        transmute(Value = as.numeric(Value)) %>%
-        summarise(Value = sum(Value)) %>% # Could be combined with above
-      ungroup() %>%
-      spread(key = Key, value = Value) %>%
-        rename(maxPrice = `oos:lots/oos:lot/oos:customerRequirements/oos:customerRequirement/oos:maxPrice`) # Move earlier
-      
-    test <- notifications_cleaned %>%
-      group_by(BusinessKey, Key) %>%
-      tally()
-    
-    
-    # Split the data in to separate tables with appropriate grain
-    
-    # Add a counter argument to this
-    select_keys_to_split <- function(OutputTable){
-      keys_to_split <- parsing_configuration[parsing_configuration$OutputTable == OutputTable, 4]
-    }
-    
-    # Easy case
-    keys_to_split <- select_keys_to_split("notifications")
-    output_table_easy <- notifications_cleaned %>%
-      filter(Key %in% keys_to_split) %>%
-      spread(key = Key, value = Value)
-    
-    # Tough case (needs counter argument)
-    keys_to_split <- select_keys_to_split("notification_lots")
-        
-    output_table_hard <- notifications_cleaned %>%
-      filter(Key %in% keys_to_split) %>%
-      mutate(Counter = ifelse(Key == "oos:lots/oos:lot/oos:ordinalNumber", Value, NA))
-    
-    rows_with_UniqueID <- batch_output_key_value %>%
-      add_rownames() %>%
-      filter(Key == "oos:id") %>%
-      select(rowname) %>%
-      cbind(UniqueID)
-    
- 
-          
-    contracts <- contracts_cleaned %>%
-      filter(Key == "oos:price") %>%
-      group_by(BusinessKey) %>%
-      summarise(ContractTotalPrice = sum(as.numeric(Value)))
-      
-    contracts_per_notification <- notifications %>%
-      left_join(contracts, by = "BusinessKey") # Same length as notifications
-    
-    notifications_per_contract <- contracts %>%
-      left_join(notifications, by = "BusinessKey") # Same length as contracts
-    
-    notifications_and_contracts <- notifications %>%
-      full_join(contracts, by = "BusinessKey") %>%
-      mutate(NotificationMaxPriceMinusContractPrice = NotificationTotalMaxPrice - ContractTotalPrice,
-             ContractPriceMinusNotificationMaxPrice = ContractTotalPrice - NotificationTotalMaxPrice,
-             AuctionEfficiency = (ContractTotalPrice/NotificationTotalMaxPrice*100))
-    hist(log(notifications_and_contracts$NotificationMaxPriceMinusContractPrice), breaks = 100)
-    hist((notifications_and_contracts$AuctionEfficiency), breaks = 500)
-    
-    # Draw one histogram of efficiency measure per organisation
-    
-    
-  } # Closes control loop over document_types_list in this region
-  
-} # Closes control loop over regions_list
-                    
-    
-################################################
-# 4. ? #
-################################################
 
 # ENDS
