@@ -1,1 +1,4 @@
-"Region","Date","Type","Proportion"
+"Region","Date","Type","Count","Proportion"
+"Adygeja_Resp","2016-06-13","Notifications with matching contract","9213","0.706626783248965"
+"Adygeja_Resp","2016-06-13","Notifications without matching contract","3368","0.258321828501304"
+"Adygeja_Resp","2016-06-13","Contracts without matching notification","457","0.0350513882497316"
