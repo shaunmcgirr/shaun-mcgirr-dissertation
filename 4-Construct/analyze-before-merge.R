@@ -124,6 +124,14 @@ for(r in 1:regions_number){
   ggsave(plot = notification_maxPrice_histogram_log_all_quartiles, filename = graph_file_name, device = "pdf")
   
   
+  # ADD FURTHER LEVELS OF OKDP PRODUCT CLASSIFICATION
+  notifications_cleaned_product_groupings <- notifications_cleaned %>%
+    filter(Key == "oos:lots/oos:lot/oos:products/oos:product/oos:code") %>%
+    semi_join(okdp_product_classification_level_3,
+               by = c("Value" = "ProductCodeLevel3"))
+  # In adygeja, 25 products were at level 1, 2958 at level 2, 1664 at level 3, 20437 at level 4
+  
+  
   # SUBSET DATA TO JUST NOTIFICATIONS/CONTRACTS WITH ONE LOT/PRODUCT/CUSTOMER
   # Identify and assess size of multiple-lot notifications
   notifications_lots_number <- notifications_cleaned %>%
