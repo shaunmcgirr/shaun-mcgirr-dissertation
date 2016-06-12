@@ -69,6 +69,6 @@ okdp_product_classification_level_4 <- okdp_product_classification %>%
                                         filter(ProductCode != ProductCodeLevel1 & ProductCode != ProductCodeLevel2 & ProductCode != ProductCodeLevel3)
 
 rm(okdp_product_classification_raw)
-# rm(okdp_product_classification_level_3); rm(okdp_product_classification_level_2); rm(okdp_product_classification_level_1)
+rm(okdp_product_classification_level_4); rm(okdp_product_classification_level_3); rm(okdp_product_classification_level_2); rm(okdp_product_classification_level_1)
 
 # ENDS
