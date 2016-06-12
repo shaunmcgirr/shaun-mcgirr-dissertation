@@ -29,3 +29,10 @@ The project measures in fine detail many aspects of political institutions, and 
 
 The size of the Country_Year_V-Dem_other_SPSS_v6.1.zip download is prohibitive for tracking by Git, so unzip it in to the folder specified by downloads_directory
 
+## Russian statistical classifications
+The procurement data contain several classifications.
+
+Общероссийский классификатор продукции (ОКПД) - All-Russian classification of products (OKDP):
+- file КЛЮЧ+ОКДП-ОКПД2-.xls downloaded from Ministry of Economic Development at http://economy.gov.ru/minec/activity/sections/classificators/
+- opened in LibreOffice 5, row 1 and columns 3-5 deleted, saved as CSV with UTF-8 encoding, to data_other/ОКДП.csv
+

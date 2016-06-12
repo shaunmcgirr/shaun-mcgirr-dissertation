@@ -1,7 +1,7 @@
 # 3-Construct\load-other-data.R
 
 # Goals of this script are:
-#   - Load and parse the data that comes from sources outside the procurement dataset
+#   - Load and parse the data that comes from sources outside the procurement dataset (other than classifications loaded in load-classifications.R)
 
 ###################
 # 1. Housekeeping #

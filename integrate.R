@@ -55,6 +55,7 @@ Sys.setlocale("LC_CTYPE", "Russian") # This may not be necessary on Mac/Linux
 #----- 3. Run scripts for each step -----
 
 # Procurement data
+# source("3-Unpack//load-classifications.R") # Loads classifications used to parse procurement data
 # source("3-Unpack//unzip-files.R") # unzips files from raw-data to unzipped-data
 # source("3-Unpack//parse-files-functionwise.R") # parses the unzipped xml files from unzipped-data to parsed-data
 # source("4-Construct//clean-data.R") # Cleans the parsed data (mostly deduplicating)
