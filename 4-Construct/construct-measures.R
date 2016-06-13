@@ -13,6 +13,9 @@
 source(file="3-Unpack/parse-files-functions.R")
 source(file="4-Construct/construct-measures-functions.R")
 
+# Load classifications
+source(file="3-Unpack/load-classifications.R")
+
 ############################################
 # 2. Gather parameters about the job ahead #
 ############################################
@@ -23,13 +26,11 @@ regions_list <- as.list("Adygeja_Resp")
 # regions_list <- as.list("Moskva")
 regions_number <- length(regions_list)
 
-# Define target of cleaned data
-data_cleaned_directory <- set_data_subdirectory(data_directory, data_download_date, "cleaned")
 # Define where outputs (eg graphs) should go
 data_output_directory <- set_data_subdirectory(data_directory, data_download_date, "output")
 
 ##############################################
-# 3. Load data #
+# 3. Load data, check quality, recode variables #
 ##############################################
 
 # Loop over regions, processing them in turn
@@ -37,6 +38,7 @@ for(r in 1:regions_number){
   # r <- 1
   current_region <- as.character(regions_list[r])
   current_region_english <- generate_english_region_name(current_region)
+  data_output_directory_region <- paste0(data_output_directory, current_region, "/")
   
     # Load the file of matches
     file_to_process <- paste0(data_output_directory, current_region, "/",
@@ -44,7 +46,53 @@ for(r in 1:regions_number){
                               data_download_date, ".rda")
     load(file=file_to_process)
   
-  # REMOVE matches of low quality
+## REMOVE matches of low quality
+# Function to count na in columns of data frame
+na_count <- function(x) sapply(x, function(y) sum(is.na(y)))
+# na_count(notification_contract_matches)
+
+# Turns out the notifications with a matching contract, but where many contract details NA, are interesting
+# eg http://zakupki.gov.ru/pgz/public/action/orders/info/common_info/show?notificationId=7443504 (contract not linked)
+# eg http://zakupki.gov.ru/pgz/public/action/orders/info/common_info/show?notificationId=7598466 (contract 'there' but not)
+# Perhaps these should be measures? Provisionally, treat any final data quality issues as potential measures
+
+## DELETE VARIABLES THAT NEVER VARY
+notification_contract_matches$NotificationLotOrdinalNumber <- NULL # Always = 1
+notification_contract_matches$ContractFoundationSingleCustomer <- NULL # Always empty
+
+## RECODE VARIABLES
+# Notifications
+notification_contract_matches$NotificationLotCustomerRequirementMaxPrice <- as.numeric(notification_contract_matches$NotificationLotCustomerRequirementMaxPrice)
+  # hist(notification_contract_matches$NotificationLotCustomerRequirementMaxPrice)
+notification_contract_matches$NotificationPlacingWayName <- as.factor(notification_contract_matches$NotificationPlacingWayName)
+  NotificationPlacingWayName_table <- as.data.frame(table(notification_contract_matches$NotificationPlacingWayName))
+notification_contract_matches$NotificationPublishDate <- substr(notification_contract_matches$NotificationPublishDate, 1, 10)
+  # Draw histogram by date
+notification_contract_matches$NotificationVersionNumber <- as.numeric(notification_contract_matches$NotificationVersionNumber)
+  NotificationVersionNumber_table <- as.data.frame(table(notification_contract_matches$NotificationVersionNumber))
+
+# Contracts
+notification_contract_matches$ContractCurrentContractStage <- as.factor(notification_contract_matches$ContractCurrentContractStage)
+  ContractCurrentContractStage_table <- as.data.frame(table(notification_contract_matches$ContractCurrentContractStage))
+notification_contract_matches$ContractPrice <- as.numeric(notification_contract_matches$ContractPrice)
+  # hist(notification_contract_matches$ContractPrice)
+notification_contract_matches$ContractVersionNumber <- as.numeric(notification_contract_matches$ContractVersionNumber)
+  ContractVersionNumber_table <- as.data.frame(table(notification_contract_matches$ContractVersionNumber))
+  
+## NEW VARIABLES
+# Price difference between notification max price and final contract price
+notification_contract_matches$PriceChange <- notification_contract_matches$NotificationLotCustomerRequirementMaxPrice - notification_contract_matches$ContractPrice
+  hist(notification_contract_matches$PriceChange)  
+notification_contract_matches$PriceChangePercentage <- (notification_contract_matches$NotificationLotCustomerRequirementMaxPrice - notification_contract_matches$ContractPrice)/notification_contract_matches$NotificationLotCustomerRequirementMaxPrice * 100
+  hist(notification_contract_matches$PriceChangePercentage)  
+  
+# Procedure type (user friendly)
+
+# Notification revised (binary)
+  
+# Contract revised (binary)
+  
+# Current contract stage (user friendly)
   
   
 ###############
@@ -57,16 +105,34 @@ for(r in 1:regions_number){
     # Split by agency, procedure, then both
     # Then zoom in on canonical products
     # Reproduce the old scatterplot of agency budget by single-supplier
+    # Draw one histogram of efficiency measure per organisation
+
+    # MEASURES OF CORRUPTION
+    # Initial notification listing price (by tender type) - distribution; by agency
+    # Percentage change between notification and contract price (by tender type) - distribution; by agency
+    # Number of revisions to notification/contract - by agency
+    # Shares of each tender type (eg single supplier) - by agency
+    # Notification product code != Contract product code - by agency
+    # Number of revisions to notifications and contracts (proxy for capacity or corruption?) - by agency
+
+    # MEASURES OF AGENCY CHARACTERISTICS
+    # Number of unique products (lowest and highest levels of OKDP) - by agency
+    # Customer != placer (proxy for capacity) - by agency
     
-  
-  # Distributions of the raw variables of interest
-  # notifications_maxPrice 
-  # contracts_price  
-  
+
+# GENERAL FRAMEWORK FOR MEASURES
+test <- notification_contract_matches %>%
+          group_by()
+
   # HISTOGRAMS OF NOTIFICATION PRICES
   # Output three histograms for this region: listed price of notifications; same but only bottom three quartiles to show discontinuity at 500k; logged values across all dist
 
-    
+notifications_maxPrice <- notification_contract_matches %>%
+                            transmute(NotificationMaxPrice = NotificationLotCustomerRequirementMaxPrice)
+
+notifications_maxPrice_three_quartiles <- notifications_maxPrice %>%
+  filter(NotificationMaxPrice <= as.numeric(summary(notifications_maxPrice$NotificationMaxPrice)[5]))
+
   # All notifications
   graph_title <- paste0("Distribution of initial listing prices for tenders in ", current_region_english, " (all quartiles)\n")
     graph_file_name <- paste0(data_output_directory_region, current_region, "_notification_maxPrice_histogram_raw_all_quartiles.pdf")
@@ -139,14 +205,7 @@ for(r in 1:regions_number){
     notification_attributes_character <- c("oos:order/oos:placer/oos:fullName")
     
     # Create a data frame with measures that are one-per-notification (so need to first aggregate things like maxPrice)
-    notifications_wide <- notifications_cleaned %>%
-      filter(Key %in% notification_attributes_singular) %>%
-      spread_(key_col = "Key", value_col = "Value")
 
-    notifications_wide <- notifications_cleaned %>%
-      filter(Key %in% notification_attributes_numeric) %>%
-      group_by(BusinessKey) %>%
-      summarise(NotificationTotalMaxPrice = sum(as.numeric(Value)))
     
     notifications_numeric <- notifications_cleaned %>%
       filter(Key %in% notification_attributes_numeric) %>%
@@ -209,7 +268,7 @@ for(r in 1:regions_number){
     hist(log(notifications_and_contracts$NotificationMaxPriceMinusContractPrice), breaks = 100)
     hist((notifications_and_contracts$AuctionEfficiency), breaks = 500)
     
-    # Draw one histogram of efficiency measure per organisation
+    
     
     
 } # Closes control loop over regions_list
