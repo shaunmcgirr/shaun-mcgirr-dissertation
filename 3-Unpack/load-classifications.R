@@ -2,6 +2,15 @@
 
 # Goals of this script are:
 #   - Load and parse the official statistical classifications 
+#   - Good example of what we might want to achieve with this:
+#     - http://zakupki.gov.ru/pgz/public/action/orders/info/common_info/show?notificationId=6070886
+#     - The classification of goods, works and services	
+#       221 for the construction works, reconstruction, repair of capital construction of public roads, temporary buildings, stalls, sheds and other similar structures <*>
+#         4540214 Filling of barge board doorways
+#         4540256 Arrangement of parquet flooring
+#         4540301 Pasting of walls, ceilings with wall
+#     - We would like the ability to aggregate the individual purchases in this tender to code 4540000 so it 
+#       'makes the cut' in 4-Construct/pivot-and-merge.R where we must discard multi-product notifications
 
 ###################
 # 1. Housekeeping #
@@ -24,6 +33,9 @@ data_classifications_directory <- "2-Obtain/data_other/classifications"
 ############################################
 # 3. Load ОКПД/OKDP product classification #
 ############################################
+
+# Browseable here http://classifikators.ru/okdp
+# Download instructions in 2-Obtain/download-other-data.md
 
 okdp_product_classification_raw <- read.csv(file = "2-Obtain/data_other/classifications/ОКДП.csv",
                                         header = T, stringsAsFactors = F, encoding = "utf8",

@@ -29,7 +29,7 @@ parsing_configuration <- na.omit(read.xlsx(xlsxFile="3-Unpack/how-I-parse-the-xm
 ############################################
 
 # Obtain list of regions for which consolidated data is available
-# regions_list <- generate_regions_list(data_parsed_directory)
+# regions_list <- generate_regions_list(data_cleaned_directory)
 regions_list <- as.list("Adygeja_Resp")
 # regions_list <- as.list("Moskva")
 regions_number <- length(regions_list)
@@ -147,6 +147,7 @@ for(r in 1:regions_number){
                                          "_notifications_wide_", data_download_date, ".rda")
   save(notifications, file = notifications_wide_file_name)
   # rm(notifications)
+  gc()
       
   ###################
   ## Contracts     ##
@@ -250,7 +251,7 @@ for(r in 1:regions_number){
                                      "_contracts_wide_", data_download_date, ".rda")
   save(contracts, file = contracts_wide_file_name)
   # rm(contracts)
-  
+  gc()
 
   ###################
   ## Merge         ##
@@ -322,8 +323,8 @@ for(r in 1:regions_number){
     
   rm(contracts); rm(contracts_without_notification)
   rm(notifications); rm(notifications_without_contract)
-  
+  rm(notification_contract_matches); gc()
     
 } # Closes control loop over this region
-
+gc()
 # ENDS
