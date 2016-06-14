@@ -10,6 +10,7 @@ library(magrittr)     # install.packages('magrittr')
 library(readxl)       # install.packages('readxl')
 library(openxlsx)     # install.packages('openxlsx')
 library(parallel)     # install.packages('parallel')
+library(lme4)         # install.packages('lme4')
 # library(foreach)      # install.packages('foreach')
 # library(doParallel)   # install.packages('doParallel')
 # library(plyr)       # install.packages('plyr')
@@ -54,6 +55,10 @@ Sys.setlocale("LC_CTYPE", "Russian") # This may not be necessary on Mac/Linux
 
 #----- 3. Run scripts for each step -----
 
+# Other data
+# source("3-Unpack//load-other-data.R") # Loads non-procurement data sources
+# source("6-Present//scatterplots-GCB.R") # Draws the GCB scatterplots for introduction
+
 # Procurement data
 # source("3-Unpack//load-classifications.R") # Loads classifications used to parse procurement data
 # source("3-Unpack//unzip-files.R") # unzips files from raw-data to unzipped-data
@@ -61,8 +66,6 @@ Sys.setlocale("LC_CTYPE", "Russian") # This may not be necessary on Mac/Linux
 # source("4-Construct//clean-data.R") # Cleans the parsed data (mostly deduplicating)
 # source("4-Construct//pivot-and-merge.R") # Implement what we learned from analyze-before-merge.R
 # source("4-Construct//construct-measures.R") # Builds measures for the procurement data
-
-# Other data
-# source("3-Unpack//load-other-data.R") # Loads non-procurement data sources
-# source("6-Present//scatterplots-GCB.R") # Draws the GCB scatterplots for introduction
+# source("4-Construct//prove-measures.R") # Validates measures
+# source("5-Test//explore-data.R") # Exploratory analysis
 
