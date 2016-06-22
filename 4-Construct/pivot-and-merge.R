@@ -265,6 +265,8 @@ for(r in 1:regions_number){
   #                                 group_by(NotificationNumber, ContractID) %>%
   #                                   summarize(ContractsPerNotification = n())
   
+  ## MAY WANT TO REPLACE THIS WITH FULL MERGE SO ALL ARE IN ONE DATA FRAME
+  
   notification_contract_matches <- notifications %>% 
                                     inner_join(contracts, by = c("NotificationNumber" = "ContractFoundationNotificationNumber"))
   
@@ -318,7 +320,7 @@ for(r in 1:regions_number){
                                                      "_notifications_without_contract_", data_download_date, ".rda")
     save(notifications_without_contract, file = notifications_without_contract_file_name)
   contracts_without_notification_file_name <- paste0(data_output_directory_region, current_region, 
-                                                     "_contracts_without_notification", data_download_date, ".rda")
+                                                     "_contracts_without_notification_", data_download_date, ".rda")
     save(contracts_without_notification, file = contracts_without_notification_file_name)
     
   rm(contracts); rm(contracts_without_notification)

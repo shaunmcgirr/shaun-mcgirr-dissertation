@@ -57,11 +57,13 @@ for(r in 1:regions_number){
   # HISTOGRAMS OF NOTIFICATION PRICES
   # Output three histograms for this region: listed price of notifications; same but only bottom three quartiles to show discontinuity at 500k; logged values across all dist
   notifications_maxPrice <- notification_contract_matches %>%
-                            transmute(NotificationMaxPrice = NotificationLotCustomerRequirementMaxPrice)
+                            filter(TenderProcedureGroup != "Olympic construction") %>%
+                            transmute(NotificationMaxPrice = NotificationLotCustomerRequirementMaxPrice,
+                                      ProcedureGroup = TenderProcedureGroup)
 
   notifications_maxPrice_three_quartiles <- notifications_maxPrice %>%
-  # filter(NotificationMaxPrice <= as.numeric(summary(notifications_maxPrice$NotificationMaxPrice)[5]))
-  filter(NotificationMaxPrice <= as.numeric(quantile(notifications_maxPrice$NotificationMaxPrice, .75, na.rm = T)))
+    # filter(NotificationMaxPrice <= as.numeric(summary(notifications_maxPrice$NotificationMaxPrice)[5]))
+    filter(NotificationMaxPrice <= as.numeric(quantile(notifications_maxPrice$NotificationMaxPrice, .81, na.rm = T)))
 
   # All notifications
   graph_title <- paste0("Distribution of initial listing prices for tenders in ", current_region_english, " (all quartiles)\n")
@@ -77,16 +79,21 @@ for(r in 1:regions_number){
   ggsave(plot = notification_maxPrice_histogram_raw_all_quartiles, filename = graph_file_name, device = "pdf")
   
   # Bottom three quarters of notifications
-  graph_title <- paste0("Distribution of initial listing prices for tenders in ", current_region_english, " (excluding fourth quartile)\n")
+  graph_title <- paste0("Distribution of initial listing price in ", current_region_english, ", by procedure type (excl. fourth quartile)\n")
     graph_file_name <- paste0(data_output_directory_region, current_region, "_notification_maxPrice_histogram_raw_three_quartiles.pdf")
-  notification_maxPrice_histogram_raw_three_quartiles <- ggplot(notifications_maxPrice_three_quartiles, aes(x=NotificationMaxPrice)) +
-    geom_histogram(bins = 200) +
+  notification_maxPrice_histogram_raw_three_quartiles <- ggplot(notifications_maxPrice_three_quartiles, aes(x=NotificationMaxPrice, fill = ProcedureGroup)) +
+    geom_histogram(bins = 200, show.legend = F) +
+  # notification_maxPrice_histogram_raw_three_quartiles <- ggplot(notifications_maxPrice_three_quartiles, aes(x=NotificationMaxPrice, fill = ProcedureGroup)) +
+    # geom_density(alpha = 0.2) +
     labs(title = graph_title, x = "\nInitial listing price (rubles)") +
     scale_x_continuous(labels = comma) +
+    # scale_y_continuous(labels = NULL) +
     theme_bw() +
-    annotate("text", x = 450000, y = Inf, label = "\nRules change for\ntenders > 500k", vjust = 1, hjust = 1)
+    scale_fill_tableau() +
+    facet_wrap(~ ProcedureGroup, scales = "free_y", ncol = 1)
+    #annotate("text", x = 450000, y = Inf, label = "\nRules change for\ntenders > 500k", vjust = 1, hjust = 1)
   print(notification_maxPrice_histogram_raw_three_quartiles)
-  ggsave(plot = notification_maxPrice_histogram_raw_three_quartiles, filename = graph_file_name, device = "pdf")
+  ggsave(plot = notification_maxPrice_histogram_raw_three_quartiles, filename = graph_file_name, device = "pdf", width = 8, height = 10)
   
   # All notifications, logged
   graph_title <- paste0("Distribution of initial listing prices (log base 10) for tenders in ", current_region_english, " (all quartiles)\n")
@@ -103,7 +110,9 @@ for(r in 1:regions_number){
   
   # Quick graph of price change
   hist(notification_contract_matches$PriceChangePercentageNoOutliers, breaks = 100)
-    
+  
+  # Can also facet with greyed-out underlying data, perhaps for comparing two agencies
+  # http://docs.ggplot2.org/current/facet_wrap.html
     
 } # Closes control loop over regions_list
 
