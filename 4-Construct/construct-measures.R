@@ -2,8 +2,8 @@
 
 # Goals of this script are:
 #   - Obtain list of regions which have completed matching from pivot-and-merge.R
-#   - Process these to create measures to test my theory
-#   - Profit!!!
+#   - Set up various data frames, then call the scripts that construct individual measures
+#   - Store the resulting measures somewhere
 
 ###################
 # 1. Housekeeping #
@@ -123,7 +123,7 @@ for(r in 1:regions_number){
     # hist(notification_contract_matches$PriceChangePercentageNoOutliers[notification_contract_matches$TenderProcedureGroup == "Request for quotes"], breaks = 100, col=rgb(1, 0, 0, 0.5), add=T)  
   stopifnot(!anyNA(notification_contract_matches$TenderProcedureGroup))
   notification_contract_matches$TenderProcedureGroup <- factor(notification_contract_matches$TenderProcedureGroup, 
-                                                               levels = c("Open electronic auction", "Request for quotes", "Open tender", "Olympic construction"),
+                                                               levels = c("Open electronic auction", "Open tender", "Request for quotes", "Olympic construction"),
                                                                ordered = F)
 
   # Procedure level of discretion
@@ -156,10 +156,50 @@ for(r in 1:regions_number){
     # Notification product code != Contract product code - by agency
     # Number of revisions to notifications and contracts (proxy for capacity or corruption?) - by agency
     # Proportion of contracts near 10%/100% over the maximum notified price - by agency
+    # Applicants/bidders per notification, share of contracts with single bidder - by agency
+    # Dramatic price drop from notification to contract - indicates risk of 'cheap analogue' being supplied
+    #   - a valid measure because FL-44 prevented it in cases more than 15% without contract explaining why
+    #   - concrete case https://www.hse.ru/pubs/share/direct/document/64729394
 
     # MEASURES OF AGENCY CHARACTERISTICS
     # Number of unique products (lowest and highest levels of OKDP) - by agency
     # Customer != placer (proxy for capacity) - by agency
+    # •	Specificity of goods purchased by agency, defined as the inverse of the rarity with which a given product is purchased across all other agencies (the database includes detailed product codings that make such a measure possible: the score will be highest when only the given agency purchases this product, and lowest when every other agency also purchases it)
+    # •	The Audit Chamber, the main oversight agency of the Executive, releases yearly reports on its activities, including the number of inquiries initiated in to each agency, and the `yield' of these inquiries in terms of cases forwarded to prosecutors. I am planning to use this data to proxy for constraints on agencies.
+    # •	Corruption revelations from press reports, in which I would tag the agency mentioned. Exactly what this data would be measuring depends on how the formal model works out.
+ 
+  
+    # CONTROLS
+    # Total spent by agency
+    # Time elapsed between notification and contract
+    # Procedure type (when modelling reduction of price, eg auctions might incorportate more pre-market info
+    #   in this regard, need two-stage model: first what determines initial price)
+  
+  # National official rating http://nrpz.ru/
+  #   Criteria
+  # Таб. 5. Основные показатели рынка закупок государственных закупщиков *
+  #   - Средняя начальная цена конкурентного способа определения поставщиков, млн. руб.
+  # - Среднее число поданных заявок
+  # - Доля отклоненных заявок
+  # - Среднее число участников закупочных процедур (или допущенных котировочных заявок)
+  # - Доля закупочных процедур с 0 или 1 участником
+  
+  # •	Procedure choice
+  #   o	Proportion of tenders in which the agency chooses a single supplier instead of any kind of competitive procedure (well-demonstrated in literature on public procurement to be correlated with procurement fraud)
+  #   o	Correlation between proc choice and purchase size
+  # •	Bidding environment
+  #   o	Number of bidders
+  #   o	Number of disqualifications
+  # •	Procedure efficiency (start vs end)
+  #   o	By procedure type
+  #   o	Mean, median, and a measure of “crowding” in to space just below 100%
+  #   o	Average increase in contract cost over the lifetime of the procedure (this detects variation in cost changes, another standard place to hide kickbacks)
+  #   o Average price decrease in competitive auctions (bureaucrats choose a maximum/starting price, and potential suppliers bid down; procurement literature identifies this as a good measure for the tolerance of cartel behavior by suppliers)
+  #   o	Increases as irregularities
+  # •	Irregularities
+  #   o	Start prices right at thresholds
+  
+ 
   
   
   ############################################################
