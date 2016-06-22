@@ -66,21 +66,76 @@ for(r in 1:regions_number){
   notifications_cleaned <- notifications_cleaned %>% filter(Key != "oos:lots/oos:lot/oos:notificationFeatures/oos:notificationFeature/oos:placementFeature/oos:name")
   contracts_cleaned <- contracts_cleaned %>% filter(BusinessKey != "")
   
+  # How many total cases are there, and how many matches?
+  notifications_cleaned_unique_business_keys <- data.frame(Notification = "Notification", BusinessKey = unique(notifications_cleaned$BusinessKey), stringsAsFactors = F)
+  contracts_cleaned_unique_business_keys <- data.frame(Contract = "Contract", BusinessKey = unique(contracts_cleaned$BusinessKey), stringsAsFactors = F)
+  
+  # Create a "spine" of all the business keys in the data, and note whether they are matches, or which document is missing
+  all_business_keys <- full_join(notifications_cleaned_unique_business_keys, contracts_cleaned_unique_business_keys, by = "BusinessKey") %>%
+                          mutate(MissingReason = as.character(NA),
+                                 Match = ifelse(!is.na(Notification) & !is.na(Contract), "Notification matches contract", 
+                                                ifelse(!is.na(Notification) & is.na(Contract), "Notification without contract", 
+                                                       ifelse(is.na(Notification) & !is.na(Contract), "Contract without notification", NA)))) %>%
+                          select(BusinessKey, Match, MissingReason)
+  # table(all_business_keys$Match)    
+  if(sum(is.na(all_business_keys$Match)) != 0) print("Merge failed, investigate")
+  all_business_keys_length <- length(all_business_keys$BusinessKey)
+  
+  # Cut down notifications and contracts to a dataframe containing just the data universal to every business key, regardless of filtering below
+  notifications_universal <- notifications_cleaned %>%
+                              filter(Key %in% c("oos:id", "oos:notificationNumber", "oos:versionNumber", "oos:publishDate",
+                                                "oos:placingWay/oos:name", "oos:orderName", "oos:order/oos:placer/oos:regNum",
+                                                "oos:order/oos:placer/oos:fullName", "oos:href")) %>%
+                              select(-DocumentVersionUniqueID) %>%
+                              spread(key = Key, value = Value)
+  if(length(notifications_universal$BusinessKey) != length(notifications_cleaned_unique_business_keys$BusinessKey)) print("Merge failed, investigate")
+  
+  # Rename variables sensibly
+  column_names_notifications_old <- data.frame(XMLFieldName = colnames(notifications_universal), stringsAsFactors = F)
+  column_names_notifications_new <- parsing_configuration %>%
+    filter(DocumentType == "notifications") %>%
+    select(XMLFieldName, VariableName) %>%
+    right_join(column_names_notifications_old, by = "XMLFieldName") %>%
+    mutate(VariableName = ifelse(is.na(VariableName), XMLFieldName,
+                                 VariableName)) %>%
+    select(VariableName) 
+  colnames(notifications_universal) <- column_names_notifications_new$VariableName
+  rm(column_names_notifications_new); rm(column_names_notifications_old)
+  
+  contracts_universal <- contracts_cleaned %>%
+                          filter(Key %in% c("oos:id", "oos:regNum", "oos:versionNumber", "oos:publishDate", "oos:signDate",
+                                            "oos:foundation/oos:order/oos:notificationNumber", "oos:foundation/oos:singleCustomer",
+                                            "oos:customer/oos:regNum", "oos:customer/oos:fullName", "oos:customer/oos:inn", 
+                                            "oos:customer/oos:kpp", "oos:customer/oos:tofk", "oos:price", "oos:currency/oos:code",
+                                            "oos:execution/oos:month", "oos:execution/oos:year", "oos:finances/oos:financeSource",
+                                            "oos:currentContractStage")) %>%
+                          select(-DocumentVersionUniqueID) %>%
+                          spread(key = Key, value = Value)
+  if(length(contracts_universal$BusinessKey) != length(contracts_cleaned_unique_business_keys$BusinessKey)) print("Merge failed, investigate")
+  
+  # Rename variables sensibly
+  column_names_contracts_old <- data.frame(XMLFieldName = colnames(contracts_universal), stringsAsFactors = F)
+  column_names_contracts_new <- parsing_configuration %>%
+    filter(DocumentType == "contracts") %>%
+    select(XMLFieldName, VariableName) %>%
+    right_join(column_names_contracts_old, by = "XMLFieldName") %>%
+    mutate(VariableName = ifelse(is.na(VariableName), XMLFieldName,
+                                 VariableName)) %>%
+    select(VariableName) 
+  colnames(contracts_universal) <- column_names_contracts_new$VariableName
+  rm(column_names_contracts_new); rm(column_names_contracts_old)
+  
+  # Join together this universal data
+  notifications_contracts <- all_business_keys %>%
+                              left_join(notifications_universal, by = "BusinessKey") %>%
+                              left_join(contracts_universal, by = "BusinessKey")
+    
   ###################
   ## Notifications ##
   ###################
   
-  # ADD LEVEL 1 OF OKDP PRODUCT CLASSIFICATION (PAUSED FOR NOW)
-  # notifications_cleaned_okdp_level_1 <- notifications_cleaned %>%
-  #                                         filter(Key == "oos:lots/oos:lot/oos:products/oos:product/oos:code") %>%
-  #                                         left_join(okdp_product_classification,
-  #                                                   by = c("Value" = "ProductCode")) %>%
-  #                                         mutate(Key = "NotificationLotProductCodeLevel1",
-  #                                                Value = ProductCodeLevel1) %>%
-  #                                         select(BusinessKey, DocumentVersionUniqueID, Key, Value)
-
   # SUBSET DATA TO JUST NOTIFICATIONS/CONTRACTS WITH ONE LOT/PRODUCT/CUSTOMER
-  notifications_cleaned_unique_business_keys_number <- length(unique(notifications_cleaned$BusinessKey))
+  # (merging those with multiple lots/product/customer in to notifications_contracts as we go)
   
   # Identify and assess size of multiple-lot notifications
   notifications_lots_number <- notifications_cleaned %>%
@@ -89,13 +144,83 @@ for(r in 1:regions_number){
                                 summarize(NumberOfLots = as.numeric(max(Value)))
   # table(notifications_lots_number$NumberOfLots)
   
+  # Which notifications are for multiple lots (and so have to be dropped later)?
+  notifications_with_multiple_lots <- notifications_lots_number %>%
+                                        filter(NumberOfLots > 1) %>%
+                                        select(BusinessKey) %>%
+                                        mutate(MissingReason = "Notification with multiple lots")
+  # Send these to master DF
+  notifications_contracts <- notifications_contracts %>% 
+                              left_join(notifications_with_multiple_lots, by = c("BusinessKey")) %>%
+                              rename(MissingReason = MissingReason.x) %>%
+                              mutate(MissingReason = ifelse(is.na(MissingReason.y), MissingReason, MissingReason.y)) %>%
+                              select(-MissingReason.y)
+  
   # Subset to just the single-lot notifications
   notifications_with_one_lot <- notifications_lots_number %>% filter(NumberOfLots == 1) %>% select(BusinessKey)
   notifications_single_lot <- notifications_cleaned %>%
                                 right_join(notifications_with_one_lot, by = "BusinessKey")
-  rm(notifications_lots_number); rm(notifications_with_one_lot); rm(notifications_cleaned)
+  rm(notifications_lots_number); rm(notifications_with_one_lot); # rm(notifications_cleaned)
   
-  # Identify and assess size of multiple-product notifications (within single-lot subset)
+  # ADD LEVEL 1 OF OKDP PRODUCT CLASSIFICATION
+  notifications_cleaned_okdp_level_1 <- notifications_cleaned %>%
+                                          filter(Key == "oos:lots/oos:lot/oos:products/oos:product/oos:code") %>%
+                                          left_join(okdp_product_classification,
+                                            by = c("Value" = "ProductCode")) %>%
+                                          mutate(Key = "NotificationLotProductCodeLevel1",
+                                             Value = ProductCodeLevel1) %>%
+                                          select(BusinessKey, DocumentVersionUniqueID, Key, Value)
+  # Add these new lines to single-lot
+  notifications_single_lot <- rbind(notifications_single_lot, notifications_cleaned_okdp_level_1)
+  
+  # Now identify multiple-customer notifications
+  # customer_keys_with_duplicates <- notifications_single_lot %>% group_by(BusinessKey, Key) %>% summarise(ValuesPerKey = n()) %>% group_by(Key) %>% summarise(MaxValuesPerKey = max(ValuesPerKey))
+  notifications_with_one_lot_multiple_customers <- notifications_single_lot %>% 
+                                                    filter(Key %in% c("oos:lots/oos:lot/oos:customerRequirements/oos:customerRequirement/oos:customer/oos:regNum")) %>%
+                                                    group_by(BusinessKey) %>%
+                                                      summarise(ValuesPerKey = n()) %>% ungroup() %>%
+                                                    filter(ValuesPerKey > 1) %>%
+                                                    select(BusinessKey) %>%
+                                                    mutate(MissingReason = "Notification with single lot, multiple customers")
+  
+  # Send these off to master data frame
+  notifications_contracts <- notifications_contracts %>%
+                              left_join(notifications_with_one_lot_multiple_customers, by = c("BusinessKey")) %>%
+                              rename(MissingReason = MissingReason.x) %>%
+                              mutate(MissingReason = ifelse(is.na(MissingReason.y), MissingReason, MissingReason.y)) %>%
+                              select(-MissingReason.y)
+  # table(notifications_contracts$MissingReason, useNA = "always")
+  
+  notifications_with_one_lot_one_customer <- notifications_single_lot %>%
+    filter(Key %in% c("oos:lots/oos:lot/oos:customerRequirements/oos:customerRequirement/oos:customer/oos:regNum")) %>%
+    group_by(BusinessKey) %>%
+      summarise(ValuesPerKey = n()) %>% ungroup() %>%
+    filter(ValuesPerKey == 1) %>%
+    select(BusinessKey)
+
+  # Check our cases so far add up to total notifications
+  if(length(notifications_with_one_lot_one_customer$BusinessKey) + length(notifications_with_one_lot_multiple_customers$BusinessKey) + length(notifications_with_multiple_lots$BusinessKey) != notifications_cleaned_unique_business_keys_number) print("Merge failed, investigate")
+
+  # Subset single lot to those with one customer
+  notifications_single_lot_single_customer <- notifications_single_lot %>%
+                                                right_join(notifications_with_one_lot_one_customer, by = "BusinessKey")
+    
+  # Identify and assess size of multiple-product notifications at level 1 (within single-lot, single-customer subset)
+  notifications_products_number_level_1 <- notifications_single_lot_single_customer %>%
+                                            filter(Key == "NotificationLotProductCodeLevel1") %>%
+                                            group_by(BusinessKey) %>%
+                                              summarize(NumberOfProducts = n(), 
+                                                        NumberOfUniqueProducts = n_distinct(Value))
+  
+  #
+  # Easiest to create two DFs from here: one for each product level
+  #
+  
+  # Send these off to the master data frame with some metadata (could later come back, change to NumberOfUniqueProducts and sum across oos:customerRequirement/oos:maxPrice)
+  notifications_with_multiple_products_level_1 <- notifications_products_number_level_1 %>%
+                                                    filter(NumberOfProducts > 1)
+  
+  # Identify and assess size of multiple-product notifications at level 4 (within single-lot subset)
   notifications_products_number <- notifications_single_lot %>%
                                     filter(Key == "oos:lots/oos:lot/oos:products/oos:product/oos:code") %>%
                                     group_by(BusinessKey) %>%
