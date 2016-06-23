@@ -46,6 +46,14 @@ okdp_product_classification_raw <- read.csv(file = "2-Obtain/data_other/classifi
                                        ProductCodeLevel2 = paste0(substr(ProductCode, 1, 3), "0000"),
                                        ProductCodeLevel3 = paste0(substr(ProductCode, 1, 4), "000"))
 
+# Fix empty product codes (as detectable below)
+# Оборудование механическое для предприятий общественного питания should be 2945110 based on http://classifikators.ru/okdp/2945010
+okdp_product_classification_raw$ProductCode[okdp_product_classification_raw$ProductName == "Оборудование механическое для предприятий общественного питания"] <- "2945110"
+
+# Fix two product names for 3532112 (space craft etc), delete that name not appearing here http://classifikators.ru/okdp/3532110
+okdp_product_classification_raw <- okdp_product_classification_raw %>%
+                                    filter(!(ProductCode == 3532112 & ProductName == "Космические станции"))
+
 # CODE BELOW SETS UP FULL BRIDGING TABLE
 okdp_product_classification_level_1 <- okdp_product_classification_raw %>%
                                         filter(ProductCode == ProductCodeLevel1) %>%
@@ -82,5 +90,29 @@ okdp_product_classification_level_4 <- okdp_product_classification %>%
 
 rm(okdp_product_classification_raw)
 rm(okdp_product_classification_level_4); rm(okdp_product_classification_level_3); rm(okdp_product_classification_level_2); rm(okdp_product_classification_level_1)
+
+## Checks
+# Any blanks?
+blank_product_codes <- okdp_product_classification %>%
+                        filter(!grepl("[0-9]{7}$", ProductCode))
+                        #filter(!grepl("\\A\\s*\\z/", ProductCode))
+if(length(blank_product_codes$ProductCode) > 0) print("There are blank product codes")
+
+blank_product_names <- okdp_product_classification %>%
+                        filter(!grepl("[А-Яа-яЁё0-9]", ProductName))
+if(length(blank_product_names$ProductName) > 0) print("There are blank product names")
+
+# How many descriptors per level 4 code?
+names_per_code_level_4 <- okdp_product_classification %>%
+                            group_by(ProductCode) %>%
+                              summarise(NamesPerCode = n_distinct(ProductName)) %>% ungroup() %>%
+                            filter(NamesPerCode > 1)
+if(length(names_per_code_level_4$ProductCode) > 0) print("There are product codes with more than one product name")
+
+# One duplicate: space junk http://classifikators.ru/okdp/3532110
+# 3532112 Космические станции
+# 3532112 Космические аппараты, включая спутники
+# space_junk <- okdp_product_classification %>%
+#                 right_join(names_per_code_level_4)
 
 # ENDS
