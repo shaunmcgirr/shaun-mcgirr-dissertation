@@ -115,4 +115,6 @@ if(length(names_per_code_level_4$ProductCode) > 0) print("There are product code
 # space_junk <- okdp_product_classification %>%
 #                 right_join(names_per_code_level_4)
 
+rm(blank_product_codes); rm(blank_product_names); rm(names_per_code_level_4); gc()
+
 # ENDS

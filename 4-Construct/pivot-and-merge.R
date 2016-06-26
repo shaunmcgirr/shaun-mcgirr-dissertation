@@ -68,15 +68,18 @@ for(r in 1:regions_number){
   
   # How many total cases are there, and how many matches?
   notifications_cleaned_unique_business_keys <- data.frame(Notification = "Notification", BusinessKey = unique(notifications_cleaned$BusinessKey), stringsAsFactors = F)
+    notifications_cleaned_unique_business_keys_number <- length(notifications_cleaned_unique_business_keys$BusinessKey)
   contracts_cleaned_unique_business_keys <- data.frame(Contract = "Contract", BusinessKey = unique(contracts_cleaned$BusinessKey), stringsAsFactors = F)
+    contracts_cleaned_unique_business_keys_number <- length(contracts_cleaned_unique_business_keys$BusinessKey)
   
   # Create a "spine" of all the business keys in the data, and note whether they are matches, or which document is missing
   all_business_keys <- full_join(notifications_cleaned_unique_business_keys, contracts_cleaned_unique_business_keys, by = "BusinessKey") %>%
-                          mutate(MissingReason = as.character(NA),
+                          mutate(NotificationMissingReason = as.character(NA),
+                                 ContractMissingReason = as.character(NA),
                                  Match = ifelse(!is.na(Notification) & !is.na(Contract), "Notification matches contract", 
                                                 ifelse(!is.na(Notification) & is.na(Contract), "Notification without contract", 
                                                        ifelse(is.na(Notification) & !is.na(Contract), "Contract without notification", NA)))) %>%
-                          select(BusinessKey, Match, MissingReason)
+                          select(BusinessKey, Match, NotificationMissingReason, ContractMissingReason)
   # table(all_business_keys$Match)    
   if(sum(is.na(all_business_keys$Match)) != 0) print("Merge failed, investigate")
   all_business_keys_length <- length(all_business_keys$BusinessKey)
@@ -108,7 +111,8 @@ for(r in 1:regions_number){
                                             "oos:customer/oos:regNum", "oos:customer/oos:fullName", "oos:customer/oos:inn", 
                                             "oos:customer/oos:kpp", "oos:customer/oos:tofk", "oos:price", "oos:currency/oos:code",
                                             "oos:execution/oos:month", "oos:execution/oos:year", "oos:finances/oos:financeSource",
-                                            "oos:currentContractStage")) %>%
+                                            "oos:currentContractStage", "oos:finances/oos:budget/oos:code",
+                                            "oos:finances/oos:budget/oos:name", "oos:finances/oos:extrabudget/oos:name")) %>%
                           select(-DocumentVersionUniqueID) %>%
                           spread(key = Key, value = Value)
   if(length(contracts_universal$BusinessKey) != length(contracts_cleaned_unique_business_keys$BusinessKey)) print("Merge failed, investigate")
@@ -129,6 +133,7 @@ for(r in 1:regions_number){
   notifications_contracts <- all_business_keys %>%
                               left_join(notifications_universal, by = "BusinessKey") %>%
                               left_join(contracts_universal, by = "BusinessKey")
+  rm(all_business_keys); rm(notifications_cleaned_unique_business_keys); rm(contracts_cleaned_unique_business_keys); rm(notifications_universal); rm(contracts_universal); gc();
     
   ###################
   ## Notifications ##
@@ -148,19 +153,19 @@ for(r in 1:regions_number){
   notifications_with_multiple_lots <- notifications_lots_number %>%
                                         filter(NumberOfLots > 1) %>%
                                         select(BusinessKey) %>%
-                                        mutate(MissingReason = "Notification with multiple lots")
+                                        mutate(NotificationMissingReason = "Notification with multiple lots")
   # Send these to master DF
   notifications_contracts <- notifications_contracts %>% 
                               left_join(notifications_with_multiple_lots, by = c("BusinessKey")) %>%
-                              rename(MissingReason = MissingReason.x) %>%
-                              mutate(MissingReason = ifelse(is.na(MissingReason.y), MissingReason, MissingReason.y)) %>%
-                              select(-MissingReason.y)
+                              rename(NotificationMissingReason = NotificationMissingReason.x) %>%
+                              mutate(NotificationMissingReason = ifelse(is.na(NotificationMissingReason.y), NotificationMissingReason, NotificationMissingReason.y)) %>%
+                              select(-NotificationMissingReason.y)
   
   # Subset to just the single-lot notifications
   notifications_with_one_lot <- notifications_lots_number %>% filter(NumberOfLots == 1) %>% select(BusinessKey)
   notifications_single_lot <- notifications_cleaned %>%
                                 right_join(notifications_with_one_lot, by = "BusinessKey")
-  rm(notifications_lots_number); rm(notifications_with_one_lot); # rm(notifications_cleaned)
+  rm(notifications_lots_number); rm(notifications_with_one_lot);
   
   # ADD LEVEL 1 OF OKDP PRODUCT CLASSIFICATION
   notifications_cleaned_okdp_level_1 <- notifications_cleaned %>%
@@ -172,6 +177,7 @@ for(r in 1:regions_number){
                                           select(BusinessKey, DocumentVersionUniqueID, Key, Value)
   # Add these new lines to single-lot
   notifications_single_lot <- rbind(notifications_single_lot, notifications_cleaned_okdp_level_1)
+  rm(notifications_cleaned_okdp_level_1); rm(notifications_cleaned); gc();
   
   # Now identify multiple-customer notifications
   # customer_keys_with_duplicates <- notifications_single_lot %>% group_by(BusinessKey, Key) %>% summarise(ValuesPerKey = n()) %>% group_by(Key) %>% summarise(MaxValuesPerKey = max(ValuesPerKey))
@@ -181,15 +187,15 @@ for(r in 1:regions_number){
                                                       summarise(ValuesPerKey = n()) %>% ungroup() %>%
                                                     filter(ValuesPerKey > 1) %>%
                                                     select(BusinessKey) %>%
-                                                    mutate(MissingReason = "Notification with single lot, multiple customers")
+                                                    mutate(NotificationMissingReason = "Notification with single lot, multiple customers")
   
   # Send these off to master data frame
   notifications_contracts <- notifications_contracts %>%
                               left_join(notifications_with_one_lot_multiple_customers, by = c("BusinessKey")) %>%
-                              rename(MissingReason = MissingReason.x) %>%
-                              mutate(MissingReason = ifelse(is.na(MissingReason.y), MissingReason, MissingReason.y)) %>%
-                              select(-MissingReason.y)
-  # table(notifications_contracts$MissingReason, useNA = "always")
+                              rename(NotificationMissingReason = NotificationMissingReason.x) %>%
+                              mutate(NotificationMissingReason = ifelse(is.na(NotificationMissingReason.y), NotificationMissingReason, NotificationMissingReason.y)) %>%
+                              select(-NotificationMissingReason.y)
+  # table(notifications_contracts$NotificationMissingReason, useNA = "always")
   
   notifications_with_one_lot_one_customer <- notifications_single_lot %>%
     filter(Key %in% c("oos:lots/oos:lot/oos:customerRequirements/oos:customerRequirement/oos:customer/oos:regNum")) %>%
@@ -204,7 +210,16 @@ for(r in 1:regions_number){
   # Subset single lot to those with one customer
   notifications_single_lot_single_customer <- notifications_single_lot %>%
                                                 right_join(notifications_with_one_lot_one_customer, by = "BusinessKey")
+  # table(notifications_product_grouped$NotificationMissingReason, useNA = "always")
+  rm(notifications_single_lot); rm(notifications_with_one_lot_one_customer)
     
+  #
+  # Easiest to create two DFs from here: one for each product level
+  # notifications_contracts_products_grouped & notifications_contracts_products_ungrouped
+  #
+  
+  ## FIRST GROUPED PRODUCTS
+  
   # Identify and assess size of multiple-product notifications at level 1 (within single-lot, single-customer subset)
   notifications_products_number_level_1 <- notifications_single_lot_single_customer %>%
                                             filter(Key == "NotificationLotProductCodeLevel1") %>%
@@ -212,143 +227,498 @@ for(r in 1:regions_number){
                                               summarize(NumberOfProducts = n(), 
                                                         NumberOfUniqueProducts = n_distinct(Value))
   
-  #
-  # Easiest to create two DFs from here: one for each product level
-  #
-  
-  # Send these off to the master data frame with some metadata (could later come back, change to NumberOfUniqueProducts and sum across oos:customerRequirement/oos:maxPrice)
+  # Send these off to the master data frame with some metadata (for the rest, use NumberOfUniqueProducts and sum across oos:customerRequirement/oos:maxPrice)
   notifications_with_multiple_products_level_1 <- notifications_products_number_level_1 %>%
-                                                    filter(NumberOfProducts > 1)
+                                                    filter(NumberOfUniqueProducts > 1) %>%
+                                                    transmute(BusinessKey = BusinessKey, NotificationMissingReason = "Notification with single lot, single customer, multiple products (grouped)")
   
-  # Identify and assess size of multiple-product notifications at level 4 (within single-lot subset)
-  notifications_products_number <- notifications_single_lot %>%
-                                    filter(Key == "oos:lots/oos:lot/oos:products/oos:product/oos:code") %>%
-                                    group_by(BusinessKey) %>%
-                                    summarize(NumberOfProducts = n(), NumberOfUniqueProducts = n_distinct(Value))
-
-  notifications_with_one_lot_one_product <- notifications_products_number %>% filter(NumberOfProducts == 1) %>% select(BusinessKey)
-  notifications_single_lot_single_product <- notifications_single_lot %>%
-                                              right_join(notifications_with_one_lot_one_product,
-                                                         by = "BusinessKey")
-  rm(notifications_products_number); rm(notifications_with_one_lot_one_product); rm(notifications_single_lot)
+  notifications_contracts_products_grouped <- notifications_contracts %>%
+                                                left_join(notifications_with_multiple_products_level_1, by = c("BusinessKey")) %>%
+                                                rename(NotificationMissingReason = NotificationMissingReason.x) %>%
+                                                mutate(NotificationMissingReason = ifelse(is.na(NotificationMissingReason.y), NotificationMissingReason, NotificationMissingReason.y)) %>%
+                                                select(-NotificationMissingReason.y)
+  # table(notifications_contracts_products_grouped$NotificationMissingReason, useNA = "always")
   
-  # Final restriction to the simplest notfications (see analyze-before-merge.R for more detail)
-  notifications_with_one_lot_one_product_one_customer <- notifications_single_lot_single_product %>%
-                                                          group_by(BusinessKey, Key) %>%
-                                                            summarise(ValuesPerKey = n()) %>% ungroup() %>%
-                                                          group_by(BusinessKey) %>%
-                                                            summarise(MaxFieldsPerNotification = max(ValuesPerKey)) %>% ungroup() %>%
-                                                          filter(MaxFieldsPerNotification == 1) %>%
-                                                          select(BusinessKey)
-                                                          
-  notifications_single_lot_single_product_single_customer <- notifications_single_lot_single_product %>%
-                                                              right_join(notifications_with_one_lot_one_product_one_customer, 
-                                                                         by = "BusinessKey")
-  rm(notifications_with_one_lot_one_product_one_customer); rm(notifications_single_lot_single_product)
+  # Identify remaining records, sum over maxPrice (sum not actually necessary)
+  notifications_with_one_product_level_1 <- notifications_products_number_level_1 %>%
+                                              filter(NumberOfUniqueProducts == 1) %>%
+                                              select(BusinessKey)
   
-  ## PIVOT THE DEDUPLICATED DATA IN TO ONE ROW PER NOTIFICATION, SAVE
-  notifications <- notifications_single_lot_single_product_single_customer %>%
-                    spread(key = Key, value = Value)
-  rm(notifications_single_lot_single_product_single_customer)
+  # Check our cases so far add up to total notifications
+  if(length(unique(notifications_with_one_product_level_1$BusinessKey)) + length(unique(notifications_with_multiple_products_level_1$BusinessKey)) + length(notifications_with_one_lot_multiple_customers$BusinessKey) + length(notifications_with_multiple_lots$BusinessKey) != notifications_cleaned_unique_business_keys_number) print("Merge failed, investigate")
+  
+  notifications_single_lot_single_customer_single_product_grouped <- notifications_single_lot_single_customer %>%
+                                                                      right_join(notifications_with_one_product_level_1, by = "BusinessKey")
+  # Clean up
+  rm(notifications_products_number_level_1); rm(notifications_with_multiple_products_level_1); # rm(notifications_with_multiple_lots); rm(notifications_with_one_lot_multiple_customers); 
+  
+  # Any remaining duplicate fields unrelated to product code?
+  duplicate_fields <- notifications_single_lot_single_customer_single_product_grouped %>%
+    group_by(BusinessKey, Key) %>%
+    summarise(ValuesPerKey = n()) %>% ungroup() %>%
+    group_by(Key) %>%
+    summarise(MaxFieldsPerNotification = max(ValuesPerKey)) %>%
+    filter(!Key %in% c("NotificationLotProductCodeLevel1", "oos:lots/oos:lot/oos:products/oos:product/oos:code", "oos:lots/oos:lot/oos:products/oos:product/oos:name"))
+  # Check that we are safe to proceed without need to sum over maxPrice
+  if(max(duplicate_fields$MaxFieldsPerNotification) > 1) print("Unexpected duplicate keys, investigate")
+    
+  # Filter out the duplicated lower-level product information
+  notifications_product_grouped <- notifications_single_lot_single_customer_single_product_grouped %>%
+                                    filter(!Key %in% c("oos:lots/oos:lot/oos:products/oos:product/oos:code", 
+                                                       "oos:lots/oos:lot/oos:products/oos:product/oos:name")) %>%
+                                    group_by(BusinessKey, DocumentVersionUniqueID, Key) %>%
+                                      filter(row_number() == 1) %>% # Leaves one instance of NotificationLotProductCodeLevel1
+                                    spread(key = Key, value = Value) #%>%
+                                    #mutate(NotificationMissingReason = "Notification data complete (products grouped)")
+  if(length(notifications_product_grouped$BusinessKey) != length(unique(notifications_with_one_product_level_1$BusinessKey))) print("Number of records mismatch, investigate")
+  
+  # Clean up
+  rm(notifications_single_lot_single_customer_single_product_grouped); rm(notifications_with_one_product_level_1);
   
   # Rename variables sensibly
-  column_names_notifications_old <- data.frame(XMLFieldName = colnames(notifications), stringsAsFactors = F)
+  column_names_notifications_old <- data.frame(XMLFieldName = colnames(notifications_product_grouped), stringsAsFactors = F)
   column_names_notifications_new <- parsing_configuration %>%
-                                      filter(DocumentType == "notifications") %>%
-                                      select(XMLFieldName, VariableName) %>%
-                                      right_join(column_names_notifications_old, by = "XMLFieldName") %>%
-                                      mutate(VariableName = ifelse(is.na(VariableName), XMLFieldName,
-                                                                   VariableName)) %>%
-                                      select(VariableName) 
-  colnames(notifications) <- column_names_notifications_new$VariableName
+    filter(DocumentType == "notifications") %>%
+    select(XMLFieldName, VariableName) %>%
+    right_join(column_names_notifications_old, by = "XMLFieldName") %>%
+    mutate(VariableName = ifelse(is.na(VariableName), XMLFieldName,
+                                 VariableName)) %>%
+    select(VariableName) 
+  colnames(notifications_product_grouped) <- column_names_notifications_new$VariableName
   rm(column_names_notifications_new); rm(column_names_notifications_old)
   
-  # Output proportion of tidy notifications from all parsed
-  tidy_notifications_percentage <- length(unique(notifications$BusinessKey))/notifications_cleaned_unique_business_keys_number
-  print(paste0("Proportion of tidy notifications in ", current_region, " is ", tidy_notifications_percentage))
+  # Finally, join on the information we have about the notifications not filtered out above
+  notifications_contracts_products_grouped <- notifications_contracts_products_grouped %>%
+                                                left_join(notifications_product_grouped)
+  if(sum(is.na(notifications_contracts_products_grouped$NotificationMissingReason)) - length(notifications_contracts$Match[notifications_contracts$Match == "Contract without notification"]) != length(notifications_product_grouped$BusinessKey)) print("Reconciliation failed, check")
   
-  # Save the 'wide' format file with a sensible name and clean up
-  notifications_wide_file_name <- paste0(data_output_directory_region, current_region,
-                                         "_notifications_wide_", data_download_date, ".rda")
-  save(notifications, file = notifications_wide_file_name)
-  # rm(notifications)
+  
+  ## NOW SAME THING FOR UNGROUPED PRODUCTS
+    
+  # Identify and assess size of multiple-product notifications at level 4 (within single-lot subset)
+  notifications_products_number_level_4 <- notifications_single_lot_single_customer %>%
+                                            filter(Key == "oos:lots/oos:lot/oos:products/oos:product/oos:code") %>%
+                                            group_by(BusinessKey) %>%
+                                              summarize(NumberOfProducts = n(), 
+                                                        NumberOfUniqueProducts = n_distinct(Value))
+  
+  # Send these off to the master data frame with some metadata
+  notifications_with_multiple_products_level_4 <- notifications_products_number_level_4 %>%
+                                                    filter(NumberOfUniqueProducts > 1) %>%
+                                                    transmute(BusinessKey = BusinessKey, NotificationMissingReason = "Notification with single lot, single customer, multiple products (ungrouped)")
+  
+  notifications_contracts_products_ungrouped <- notifications_contracts %>%
+                                                  left_join(notifications_with_multiple_products_level_4, by = c("BusinessKey")) %>%
+                                                  rename(NotificationMissingReason = NotificationMissingReason.x) %>%
+                                                  mutate(NotificationMissingReason = ifelse(is.na(NotificationMissingReason.y), NotificationMissingReason, NotificationMissingReason.y)) %>%
+                                                  select(-NotificationMissingReason.y)
+  # table(notifications_contracts_products_ungrouped$NotificationMissingReason, useNA = "always")
+
+  # Identify remaining records, sum over maxPrice (sum necessary?)
+  notifications_with_one_product_level_4 <- notifications_products_number_level_4 %>%
+                                              filter(NumberOfUniqueProducts == 1) %>%
+                                              select(BusinessKey)
+  
+  # Check our cases so far add up to total notifications
+  if(length(unique(notifications_with_one_product_level_4$BusinessKey)) + length(unique(notifications_with_multiple_products_level_4$BusinessKey)) + length(notifications_with_one_lot_multiple_customers$BusinessKey) + length(notifications_with_multiple_lots$BusinessKey) != notifications_cleaned_unique_business_keys_number) print("Merge failed, investigate")
+  
+  notifications_single_lot_single_customer_single_product_ungrouped <- notifications_single_lot_single_customer %>%
+                                                                        right_join(notifications_with_one_product_level_4, by = "BusinessKey")
+  
+  # Clean up
+  rm(notifications_with_multiple_lots); rm(notifications_with_one_lot_multiple_customers); rm(notifications_products_number_level_4); rm(notifications_with_multiple_products_level_4); gc()
+  
+  # Any remaining duplicate fields unrelated to product code?
+  duplicate_fields <- notifications_single_lot_single_customer_single_product_ungrouped %>%
+    group_by(BusinessKey, Key) %>%
+    summarise(ValuesPerKey = n()) %>% ungroup() %>%
+    group_by(Key) %>%
+    summarise(MaxFieldsPerNotification = max(ValuesPerKey))
+
+  # Check that we are safe to proceed without need to sum over maxPrice
+  if(max(duplicate_fields$MaxFieldsPerNotification) > 1) print("Unexpected duplicate keys, investigate")
+  
+  # Spread to wide format (don't need to filter out any fields as with grouped products)
+  notifications_product_ungrouped <- notifications_single_lot_single_customer_single_product_ungrouped %>%
+                                      spread(key = Key, value = Value) #%>%
+  #mutate(NotificationMissingReason = "Notification data complete (products grouped)")
+  if(length(notifications_product_ungrouped$BusinessKey) != length(unique(notifications_with_one_product_level_4$BusinessKey))) print("Number of records mismatch, investigate")
+  
+  # Clean up
+  rm(notifications_single_lot_single_customer_single_product_ungrouped); rm(notifications_with_one_product_level_4); rm(duplicate_fields); rm(notifications_single_lot_single_customer); gc()
+  
+  # Rename variables sensibly
+  column_names_notifications_old <- data.frame(XMLFieldName = colnames(notifications_product_ungrouped), stringsAsFactors = F)
+  column_names_notifications_new <- parsing_configuration %>%
+    filter(DocumentType == "notifications") %>%
+    select(XMLFieldName, VariableName) %>%
+    right_join(column_names_notifications_old, by = "XMLFieldName") %>%
+    mutate(VariableName = ifelse(is.na(VariableName), XMLFieldName,
+                                 VariableName)) %>%
+    select(VariableName) 
+  colnames(notifications_product_ungrouped) <- column_names_notifications_new$VariableName
+  rm(column_names_notifications_new); rm(column_names_notifications_old)
+  
+  # Finally, join on the information we have about the notifications not filtered out above
+  notifications_contracts_products_ungrouped <- notifications_contracts_products_ungrouped %>%
+                                                  left_join(notifications_product_ungrouped)
+  if(sum(is.na(notifications_contracts_products_ungrouped$NotificationMissingReason)) - length(notifications_contracts$Match[notifications_contracts$Match == "Contract without notification"]) != length(notifications_product_ungrouped$BusinessKey)) print("Reconciliation failed, check")
+  # table(notifications_contracts_products_ungrouped$NotificationMissingReason, useNA = "always")
+  
+  # Which columns are different between the two?
+  # anti_join(data.frame(ungrouped = colnames(notifications_contracts_products_ungrouped)), data.frame(grouped = colnames(notifications_contracts_products_grouped)), by = c("ungrouped"="grouped"))
+  # NotificationLotProductName; NotificationLotProductCode (as expected, only the level 4 product code/name)
+  
+  # Clean up
+  rm(notifications_contracts); gc()
+  
+  # Output proportion of tidy notifications from all parsed
+  tidy_notifications_percentage <- length(unique(notifications_product_grouped$BusinessKey))/notifications_cleaned_unique_business_keys_number
+  print(paste0("Proportion of tidy notifications (products grouped) in ", current_region, " is ", tidy_notifications_percentage))
+
+  tidy_notifications_percentage <- length(unique(notifications_product_ungrouped$BusinessKey))/notifications_cleaned_unique_business_keys_number
+  print(paste0("Proportion of tidy notifications (products ungrouped) in ", current_region, " is ", tidy_notifications_percentage))
+  rm(tidy_notifications_percentage)
+  
+  # SAVE BOTH VERSIONS OF NOTIFICATION DATA
+  notifications_wide_file_name_product_grouped <- paste0(data_output_directory_region, current_region,
+                                                          "_notifications_wide_products_grouped_",
+                                                          data_download_date, ".rda")
+  save(notifications_product_grouped, file = notifications_wide_file_name_product_grouped)
+  rm(notifications_product_grouped); rm(notifications_wide_file_name_product_grouped);
+  
+  notifications_wide_file_name_product_ungrouped <- paste0(data_output_directory_region, current_region,
+                                                         "_notifications_wide_products_ungrouped_",
+                                                         data_download_date, ".rda")
+  save(notifications_product_ungrouped, file = notifications_wide_file_name_product_ungrouped)
+  rm(notifications_product_ungrouped); rm(notifications_wide_file_name_product_ungrouped);
   gc()
       
   ###################
   ## Contracts     ##
   ###################    
   
+  # Drop some fields that are of limited use (Budgetary/extrabudgetary accounting codes)
+  contracts_cleaned <- contracts_cleaned %>%
+                        filter(!Key %in% c("oos:finances/oos:extrabudgetary/oos:KOSGU",
+                                           "oos:finances/oos:extrabudgetary/oos:price",
+                                           "oos:finances/oos:budgetary/oos:KBK",
+                                           "oos:finances/oos:budgetary/oos:price")) 
+  
+  # Store fine product-related details of contracts (with multiple values per contract) separately
+  # These are relevant only for notifications_contracts_ungrouped!
+  contracts_products_details <- contracts_cleaned %>%
+                        filter(Key %in% c("oos:products/oos:product/oos:OKDP/oos:code",
+                                          "oos:products/oos:product/oos:OKDP/oos:name",
+                                          "oos:products/oos:product/oos:OKEI/oos:code",
+                                          "oos:products/oos:product/oos:OKEI/oos:name",
+                                          "oos:products/oos:product/oos:price",
+                                          "oos:products/oos:product/oos:quantity",
+                                          "oos:products/oos:product/oos:sum"))
+  
   # ADD LEVEL 1 OF OKDP PRODUCT CLASSIFICATION (PAUSED FOR NOW)
-  # Adapt code from notifications above
+  contracts_cleaned_okdp_level_1 <- contracts_cleaned %>%
+                                      filter(Key == "oos:products/oos:product/oos:OKDP/oos:code") %>%
+                                      left_join(okdp_product_classification,
+                                                by = c("Value" = "ProductCode")) %>%
+                                      mutate(Key = "ContractProductCodeLevel1",
+                                             Value = ProductCodeLevel1) %>%
+                                      select(BusinessKey, DocumentVersionUniqueID, Key, Value)
+  # Add these new lines 
+  contracts_cleaned <- rbind(contracts_cleaned, contracts_cleaned_okdp_level_1)
+  rm(contracts_cleaned_okdp_level_1); gc();
+    
+  # What Keys are duplicated for contracts?
+  duplicate_fields <- contracts_cleaned %>%
+    group_by(BusinessKey, Key) %>%
+    summarise(ValuesPerKey = n()) %>% ungroup() %>%
+    group_by(Key) %>%
+    summarise(MaxFieldsPerContract = max(ValuesPerKey))
   
-  # SUBSET DATA TO JUST NOTIFICATIONS/CONTRACTS WITH ONE LOT/PRODUCT/CUSTOMER
-  contracts_cleaned_unique_business_keys_number <- length(unique(contracts_cleaned$BusinessKey))
+  ### So need to filter out
+  ## Multiple suppliers 
+  # oos:suppliers/oos:supplier/oos:inn
+  # oos:suppliers/oos:supplier/oos:kpp
+  # oos:suppliers/oos:supplier/oos:organizationName
+  # oos:suppliers/oos:supplier/oos:participantType
+  contracts_suppliers_number <- contracts_cleaned %>%
+                                  filter(Key == "oos:suppliers/oos:supplier/oos:inn") %>%
+                                  group_by(BusinessKey, Key) %>%
+                                    summarize(NumberOfSuppliers = n()) %>% ungroup() 
+  # table(contracts_suppliers_number$NumberOfSuppliers)
   
-  # How many products and unique products per contract?
-  contracts_products_combined <- contracts_cleaned %>%
-                                   filter(Key == "oos:products/oos:product/oos:OKDP/oos:code") %>%
-                                   group_by(BusinessKey) %>%
-                                   summarize(NumberOfProducts = n(), NumberOfUniqueProducts = n_distinct(Value))
+  # Which contracts are with multiple suppliers?
+  contracts_with_multiple_suppliers <- contracts_suppliers_number %>%
+                                        filter(NumberOfSuppliers > 1) %>%
+                                        select(BusinessKey) %>%
+                                        mutate(ContractMissingReason = "Contract with multiple suppliers")
+  
+  # Send these to both notifications data frames (grouped and ungrouped products)
+  notifications_contracts_products_grouped <- notifications_contracts_products_grouped %>%
+                                                left_join(contracts_with_multiple_suppliers, by = "BusinessKey") %>%
+                                                rename(ContractMissingReason = ContractMissingReason.x) %>%
+                                                mutate(ContractMissingReason = ifelse(is.na(ContractMissingReason.y), ContractMissingReason, ContractMissingReason.y)) %>%
+                                                select(-ContractMissingReason.y)
+  # table(notifications_contracts_products_grouped$ContractMissingReason, useNA = "always")
+  
+  notifications_contracts_products_ungrouped <- notifications_contracts_products_ungrouped %>%
+    left_join(contracts_with_multiple_suppliers, by = "BusinessKey") %>%
+    rename(ContractMissingReason = ContractMissingReason.x) %>%
+    mutate(ContractMissingReason = ifelse(is.na(ContractMissingReason.y), ContractMissingReason, ContractMissingReason.y)) %>%
+    select(-ContractMissingReason.y)
+  # table(notifications_contracts_products_ungrouped$ContractMissingReason, useNA = "always")
+  
+  # Retain the rest for further analysis
+  contracts_with_single_supplier <- contracts_suppliers_number %>% filter(NumberOfSuppliers == 1) %>% select(BusinessKey)
+  contracts_single_supplier <- contracts_cleaned %>%
+                                right_join(contracts_with_single_supplier, by = "BusinessKey")
+  
+  # Check
+  if(length(unique(contracts_single_supplier$BusinessKey)) + length(unique(contracts_with_multiple_suppliers$BusinessKey)) != contracts_cleaned_unique_business_keys_number) print("Reconciliation failed")
+  
+  rm(contracts_suppliers_number); rm(contracts_with_single_supplier); 
+  # rm(contracts_with_multiple_suppliers) # Needed for reconciliation check later
+  
+  # Attach supplier information to main DF now
+  contracts_single_supplier_information <- contracts_single_supplier %>%
+    filter(Key %in% c("oos:suppliers/oos:supplier/oos:participantType",
+                      "oos:suppliers/oos:supplier/oos:inn",
+                      "oos:suppliers/oos:supplier/oos:kpp",
+                      "oos:suppliers/oos:supplier/oos:organizationName")) %>%
+    group_by(BusinessKey, Key) %>%
+      filter(row_number() == 1) %>% ungroup() %>%
+    spread(key = Key, value = Value) %>%
+    select(-DocumentVersionUniqueID)
+  
+  # Rename columns
+  column_names_contracts_old <- data.frame(XMLFieldName = colnames(contracts_single_supplier_information), stringsAsFactors = F)
+  column_names_contracts_new <- parsing_configuration %>%
+    filter(DocumentType == "contracts") %>%
+    select(XMLFieldName, VariableName) %>%
+    right_join(column_names_contracts_old, by = "XMLFieldName") %>%
+    mutate(VariableName = ifelse(is.na(VariableName), XMLFieldName,
+                                 VariableName)) %>%
+    select(VariableName) 
+  colnames(contracts_single_supplier_information) <- column_names_contracts_new$VariableName
+  rm(column_names_contracts_new); rm(column_names_contracts_old)
+  
+  # Send single supplier information to both master DFs
+  notifications_contracts_products_grouped <- notifications_contracts_products_grouped %>%
+    left_join(contracts_single_supplier_information, by = "BusinessKey")
 
-  # Subset to just the single-product (code) contracts  
-  contracts_with_one_product <- contracts_products_combined %>% filter(NumberOfUniqueProducts == 1) %>% select(BusinessKey)
-  contracts_single_product <- contracts_cleaned %>%
-                                right_join(contracts_with_one_product, by = "BusinessKey")
-  rm(contracts_products_combined); rm(contracts_with_one_product); rm(contracts_cleaned)
-  
-  # Count fields per business key (to check for remaining duplicate attributes)
-  fields_per_business_key <- contracts_single_product %>%
-                              group_by(BusinessKey, Key) %>%
-                              summarise(KeysPerBusinessKey = n())
-  
-  # Examine which fields from notifications file are duplicated
-  fields_with_duplicates <- fields_per_business_key %>%
-                              filter(KeysPerBusinessKey > 1) %>%
-                              group_by(Key) %>%
-                              summarise(NumberOfTimesDuplicated = n())
-  rm(fields_per_business_key)
-  
-  # Start with contracts having single unique product code, extract one instance of the following fields from each:
-  #   oos:products/oos:product/oos:OKDP/oos:code
-  #   oos:products/oos:product/oos:OKDP/oos:name
+  notifications_contracts_products_ungrouped <- notifications_contracts_products_ungrouped %>%
+    left_join(contracts_single_supplier_information, by = "BusinessKey")
 
-  # Drop the following fields (because can have multiple different values for same product, eg time & distance for transport)
-  #   oos:finances/oos:budgetary/oos:KBK
-  #   oos:finances/oos:budgetary/oos:price
-  #   oos:finances/oos:extrabudgetary/oos:KOSGU
-  #   oos:finances/oos:extrabudgetary/oos:price
-  #   oos:products/oos:product/oos:OKEI/oos:code
-  #   oos:products/oos:product/oos:OKEI/oos:name 
-  #   oos:products/oos:product/oos:price
-  #   oos:products/oos:product/oos:quantity
-  #   oos:products/oos:product/oos:sum
-  #   oos:suppliers/oos:supplier/oos:inn
-  #   oos:suppliers/oos:supplier/oos:kpp
-  #   oos:suppliers/oos:supplier/oos:organizationName
-  #   oos:suppliers/oos:supplier/oos:participantType
-  duplicated_contract_fields_to_drop <- fields_with_duplicates %>%
-                                          filter(!Key %in% c("oos:products/oos:product/oos:OKDP/oos:code",
-                                                             "oos:products/oos:product/oos:OKDP/oos:name")) %>%
-                                          select(Key) %>% as.list()
-  rm(fields_with_duplicates)
+  rm(contracts_single_supplier_information);
   
-  contracts_with_one_product_fields_collapsed <- contracts_single_product %>%
-                                                  filter(!Key %in% duplicated_contract_fields_to_drop[[1]]) %>%
-                                                  group_by(BusinessKey, DocumentVersionUniqueID, Key) %>%
-                                                    filter(row_number() == 1) %>% # Leaves one instance of OKDP code/name per contract
-                                                    summarise(ValuesPerKey = n()) %>% ungroup() %>% 
-                                                  group_by(BusinessKey) %>%
-                                                    summarise(MaxFieldsPerContract = max(ValuesPerKey)) %>% ungroup() %>%
-                                                  filter(MaxFieldsPerContract == 1) %>% # Might as well be defensive
-                                                  select(BusinessKey)
+  # Now repeat technique above for identifying products within contracts
+  ## FIRST GROUPED PRODUCTS
+  contracts_products_number_level_1 <- contracts_single_supplier %>%
+                                        filter(Key == "ContractProductCodeLevel1") %>%
+                                        group_by(BusinessKey) %>%
+                                          summarize(NumberOfProducts = n(),
+                                                    NumberOfUniqueProducts = n_distinct(Value))
+
+  # Send these off to the master data frame with some metadata (for the rest, use NumberOfUniqueProducts and sum across oos:customerRequirement/oos:maxPrice)
+  contracts_with_multiple_products_level_1 <- contracts_products_number_level_1 %>%
+    filter(NumberOfUniqueProducts > 1) %>%
+    transmute(BusinessKey = BusinessKey, ContractMissingReason = "Contract with single supplier, multiple products (grouped)")
   
-  contracts_single_product_fields_collapsed <- contracts_single_product %>%
-                                                filter(!Key %in% duplicated_contract_fields_to_drop[[1]]) %>%
-                                                group_by(BusinessKey, DocumentVersionUniqueID, Key) %>%
-                                                  filter(row_number() == 1) %>% ungroup() %>%
-                                                right_join(contracts_with_one_product_fields_collapsed, 
-                                                           by = "BusinessKey")
-  rm(contracts_single_product); rm(contracts_with_one_product_fields_collapsed)
+  notifications_contracts_products_grouped <- notifications_contracts_products_grouped %>%
+    left_join(contracts_with_multiple_products_level_1, by = c("BusinessKey")) %>%
+    rename(ContractMissingReason = ContractMissingReason.x) %>%
+    mutate(ContractMissingReason = ifelse(is.na(ContractMissingReason.y), ContractMissingReason, ContractMissingReason.y)) %>%
+    select(-ContractMissingReason.y)
+  # table(notifications_contracts_products_grouped$ContractMissingReason, useNA = "always")
+  
+  # Identify remaining records, sum over maxPrice (sum not actually necessary)
+  contracts_with_one_product_level_1 <- contracts_products_number_level_1 %>%
+    filter(NumberOfUniqueProducts == 1) %>%
+    select(BusinessKey)
+  
+  # Check our cases so far add up to total contracts
+  if(length(unique(contracts_with_one_product_level_1$BusinessKey)) + length(unique(contracts_with_multiple_products_level_1$BusinessKey)) + length(contracts_with_multiple_suppliers$BusinessKey) != contracts_cleaned_unique_business_keys_number) print("Merge failed, investigate")
+  
+  contracts_single_supplier_single_product_grouped <- contracts_single_supplier %>%
+    right_join(contracts_with_one_product_level_1, by = "BusinessKey")
+  
+  # Clean up
+  rm(contracts_products_number_level_1); rm(contracts_with_multiple_products_level_1); rm(contracts_with_one_product_level_1)
+  
+  # Any remaining duplicate fields unrelated to product code?
+  duplicate_fields <- contracts_single_supplier_single_product_grouped %>%
+    group_by(BusinessKey, Key) %>%
+      summarise(ValuesPerKey = n()) %>% ungroup() %>%
+    group_by(Key) %>%
+      summarise(MaxFieldsPerNotification = max(ValuesPerKey))
+  
+  ## Product-related duplicate fields
+  # Only need to retain first one for the grouped version (one instance per contract)
+  # ContractProductCodeLevel1
+  # oos:products/oos:product/oos:OKDP/oos:code
+  # oos:products/oos:product/oos:OKDP/oos:name
+  # oos:products/oos:product/oos:OKEI/oos:code
+  # oos:products/oos:product/oos:OKEI/oos:name
+  # oos:products/oos:product/oos:price
+  # oos:products/oos:product/oos:quantity
+  # oos:products/oos:product/oos:sum
+  
+  # Send single product (grouped) code to main DF, along with other non-duplicated details
+  contracts_product_grouped <- contracts_single_supplier_single_product_grouped %>%
+    filter(Key %in% c("ContractProductCodeLevel1")) %>%
+    group_by(BusinessKey, Key) %>%
+      filter(row_number() == 1) %>% ungroup() %>%
+    spread(key = Key, value = Value) %>%
+    select(-DocumentVersionUniqueID)
+  
+  # Rename columns
+  column_names_contracts_old <- data.frame(XMLFieldName = colnames(contracts_product_grouped), stringsAsFactors = F)
+  column_names_contracts_new <- parsing_configuration %>%
+    filter(DocumentType == "contracts") %>%
+    select(XMLFieldName, VariableName) %>%
+    right_join(column_names_contracts_old, by = "XMLFieldName") %>%
+    mutate(VariableName = ifelse(is.na(VariableName), XMLFieldName,
+                                 VariableName)) %>%
+    select(VariableName) 
+  colnames(contracts_product_grouped) <- column_names_contracts_new$VariableName
+  rm(column_names_contracts_new); rm(column_names_contracts_old)
+  
+  # Join on to main data frame
+  notifications_contracts_products_grouped <- notifications_contracts_products_grouped %>%
+    left_join(contracts_product_grouped, by = "BusinessKey")
+  # Saving happens later
+  rm(contracts_single_supplier_single_product_grouped); gc();
+  
+  
+  ## NOW UNGROUPED PRODUCTS (to the extent possible given multiple duplicate fields per product)
+  contracts_products_number_level_4 <- contracts_single_supplier %>%
+                                        filter(Key == "oos:products/oos:product/oos:OKDP/oos:code") %>%
+                                        group_by(BusinessKey) %>%
+                                          summarize(NumberOfProducts = n(),
+                                                    NumberOfUniqueProducts = n_distinct(Value))
+  # table(contracts_products_number_level_4$NumberOfUniqueProducts)
+  
+  # Unique products are a problem here because can't sum across prices and quantities
+  # Need to send these to master DF noting as such
+  contracts_with_multiple_products_level_4 <- contracts_products_number_level_4 %>%
+    filter(NumberOfUniqueProducts > 1) %>%
+    transmute(BusinessKey = BusinessKey, ContractMissingReason = "Contract with single supplier, multiple products (ungrouped)")
+  
+  notifications_contracts_products_ungrouped <- notifications_contracts_products_ungrouped %>%
+    left_join(contracts_with_multiple_products_level_4, by = c("BusinessKey")) %>%
+    rename(ContractMissingReason = ContractMissingReason.x) %>%
+    mutate(ContractMissingReason = ifelse(is.na(ContractMissingReason.y), ContractMissingReason, ContractMissingReason.y)) %>%
+    select(-ContractMissingReason.y)
+  # table(notifications_contracts_products_ungrouped$ContractMissingReason, useNA = "always")
+  
+  # Identify remaining records, sum over maxPrice (sum not actually necessary)
+  contracts_with_one_product_level_4 <- contracts_products_number_level_4 %>%
+    filter(NumberOfUniqueProducts == 1) %>%
+    select(BusinessKey)
+  
+  # Check our cases so far add up to total contracts
+  if(length(unique(contracts_with_one_product_level_4$BusinessKey)) + length(unique(contracts_with_multiple_products_level_4$BusinessKey)) + length(contracts_with_multiple_suppliers$BusinessKey) != contracts_cleaned_unique_business_keys_number) print("Merge failed, investigate")
+  
+  contracts_single_supplier_single_product_ungrouped <- contracts_single_supplier %>%
+    right_join(contracts_with_one_product_level_4, by = "BusinessKey")
+  
+  # Clean up
+  rm(contracts_products_number_level_4); 
+  # rm(contracts_with_multiple_products_level_4); rm(contracts_with_multiple_suppliers); 
+  rm(contracts_with_one_product_level_4)
+
+  # Any remaining duplicate fields unrelated to product code?
+  # Particularly concerned about multiple units (OKEI) as prevents summing over price, quantity and sum
+  duplicate_fields <- contracts_single_supplier_single_product_ungrouped %>%
+    group_by(BusinessKey, Key) %>%
+      summarise(ValuesPerKey = n_distinct(Value)) %>% ungroup() %>%
+    group_by(Key) %>%
+      summarise(MaxFieldsPerNotification = max(ValuesPerKey))
+  
+  # How many units of measurement (OKEI code) per contract?
+  contracts_single_supplier_single_product_ungrouped_units_number <- contracts_single_supplier_single_product_ungrouped %>%
+    filter(Key == "oos:products/oos:product/oos:OKEI/oos:code") %>%
+    group_by(BusinessKey, Key) %>%
+      summarize(NumberOfUnits = n_distinct(Value)) %>% ungroup()
+  
+  contracts_with_one_product_level_4_multiple_units <- contracts_single_supplier_single_product_ungrouped_units_number %>%
+    filter(NumberOfUnits > 1) %>%
+    transmute(BusinessKey = BusinessKey, ContractMissingReason = "Contract with single supplier, single product (ungrouped), multiple units")
+  
+  notifications_contracts_products_ungrouped <- notifications_contracts_products_ungrouped %>%
+    left_join(contracts_with_one_product_level_4_multiple_units, by = c("BusinessKey")) %>%
+    rename(ContractMissingReason = ContractMissingReason.x) %>%
+    mutate(ContractMissingReason = ifelse(is.na(ContractMissingReason.y), ContractMissingReason, ContractMissingReason.y)) %>%
+    select(-ContractMissingReason.y)
+  # table(notifications_contracts_products_ungrouped$ContractMissingReason, useNA = "always")
+  
+  # Identify remaining records, sum over price, quantity, sum
+  contracts_with_one_product_level_4_one_unit <- contracts_single_supplier_single_product_ungrouped_units_number %>%
+    filter(NumberOfUnits == 1) %>%
+    select(BusinessKey)
+
+  contracts_single_supplier_single_product_ungrouped_single_unit <- contracts_single_supplier_single_product_ungrouped %>%
+    right_join(contracts_with_one_product_level_4_one_unit, by = "BusinessKey")
+  
+  rm(contracts_single_supplier_single_product_ungrouped_units_number); rm(contracts_with_one_product_level_4_one_unit)
+  
+  # Any remaining duplicate fields unrelated to product code?
+  # duplicate_fields <- contracts_single_supplier_single_product_ungrouped_single_unit %>%
+  #   group_by(BusinessKey, Key) %>%
+  #     summarise(ValuesPerKey = n_distinct(Value)) %>% ungroup() %>%
+  #   group_by(Key) %>%
+  #     summarise(MaxFieldsPerNotification = max(ValuesPerKey))
+
+  contracts_product_ungrouped_non_additive <- contracts_single_supplier_single_product_ungrouped_single_unit %>%
+    filter(Key %in% c("oos:products/oos:product/oos:OKDP/oos:code",
+                      "oos:products/oos:product/oos:OKDP/oos:name",
+                      "oos:products/oos:product/oos:OKEI/oos:code",
+                      "oos:products/oos:product/oos:OKEI/oos:name")) %>%
+    group_by(BusinessKey, Key) %>%
+      filter(row_number() == 1) %>% ungroup() %>%
+    spread(key = Key, value = Value) %>%
+    select(-DocumentVersionUniqueID)
+  
+  contracts_product_ungrouped_additive <- contracts_single_supplier_single_product_ungrouped_single_unit %>%
+    filter(Key %in% c("oos:products/oos:product/oos:price",
+                      "oos:products/oos:product/oos:sum",
+                      "oos:products/oos:product/oos:quantity")) %>%
+    group_by(BusinessKey, Key) %>%
+      summarize(Sum = sum(as.numeric(Value))) %>% ungroup() %>%
+    spread(key = Key, value = Sum)
+  
+  contracts_product_ungrouped <- contracts_product_ungrouped_non_additive %>%
+    inner_join(contracts_product_ungrouped_additive, by = "BusinessKey")
+  
+  # Check number of cases after summing over price/quantity/sum
+  if(length(unique(contracts_product_ungrouped$BusinessKey)) + length(unique(contracts_with_one_product_level_4_multiple_units$BusinessKey)) + length(unique(contracts_with_multiple_products_level_4$BusinessKey)) + length(unique(contracts_with_multiple_suppliers$BusinessKey)) != length(unique(contracts_cleaned$BusinessKey))) print("Missing contracts")
+  
+  rm(contracts_single_supplier_single_product_ungrouped_single_unit); rm(contracts_single_supplier_single_product_ungrouped);
+  rm(contracts_product_ungrouped_additive); rm(contracts_product_ungrouped_non_additive); rm(contracts_with_one_product_level_4_multiple_units)
+  rm(contracts_with_multiple_products_level_4); rm(contracts_with_multiple_suppliers)
+  rm(contracts_single_supplier)
+  gc()
+  
+  # Rename columns
+  column_names_contracts_old <- data.frame(XMLFieldName = colnames(contracts_product_ungrouped), stringsAsFactors = F)
+  column_names_contracts_new <- parsing_configuration %>%
+    filter(DocumentType == "contracts") %>%
+    select(XMLFieldName, VariableName) %>%
+    right_join(column_names_contracts_old, by = "XMLFieldName") %>%
+    mutate(VariableName = ifelse(is.na(VariableName), XMLFieldName,
+                                 VariableName)) %>%
+    select(VariableName) 
+  colnames(contracts_product_ungrouped) <- column_names_contracts_new$VariableName
+  rm(column_names_contracts_new); rm(column_names_contracts_old)
+  
+  # Join on to master DF
+  notifications_contracts_products_ungrouped <- notifications_contracts_products_ungrouped %>%
+    left_join(contracts_product_ungrouped, by = "BusinessKey")
+  
+  
+  
+  
+  
   
   ## PIVOT THE DEDUPLICATED DATA IN TO ONE ROW PER NOTIFICATION
   contracts <- contracts_single_product_fields_collapsed %>%
