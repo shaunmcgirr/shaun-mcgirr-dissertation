@@ -42,7 +42,7 @@ for(r in 1:regions_number){
   
     # Load the file of measures
     file_to_process <- paste0(data_output_directory, current_region, "/",
-                              current_region, "_notification_contract_matches_",
+                              current_region, "_notifications_contracts_products_ungrouped_",
                               data_download_date, ".rda")
     load(file=file_to_process)
   
@@ -56,8 +56,8 @@ for(r in 1:regions_number){
 
   # HISTOGRAMS OF NOTIFICATION PRICES
   # Output three histograms for this region: listed price of notifications; same but only bottom three quartiles to show discontinuity at 500k; logged values across all dist
-  notifications_maxPrice <- notification_contract_matches %>%
-                            filter(TenderProcedureGroup != "Olympic construction") %>%
+  notifications_maxPrice <- notifications_contracts_products_ungrouped %>%
+                            filter(!TenderProcedureGroup %in% c("Olympic construction", "Preliminary selection") & !is.na(TenderProcedureGroup)) %>%
                             transmute(NotificationMaxPrice = NotificationLotCustomerRequirementMaxPrice,
                                       ProcedureGroup = TenderProcedureGroup)
 
@@ -68,13 +68,13 @@ for(r in 1:regions_number){
   # All notifications
   graph_title <- paste0("Distribution of initial listing prices for tenders in ", current_region_english, " (all quartiles)\n")
     graph_file_name <- paste0(data_output_directory_region, current_region, "_notification_maxPrice_histogram_raw_all_quartiles.pdf")
-  notification_maxPrice_histogram_raw_all_quartiles <- ggplot(notification_contract_matches, aes(x=NotificationLotCustomerRequirementMaxPrice)) +
+  notification_maxPrice_histogram_raw_all_quartiles <- ggplot(notifications_contracts_products_ungrouped, aes(x=NotificationLotCustomerRequirementMaxPrice)) +
                                                         geom_histogram(bins = 200) +
                                                         labs(title = graph_title, x = "\nInitial listing price (rubles)") +
                                                         scale_x_continuous(labels = comma) +
                                                         theme_bw() +
                                                         annotate("text", 
-                                                                 x = 0.95*(max(notification_contract_matches$NotificationLotCustomerRequirementMaxPrice, na.rm = T)), y = 0, label = "\nA few very large\ntenders in each\nregion skew the\ndistribution right", vjust = 0, hjust = 1)
+                                                                 x = 0.95*(max(notifications_contracts_products_ungrouped$NotificationLotCustomerRequirementMaxPrice, na.rm = T)), y = 0, label = "\nA few very large\ntenders in each\nregion skew the\ndistribution right", vjust = 0, hjust = 1)
   print(notification_maxPrice_histogram_raw_all_quartiles)
   ggsave(plot = notification_maxPrice_histogram_raw_all_quartiles, filename = graph_file_name, device = "pdf")
   
@@ -109,11 +109,71 @@ for(r in 1:regions_number){
   
   
   # Quick graph of price change
-  hist(notification_contract_matches$PriceChangePercentageNoOutliers, breaks = 100)
+  hist(notifications_contracts_products_ungrouped$PriceChangePercentageNoOutliers, breaks = 100)
   
   # Can also facet with greyed-out underlying data, perhaps for comparing two agencies
   # http://docs.ggplot2.org/current/facet_wrap.html
+  
+  
+  # STACKED BAR CHART OF PROCEDURE CHOICE BY AGENCY
+  procedure_choice_by_agency <- notifications_contracts_products_ungrouped %>%
+    group_by(NotificationOrderPlacerRegNum, TenderProcedureDiscretion) %>%
+      summarize(NotificationsPerProcedure = n()) %>% ungroup() %>%
+    filter(!is.na(TenderProcedureDiscretion)) %>%
+    spread(key = TenderProcedureDiscretion, value = NotificationsPerProcedure, fill = 0) %>%
+    mutate(`Total notifications` = (`Lower discretion` + `Medium discretion` + `Higher discretion` + Other)) %>%
+    transmute(Agency = NotificationOrderPlacerRegNum,
+              `Other` = Other/`Total notifications`,
+              `Lower discretion` = `Lower discretion`/`Total notifications`,
+              `Medium discretion` = `Medium discretion`/`Total notifications`,
+              `Higher discretion` = `Higher discretion`/`Total notifications`,
+              DominantProcedure = ifelse(`Lower discretion` == 1, "0 Lower discretion", 
+                                         ifelse(`Medium discretion` == 1, "1 Medium discretion", 
+                                                ifelse(`Higher discretion` == 1, "2 Higher discretion", "3 None")))) %>%
+  # slice(1:20) %>%
+    arrange(DominantProcedure, -`Lower discretion`, -`Medium discretion`, -`Higher discretion`, Other) %>%
+    # arrange(DominantProcedure, -`Higher discretion`, -`Medium discretion`, -`Lower discretion`, -Other) %>%
+    # arrange(-`Medium discretion`, -`Lower discretion`, -`Higher discretion`, -Other) %>%
+    # arrange(-`Medium discretion`, `Higher discretion`, -`Lower discretion`, -Other) %>%
+    mutate(SortByProportionHigher = row_number(),
+           ProportionOfAllAgencies = SortByProportionHigher/length(unique(notifications_contracts_products_ungrouped$NotificationOrderPlacerRegNum))) %>%
+    gather(key = `Procedure type`, value = Proportion, -Agency, -SortByProportionHigher, -ProportionOfAllAgencies, -DominantProcedure) %>%
+    filter(`Procedure type` != "Other")
+  
+  procedure_choice_by_agency$`Procedure type` <- factor(procedure_choice_by_agency$`Procedure type`,
+                                                                   levels = c("Lower discretion", "Medium discretion",
+                                                                              "Higher discretion", "Other"))
+  
+  # Some variables to help label axes
+  maximum_agency_number <- length(unique(notifications_contracts_products_ungrouped$NotificationOrderPlacerRegNum))
+  all_lower_discretion_agency_number <- max(procedure_choice_by_agency[procedure_choice_by_agency$DominantProcedure == "0 Lower discretion", "SortByProportionHigher"])
+    all_lower_discretion_agency_label <- round(all_lower_discretion_agency_number/maximum_agency_number, digits = 2)
+  all_medium_discretion_agency_number <- max(procedure_choice_by_agency[procedure_choice_by_agency$DominantProcedure == "1 Medium discretion", "SortByProportionHigher"])
+    all_medium_discretion_agency_label <- round(all_medium_discretion_agency_number/maximum_agency_number, digits = 2)
+  all_higher_discretion_agency_number <- max(procedure_choice_by_agency[procedure_choice_by_agency$DominantProcedure == "2 Higher discretion", "SortByProportionHigher"])
+    all_higher_discretion_agency_label <- round(all_higher_discretion_agency_number/maximum_agency_number, digits = 2)
     
+  graph_title <- paste0("Choice of procurement procedure by agencies in ", current_region_english, ", 2011-2015\n")
+    graph_file_name <- paste0(data_output_directory_region, current_region, "_procedure_choice.pdf")
+  procedure_choice_by_agency_graph <- procedure_choice_by_agency %>%
+    ggplot(aes(x = SortByProportionHigher, y = Proportion, fill = `Procedure type`)) +
+    # ggplot(aes(x = SortByProportionHigher, fill = `Proportion of\nprocedures`)) +
+    geom_bar(stat = "identity", width = 1) +
+    # geom_histogram(bins = 50) +
+    coord_flip() +
+    theme_few() +
+    scale_fill_tableau() +
+    labs(title = graph_title,
+         x = "Proportion of individual agencies\n",
+         y = "\nProportion of agency procedures") +
+    # theme(axis.text.y=element_blank(), axis.ticks.y=element_blank()) +
+    scale_x_continuous(breaks = c(0, all_lower_discretion_agency_number, all_medium_discretion_agency_number, all_higher_discretion_agency_number, maximum_agency_number, maximum_agency_number/2, 3*maximum_agency_number/4),
+                       labels = c("0", all_lower_discretion_agency_label, all_medium_discretion_agency_label, all_higher_discretion_agency_label, "1", "0.5", "0.75"))
+  print(procedure_choice_by_agency_graph)
+  ggsave(plot = procedure_choice_by_agency_graph, filename = graph_file_name, device = "pdf", limitsize = T)
+  
+
+  
 } # Closes control loop over regions_list
 
 # ENDS
