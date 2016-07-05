@@ -37,7 +37,7 @@ data_directory <- "~/data/zakupki/" # When running on internal laptop HDD
 #data_directory <- "../../SHAUN-HDD/Data/zakupki/" # When running ext HDD on an unrelated Mac
 data_download_date <- "2015-06-13"
 #setwd("~/git/shaun-mcgirr-dissertation/") # Only needed when running in batch on Linux
-downloads_directory <- "~/Downloads/" # For data not tracked by Git
+downloads_directory <- "~/Downloads/data/" # For data not tracked by Git
 
 # What kind of documents to parse?
 document_types_list <- as.list(c("contracts", "notifications"))
