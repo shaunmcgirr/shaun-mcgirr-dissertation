@@ -30,8 +30,8 @@ parsing_configuration <- na.omit(read.xlsx(xlsxFile="3-Unpack/how-I-parse-the-xm
 
 # Obtain list of regions for which consolidated data is available
 # regions_list <- generate_regions_list(data_cleaned_directory)
-regions_list <- as.list("Adygeja_Resp")
-# regions_list <- as.list("Moskva")
+# regions_list <- as.list("Adygeja_Resp")
+regions_list <- as.list(c("Moskva", "Moskovskaja_obl"))
 regions_number <- length(regions_list)
 
 ##############################################
@@ -382,13 +382,13 @@ for(r in 1:regions_number){
   
   # SAVE BOTH VERSIONS OF NOTIFICATION DATA
   notifications_wide_file_name_product_grouped <- paste0(data_output_directory_region, current_region,
-                                                          "_notifications_wide_products_grouped_",
+                                                          "_notifications_wide_product_grouped_",
                                                           data_download_date, ".rda")
   save(notifications_product_grouped, file = notifications_wide_file_name_product_grouped)
   rm(notifications_product_grouped); rm(notifications_wide_file_name_product_grouped);
   
   notifications_wide_file_name_product_ungrouped <- paste0(data_output_directory_region, current_region,
-                                                         "_notifications_wide_products_ungrouped_",
+                                                         "_notifications_wide_product_ungrouped_",
                                                          data_download_date, ".rda")
   save(notifications_product_ungrouped, file = notifications_wide_file_name_product_ungrouped)
   rm(notifications_product_ungrouped); rm(notifications_wide_file_name_product_ungrouped);
@@ -415,6 +415,13 @@ for(r in 1:regions_number){
                                           "oos:products/oos:product/oos:price",
                                           "oos:products/oos:product/oos:quantity",
                                           "oos:products/oos:product/oos:sum"))
+  
+  # Save this off and clear it out
+  contracts_products_details_file_name <- paste0(data_output_directory_region, current_region,
+                                                 "_contracts_products_details_",
+                                                 data_download_date, ".rda")
+  save(contracts_products_details, file = contracts_products_details_file_name)
+  rm(contracts_products_details); rm(contracts_products_details_file_name);
   
   # ADD LEVEL 1 OF OKDP PRODUCT CLASSIFICATION (PAUSED FOR NOW)
   contracts_cleaned_okdp_level_1 <- contracts_cleaned %>%
@@ -476,7 +483,7 @@ for(r in 1:regions_number){
   # Check
   if(length(unique(contracts_single_supplier$BusinessKey)) + length(unique(contracts_with_multiple_suppliers$BusinessKey)) != contracts_cleaned_unique_business_keys_number) print("Reconciliation failed")
   
-  rm(contracts_suppliers_number); rm(contracts_with_single_supplier); 
+  rm(contracts_suppliers_number); rm(contracts_with_single_supplier); rm(contracts_cleaned)
   # rm(contracts_with_multiple_suppliers) # Needed for reconciliation check later
   
   # Attach supplier information to main DF now
@@ -485,8 +492,8 @@ for(r in 1:regions_number){
                       "oos:suppliers/oos:supplier/oos:inn",
                       "oos:suppliers/oos:supplier/oos:kpp",
                       "oos:suppliers/oos:supplier/oos:organizationName")) %>%
-    group_by(BusinessKey, Key) %>%
-      filter(row_number() == 1) %>% ungroup() %>%
+    # group_by(BusinessKey, Key) %>%
+    #   filter(row_number() == 1) %>% ungroup() %>%
     spread(key = Key, value = Value) %>%
     select(-DocumentVersionUniqueID)
   
@@ -587,6 +594,7 @@ for(r in 1:regions_number){
   notifications_contracts_products_grouped <- notifications_contracts_products_grouped %>%
     left_join(contracts_product_grouped, by = "BusinessKey")
   # Saving happens later
+  # rm(contracts_product_grouped); 
   rm(contracts_single_supplier_single_product_grouped); gc();
   
   
@@ -623,7 +631,7 @@ for(r in 1:regions_number){
     right_join(contracts_with_one_product_level_4, by = "BusinessKey")
   
   # Clean up
-  rm(contracts_products_number_level_4); 
+  rm(contracts_products_number_level_4); rm(contracts_single_supplier)
   # rm(contracts_with_multiple_products_level_4); rm(contracts_with_multiple_suppliers); 
   rm(contracts_with_one_product_level_4)
 
@@ -661,6 +669,7 @@ for(r in 1:regions_number){
     right_join(contracts_with_one_product_level_4_one_unit, by = "BusinessKey")
   
   rm(contracts_single_supplier_single_product_ungrouped_units_number); rm(contracts_with_one_product_level_4_one_unit)
+  rm(contracts_single_supplier_single_product_ungrouped);
   
   # Any remaining duplicate fields unrelated to product code?
   # duplicate_fields <- contracts_single_supplier_single_product_ungrouped_single_unit %>%
@@ -680,23 +689,28 @@ for(r in 1:regions_number){
     select(-DocumentVersionUniqueID)
   
   contracts_product_ungrouped_additive <- contracts_single_supplier_single_product_ungrouped_single_unit %>%
-    filter(Key %in% c("oos:products/oos:product/oos:price",
-                      "oos:products/oos:product/oos:sum",
+    filter(Key %in% c("oos:products/oos:product/oos:sum",
                       "oos:products/oos:product/oos:quantity")) %>%
     group_by(BusinessKey, Key) %>%
       summarize(Sum = sum(as.numeric(Value))) %>% ungroup() %>%
     spread(key = Key, value = Sum)
   
+  contracts_product_ungrouped_semi_additive <- contracts_single_supplier_single_product_ungrouped_single_unit %>%
+    filter(Key %in% c("oos:products/oos:product/oos:price")) %>%
+    group_by(BusinessKey, Key) %>%
+      summarize(Mean = mean(as.numeric(Value))) %>% ungroup() %>%
+    spread(key = Key, value = Mean)
+  
   contracts_product_ungrouped <- contracts_product_ungrouped_non_additive %>%
-    inner_join(contracts_product_ungrouped_additive, by = "BusinessKey")
+    inner_join(contracts_product_ungrouped_additive, by = "BusinessKey") %>%
+    inner_join(contracts_product_ungrouped_semi_additive, by = "BusinessKey")
   
   # Check number of cases after summing over price/quantity/sum
-  if(length(unique(contracts_product_ungrouped$BusinessKey)) + length(unique(contracts_with_one_product_level_4_multiple_units$BusinessKey)) + length(unique(contracts_with_multiple_products_level_4$BusinessKey)) + length(unique(contracts_with_multiple_suppliers$BusinessKey)) != length(unique(contracts_cleaned$BusinessKey))) print("Missing contracts")
+  if(length(unique(contracts_product_ungrouped$BusinessKey)) + length(unique(contracts_with_one_product_level_4_multiple_units$BusinessKey)) + length(unique(contracts_with_multiple_products_level_4$BusinessKey)) + length(unique(contracts_with_multiple_suppliers$BusinessKey)) != contracts_cleaned_unique_business_keys_number) print("Missing contracts")
   
-  rm(contracts_single_supplier_single_product_ungrouped_single_unit); rm(contracts_single_supplier_single_product_ungrouped);
-  rm(contracts_product_ungrouped_additive); rm(contracts_product_ungrouped_non_additive); rm(contracts_with_one_product_level_4_multiple_units)
+  rm(contracts_single_supplier_single_product_ungrouped_single_unit); 
+  rm(contracts_product_ungrouped_additive); rm(contracts_product_ungrouped_non_additive); rm(contracts_product_ungrouped_semi_additive); rm(contracts_with_one_product_level_4_multiple_units)
   rm(contracts_with_multiple_products_level_4); rm(contracts_with_multiple_suppliers)
-  rm(contracts_single_supplier)
   gc()
   
   # Rename columns
@@ -716,87 +730,257 @@ for(r in 1:regions_number){
     left_join(contracts_product_ungrouped, by = "BusinessKey")
   
   
+  # Scatterplot of petrol prices over time
+  petrol_prices <- notifications_contracts_products_ungrouped %>%
+    filter(ContractProductOKDPCode == "2320212" & ContractProductOKEICode == "112" & ContractProductPrice < 500 & ContractProductPrice > 1) %>%
+    transmute(Date = (paste(substr(ContractPublishDate, 1, 4), substr(ContractPublishDate, 6, 7), sep = ".")),
+              `Price per liter` = ContractProductPrice,
+              `Number of liters` = ContractProductQuantity,
+              `Total purchase` = (ContractProductSum),
+              `Total purchase (log)` = log10(ContractProductSum),
+              Procedure = ifelse(NotificationPlacingWayName == "Открытый аукцион в электронной форме", "Less discretionary", 
+                                 ifelse(NotificationPlacingWayName == "Запрос котировок", "More discretionary", "Unknown")),
+              Agency = (ContractCustomerFullName),
+              INN = as.factor(as.character(ContractCustomerINN)),
+              Purchaser = NotificationOrderPlacerRegNum)
+  
+  agency_per_INN <- petrol_prices %>%
+    group_by(INN) %>%
+      summarize(AgenciesPerINN = n_distinct(Agency))
+  
+  agency_INN_correspondence <- petrol_prices %>%
+    mutate(LengthOfAgencyName = nchar(Agency)) %>%
+    group_by(INN, Agency) %>%
+      summarize(ShortestAgencyName = min(LengthOfAgencyName)) %>%
+    filter(row_number() == 1) %>% ungroup() %>%
+  transmute(INN = INN, `Agency (definitive)` = Agency)
+  
+  petrol_prices <- petrol_prices %>%
+    left_join(agency_INN_correspondence, by = "INN")
+  
+  petrol_prices_by_agency <- petrol_prices %>%
+    group_by(INN, `Agency (definitive)`) %>%
+      summarize(`Average price per liter` = mean(`Price per liter`),
+                `Median price per liter` = median(`Price per liter`)) %>% ungroup() %>%
+    arrange(`Average price per liter`) 
+  
+  petrol_prices_by_agency$`Agency (definitive)` <- factor(petrol_prices_by_agency$`Agency (definitive)`, levels = petrol_prices_by_agency$`Agency (definitive)`[order(petrol_prices_by_agency$`Average price per liter`)])
+  petrol_prices$`Agency (definitive)` <- factor(petrol_prices$`Agency (definitive)`, levels = petrol_prices_by_agency$`Agency (definitive)`)
+  petrol_prices$Procedure <- factor(petrol_prices$Procedure, levels = c("More discretionary", "Less discretionary"))
+
+  petrol_prices <- petrol_prices %>%
+    left_join(petrol_prices_by_agency)
+  
+  # First show petrol prices don't change much over time
+  # Might want to de-trend with official price data https://yandex.ru/search/site/?searchid=2252602&text=%D0%B1%D0%B5%D0%BD%D0%B7%D0%B8%D0%BD&web=0&l10n=ru
+  graph_title <- paste0("Price per liter paid for gasoline, by month in ", current_region_english, "\n")
+    graph_file_name <- paste0(data_output_directory_region, current_region, "_petrol_price_per_liter_by_month.pdf")
+  petrol_prices_by_month_graph <- petrol_prices %>%
+    ggplot(aes(x = Date, y = `Price per liter`, colour = Procedure)) +
+            geom_point() +
+            theme(axis.text.x = element_text(angle=60, vjust=0.5, size=8)) +
+            labs(title = graph_title, x = "\nMonth", y = "Price per liter (rubles)") 
+  print(petrol_prices_by_month_graph)
+    ggsave(plot = petrol_prices_by_month_graph, filename = graph_file_name, device = "pdf")
+  
+  # The best one: petrol prices
+  graph_title <- paste0("Price per liter paid for gasoline, by agencies in ", current_region_english, "\n")
+    graph_file_name <- paste0(data_output_directory_region, current_region, "_petrol_price_per_liter_by_agency.pdf")
+  petrol_prices_by_agency_graph <- petrol_prices %>%
+    ggplot(aes(x = `Agency (definitive)`, y = `Price per liter`, colour = Procedure)) +
+      geom_point() +
+      theme(axis.ticks = element_blank(), axis.text.x  = element_blank()) +
+      labs(title = graph_title, x = "\nAgencies arranged by average price per liter", y = "Price per liter (rubles)") +
+      theme(legend.justification=c(0.05,0.95), legend.position=c(0.05,0.95))
+  print(petrol_prices_by_agency_graph)
+    ggsave(plot = petrol_prices_by_agency_graph, filename = graph_file_name, device = "pdf")
+  
+  petrol_prices_by_procedure <- petrol_prices %>%
+    ggplot(aes(x = `Total purchase`, y = `Price per liter`, colour = Procedure)) +
+      geom_point()
+      # + geom_smooth(method = "lm", se = F)
+  print(petrol_prices_by_procedure)
+  
+  products_per_agency_ungrouped <- notifications_contracts_products_ungrouped %>%
+    group_by(ContractCustomerINN) %>%
+      summarize(NumberOfProductsPurchasedUngrouped = n_distinct(ContractProductOKDPCode))
+
+  products_per_agency_grouped <- notifications_contracts_products_grouped %>%
+    group_by(ContractCustomerINN) %>%
+      summarize(NumberOfProductsPurchasedGrouped = n_distinct(ContractProductCodeLevel1))
+    
+  petrol_price_vs_products_purchased <- petrol_prices_by_agency %>%
+    left_join(products_per_agency_ungrouped, by = c("INN" = "ContractCustomerINN")) %>%
+    left_join(products_per_agency_grouped, by = c("INN" = "ContractCustomerINN"))
+  
+  testing_1 <- lm(`Average price per liter` ~ NumberOfProductsPurchasedUngrouped, data = petrol_price_vs_products_purchased)
+  summary(testing_1)
+  testing_2 <- lm(`Average price per liter` ~ NumberOfProductsPurchasedGrouped, data = petrol_price_vs_products_purchased)
+  summary(testing_2)
+  testing_3 <- lm(`Average price per liter` ~ log10(NumberOfProductsPurchasedUngrouped), data = petrol_price_vs_products_purchased)
+  summary(testing_3)
+  
+  # Average amount spent on each grouped category
+  total_spent <- notifications_contracts_products_grouped %>%
+    filter(!is.na(ContractProductCodeLevel1) & !is.na(ContractPrice)) %>%
+    summarize(TotalSpent = sum(as.numeric(ContractPrice)))
+  total_spent <- total_spent[1,1]
+    
+  total_and_average_spend_per_product_grouped <- notifications_contracts_products_grouped %>%
+    filter(!is.na(ContractProductCodeLevel1) & !is.na(ContractPrice)) %>%
+    group_by(ContractProductCodeLevel1) %>%
+      summarize(TotalSpendPerProductGrouped = sum(as.numeric(ContractPrice)),
+                MeanSpendPerProductGrouped = mean(as.numeric(ContractPrice)),
+                MedianSpendPerProductGrouped = median(as.numeric(ContractPrice))) %>%
+      mutate(ProportionOfTotalSpend = as.numeric(TotalSpendPerProductGrouped) / total_spent)
+  sum(total_and_average_spend_per_product_grouped$ProportionOfTotalSpend)
+  
+  agency_INN_correspondence <- notifications_contracts_products_ungrouped %>%
+    filter(!is.na(ContractCustomerFullName) & !is.na(ContractCustomerINN)) %>%
+    transmute(Agency = ContractCustomerFullName,
+              INN = ContractCustomerINN) %>%
+    mutate(LengthOfAgencyName = nchar(Agency)) %>%
+    group_by(INN, Agency) %>%
+    summarize(ShortestAgencyName = min(LengthOfAgencyName)) %>%
+    arrange(ShortestAgencyName) %>%
+    filter(row_number() == 1) %>% ungroup() %>%
+    transmute(INN = INN, `Agency (definitive)` = Agency)
+  
+  agency_total_and_average_spend_per_product_grouped <- notifications_contracts_products_grouped %>%
+    filter(!is.na(ContractProductCodeLevel1) & !is.na(ContractPrice)) %>%
+    group_by(ContractCustomerINN) %>%
+      mutate(AgencyTotalSpend =  sum(as.numeric(ContractPrice))) %>% ungroup() %>%
+    group_by(ContractCustomerINN, ContractProductCodeLevel1, AgencyTotalSpend) %>%
+      summarize(AgencyTotalSpendPerProductGrouped = sum(as.numeric(ContractPrice)),
+                AgencyMeanSpendPerProductGrouped = mean(as.numeric(ContractPrice)),
+                AgencyMedianSpendPerProductGrouped = median(as.numeric(ContractPrice))) %>%
+      mutate(ProportionOfAgencySpend = AgencyTotalSpendPerProductGrouped / AgencyTotalSpend) %>%
+    left_join(total_and_average_spend_per_product_grouped) %>%
+    mutate(DeviationFromAverageSpend = ProportionOfTotalSpend - ProportionOfAgencySpend) %>%
+    group_by(ContractCustomerINN) %>%
+      summarize(MeanAbsoluteDeviationFromAverageSpendPerProduct = mean(abs(DeviationFromAverageSpend)),
+                SumAbsoluteDeviationFromAverageSpendPerProduct = sum(abs(DeviationFromAverageSpend))) %>%
+    left_join(agency_INN_correspondence, by = c("ContractCustomerINN" = "INN"))
+  
+  petrol_and_difference <- petrol_prices_by_agency %>%
+    inner_join(agency_total_and_average_spend_per_product_grouped)
+  
+  plot(petrol_and_difference$SumAbsoluteDeviationFromAverageSpendPerProduct, petrol_and_difference$`Average price per liter`)
+ 
+  
+  landscaping <- notifications_contracts_products_ungrouped %>%
+    filter(ContractProductOKDPCode == "4560227" & ContractProductOKEICode == "055" & ContractProductQuantity > 5) %>%
+    transmute(Date = (paste(substr(ContractPublishDate, 1, 4), substr(ContractPublishDate, 6, 7), sep = ".")),
+              `Price per square meter (log)` = log10(ContractProductPrice),
+              `Number of square meters` = ContractProductQuantity)
+  
+  landscaping_graph <- landscaping %>%
+    ggplot(aes(x = Date, y = `Price per square meter (log)`)) +
+    geom_point()
+  print(landscaping_graph)
+  
+  car_rental <- notifications_contracts_products_ungrouped %>%
+    filter(ContractProductOKDPCode == "6022020" & ContractProductOKEICode == "356" & ContractProductQuantity > 1) %>%
+    transmute(Date = (paste(substr(ContractPublishDate, 1, 4), substr(ContractPublishDate, 6, 7), sep = ".")),
+              `Price per hour (log)` = log10(ContractProductPrice),
+              `Number of square meters` = ContractProductQuantity)
+  
+  car_rental_graph <- car_rental %>%
+    ggplot(aes(x = Date, y = `Price per hour (log)`)) +
+    geom_point()
+  print(car_rental_graph)
+  
+  # Most common products
+  product_frequency <- notifications_contracts_products_ungrouped %>%
+    group_by(ContractProductOKDPCode, ContractProductOKDPName, ContractProductOKEICode, ContractProductOKEIName) %>%
+      summarize(PurchasesPerProduct = n())
+  
+  # Number of agencies per product/unit combo
+  agencies_per_product_unit <- notifications_contracts_products_ungrouped %>%
+    group_by(ContractProductOKDPCode, ContractProductOKDPName, ContractProductOKEICode, ContractProductOKEIName) %>%
+      summarize(AgenciesPerProductUnit = n_distinct(ContractCustomerINN))
+  
+  # In general, time/size/weight measures are less discretionary than "piece" etc
+  # So some kind of "amount of budget spent on discretionary units"?
+
+  # Correlate procedure choice with gas price paid
+  
+  
+  # 4560227 Благоустройство и озеленение Landscaping and gardening - how much variation reasonable per sq m?
+  # 6022020 Услуги по сдаче в аренду легковых автомобилей с водителями - rental hourly rates vs "piece"
+  # 2320212 Бензины автомобильные - Литр; Кубический дециметр (but multiple grades so only the "exceptional" count)
+    # Actually, prices quite consistent across grades (and diesel) http://www.gks.ru/bgd/free/B04_03/IssWWW.exe/Stg/d06/17.htm
+    # Seems to be discontinuity between high 30s and low 50s, no clear time trend
+  # 3311415 Перчатки хирургические Пара (2 шт.) vs 1 - gloves? 
+  # 7492060 Услуги охранников - per person/hour or as "package"
+  
+  # 2930274 Кондиционеры бытовые, электровоздухоохладители
+  # 2101511 Бумага для копировально - множительной техники
   
   
   
-  
-  ## PIVOT THE DEDUPLICATED DATA IN TO ONE ROW PER NOTIFICATION
-  contracts <- contracts_single_product_fields_collapsed %>%
-                spread(key = Key, value = Value)
-  rm(contracts_single_product_fields_collapsed)
-  
-  # Rename variables sensibly
-  column_names_contracts_old <- data.frame(XMLFieldName = colnames(contracts), stringsAsFactors = F)
-  column_names_contracts_new <- parsing_configuration %>%
-                                  filter(DocumentType == "contracts") %>%
-                                  select(XMLFieldName, VariableName) %>%
-                                  right_join(column_names_contracts_old, by = "XMLFieldName") %>%
-                                  mutate(VariableName = ifelse(is.na(VariableName), XMLFieldName,
-                                                               VariableName)) %>%
-                                  select(VariableName) 
-  colnames(contracts) <- column_names_contracts_new$VariableName
-  rm(column_names_contracts_new); rm(column_names_contracts_old)
-  
+
   # Output proportion of tidy contracts from all parsed
-  tidy_contracts_percentage <- length(unique(contracts$BusinessKey))/contracts_cleaned_unique_business_keys_number
-  print(paste0("Proportion of tidy contracts in ", current_region, " is ", tidy_contracts_percentage))
+  tidy_contracts_percentage <- length(unique(contracts_product_ungrouped$BusinessKey))/contracts_cleaned_unique_business_keys_number
+  print(paste0("Proportion of tidy contracts (products ungrouped) in ", current_region, " is ", tidy_contracts_percentage))
+  
+  tidy_contracts_percentage <- length(unique(contracts_product_grouped$BusinessKey))/contracts_cleaned_unique_business_keys_number
+  print(paste0("Proportion of tidy contracts (products grouped) in ", current_region, " is ", tidy_contracts_percentage))
   
   # Save the 'wide' format file with a sensible name and clean up
-  contracts_wide_file_name <- paste0(data_output_directory_region, current_region,
-                                     "_contracts_wide_", data_download_date, ".rda")
-  save(contracts, file = contracts_wide_file_name)
-  # rm(contracts)
+  contracts_wide_file_name_product_grouped <- paste0(data_output_directory_region, current_region,
+                                                     "_contracts_wide_product_grouped_", data_download_date, ".rda")
+  save(contracts_product_grouped, file = contracts_wide_file_name_product_grouped)
+  rm(contracts_product_grouped); rm(contracts_wide_file_name_product_grouped)
+  
+  contracts_wide_file_name_product_ungrouped <- paste0(data_output_directory_region, current_region,
+                                                     "_contracts_wide_product_ungrouped_", data_download_date, ".rda")
+  save(contracts_product_ungrouped, file = contracts_wide_file_name_product_ungrouped)
+  rm(contracts_product_ungrouped); rm(contracts_wide_file_name_product_ungrouped)
   gc()
-
+  
+  ## DELETE VARIABLES THAT NEVER VARY
+  notifications_contracts_products_grouped$NotificationLotOrdinalNumber <- NULL # Always = 1
+    notifications_contracts_products_ungrouped$NotificationLotOrdinalNumber <- NULL # Always = 1
+  notifications_contracts_products_grouped$ContractFoundationSingleCustomer <- NULL # Always empty
+    notifications_contracts_products_ungrouped$ContractFoundationSingleCustomer <- NULL # Always empty
+  
+  # Save the joined master DFs (product grouped and ungrouped)
+  notifications_contracts_products_grouped_file_name <- paste0(data_output_directory_region, current_region,
+                                                               "_notifications_contracts_products_grouped_",
+                                                               data_download_date, ".rda")
+  save(notifications_contracts_products_grouped, file = notifications_contracts_products_grouped_file_name)
+  
+  notifications_contracts_products_ungrouped_file_name <- paste0(data_output_directory_region, current_region,
+                                                               "_notifications_contracts_products_ungrouped_",
+                                                               data_download_date, ".rda")
+  save(notifications_contracts_products_ungrouped, file = notifications_contracts_products_ungrouped_file_name)
+    
   ###################
-  ## Merge         ##
+  ## Report stats  ##
   ###################  
   
-  notifications_number <- length(unique(notifications$BusinessKey))
-  contracts_number <- length(unique(contracts$BusinessKey))
-  
-  # contracts_per_notification <- notifications %>%
-  #                                 left_join(contracts, by = c("NotificationNumber" = "ContractFoundationNotificationNumber")) %>%
-  #                                 group_by(NotificationNumber, ContractID) %>%
-  #                                   summarize(ContractsPerNotification = n())
-  
-  ## MAY WANT TO REPLACE THIS WITH FULL MERGE SO ALL ARE IN ONE DATA FRAME
-  
-  notification_contract_matches <- notifications %>% 
-                                    inner_join(contracts, by = c("NotificationNumber" = "ContractFoundationNotificationNumber"))
-  
-  notifications_without_contract <- notifications %>%
-                                      anti_join(contracts, by = c("NotificationNumber" = "ContractFoundationNotificationNumber"))
-  # Many reasons, including cancellation of contract, or external control eg 0876100001413000009
-  
-  contracts_without_notification <- contracts %>%
-                                      anti_join(notifications, by = c("ContractFoundationNotificationNumber" = "NotificationNumber"))
-  # Most of these due to multiple-lot auction but single contract Eg 0376300005311000009
-  
-  # Check that the merge went as expected
-  all_notification_numbers <- c(notification_contract_matches$NotificationNumber,
-                                notifications_without_contract$NotificationNumber,
-                                contracts_without_notification$ContractFoundationNotificationNumber)
-  if(length(all_notification_numbers) != length(unique(all_notification_numbers))) print("Merge failed, investigate")
-  rm(all_notification_numbers)
-  
   # Report statistics on matching, append to file matching_statistic.csv
-  number_of_cases <- length(notification_contract_matches$NotificationNumber) + length(notifications_without_contract$NotificationNumber) + length(contracts_without_notification$ContractFoundationNotificationNumber)
+  number_of_cases <- length(notifications_contracts_products_ungrouped$BusinessKey)
+  
+  notification_matches_contract <- length(notifications_contracts_products_ungrouped$Match[notifications_contracts_products_ungrouped$Match == "Notification matches contract"])
+  notification_without_contract <- length(notifications_contracts_products_ungrouped$Match[notifications_contracts_products_ungrouped$Match == "Notification without contract"])
+  contract_without_notification <- length(notifications_contracts_products_ungrouped$Match[notifications_contracts_products_ungrouped$Match == "Contract without notification"])
   
   notification_contract_matches_proportion <- c(current_region, format(Sys.Date(), "%Y-%m-%d"),
                                                 "Notifications with matching contract",
-                                                length(notification_contract_matches$NotificationID),
-                                                length(notification_contract_matches$NotificationID)/number_of_cases)                                              
+                                                notification_matches_contract,
+                                                notification_matches_contract/number_of_cases)                                              
   # print(paste0("Notifications with matching contract: ", notification_contract_matches_proportion))
   notifications_without_contract_proportion <- c(current_region, format(Sys.Date(), "%Y-%m-%d"),
                                                  "Notifications without matching contract",
-                                                 length(notifications_without_contract$NotificationID),
-                                                 length(notifications_without_contract$NotificationID)/number_of_cases)
+                                                 notification_without_contract,
+                                                 notification_without_contract/number_of_cases)
   # print(paste0("Notifications without matching contract: ", notifications_without_contract_proportion))
   contracts_without_notification_proportion <- c(current_region, format(Sys.Date(), "%Y-%m-%d"),
                                                  "Contracts without matching notification",
-                                                 length(contracts_without_notification$ContractFoundationNotificationNumber),
-                                                 length(contracts_without_notification$ContractFoundationNotificationNumber)/number_of_cases)
+                                                 contract_without_notification,
+                                                 contract_without_notification/number_of_cases)
   # print(paste0("Contracts without matching notification: ", contracts_without_notification_proportion))
   # notification_contract_matches_proportion + notifications_without_contract_proportion + contracts_without_notification_proportion
   matching_statistics <- (rbind.data.frame(notification_contract_matches_proportion,
@@ -805,23 +989,10 @@ for(r in 1:regions_number){
   colnames(matching_statistics) <- c("Region", "Date", "Type", "Count", "Proportion")
   suppressWarnings(write.table(matching_statistics, file = "4-Construct/matching_statistics.csv",
                                sep = ",", row.names = F, append = T, col.names = F))
-  rm(matching_statistics)
-  
-  # Save files of matches/non-matches with sensible names and clean up this region
-  matches_file_name <- paste0(data_output_directory_region, current_region,
-                              "_notification_contract_matches_", data_download_date, ".rda")
-    save(notification_contract_matches, file = matches_file_name)
-  notifications_without_contract_file_name <- paste0(data_output_directory_region, current_region, 
-                                                     "_notifications_without_contract_", data_download_date, ".rda")
-    save(notifications_without_contract, file = notifications_without_contract_file_name)
-  contracts_without_notification_file_name <- paste0(data_output_directory_region, current_region, 
-                                                     "_contracts_without_notification_", data_download_date, ".rda")
-    save(contracts_without_notification, file = contracts_without_notification_file_name)
+  rm(matching_statistics); rm(contract_without_notification); rm(notification_without_contract); rm(notification_matches_contract); gc()
     
-  rm(contracts); rm(contracts_without_notification)
-  rm(notifications); rm(notifications_without_contract)
-  rm(notification_contract_matches); gc()
-    
+  # Clean up
+  rm(notifications_contracts_products_grouped); rm(notifications_contracts_products_ungrouped)
 } # Closes control loop over this region
 gc()
 # ENDS
