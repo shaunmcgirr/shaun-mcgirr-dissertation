@@ -66,16 +66,16 @@ for(r in 1:regions_number){
   notifications_contracts_products_ungrouped[columns_to_numeric] <- lapply(notifications_contracts_products_ungrouped[columns_to_numeric], as.numeric)
     # hist(notifications_contracts_products_ungrouped$NotificationLotCustomerRequirementMaxPrice)
     # hist(notification_contract_matches$ContractPrice)
-    NotificationVersionNumber_table <- as.data.frame(table(notifications_contracts_products_ungrouped$NotificationVersionNumber))
-    ContractVersionNumber_table <- as.data.frame(table(notifications_contracts_products_ungrouped$ContractVersionNumber))
+    # NotificationVersionNumber_table <- as.data.frame(table(notifications_contracts_products_ungrouped$NotificationVersionNumber))
+    # ContractVersionNumber_table <- as.data.frame(table(notifications_contracts_products_ungrouped$ContractVersionNumber))
   
   # Convert several to factor
     columns_to_factor <- c("NotificationPlacingWayName",
                            "ContractCurrentContractStage")
     notifications_contracts_products_grouped[columns_to_factor] <- lapply(notifications_contracts_products_grouped[columns_to_factor], as.factor)
     notifications_contracts_products_ungrouped[columns_to_factor] <- lapply(notifications_contracts_products_ungrouped[columns_to_factor], as.factor)
-      NotificationPlacingWayName_table <- as.data.frame(table(notifications_contracts_products_ungrouped$NotificationPlacingWayName))
-      ContractCurrentContractStage_table <- as.data.frame(table(notifications_contracts_products_ungrouped$ContractCurrentContractStage))
+      # NotificationPlacingWayName_table <- as.data.frame(table(notifications_contracts_products_ungrouped$NotificationPlacingWayName))
+      # ContractCurrentContractStage_table <- as.data.frame(table(notifications_contracts_products_ungrouped$ContractCurrentContractStage))
     
   # Convert other one-offs
   notifications_contracts_products_grouped$NotificationPublishDate <- as.Date(substr(notifications_contracts_products_grouped$NotificationPublishDate, 1, 10))
@@ -117,7 +117,7 @@ for(r in 1:regions_number){
     select(-Freq)
   
   notifications_contracts_products_grouped <- notifications_contracts_products_grouped %>%
-    left_join(mapping_NotificationPlacingWayName_to_procedure_group) %>%
+    left_join(mapping_NotificationPlacingWayName_to_procedure_group, by = "NotificationPlacingWayName") %>%
     mutate(TenderProcedureGroup = factor(TenderProcedureGroup, 
                                          levels = c("Open electronic auction", "Open tender", "Request for quotes", "Olympic construction", "Preliminary selection", "Registration of interest in open tender"),
                                          ordered = F),
@@ -126,7 +126,7 @@ for(r in 1:regions_number){
                                               ordered = T))
   
   notifications_contracts_products_ungrouped <- notifications_contracts_products_ungrouped %>%
-    left_join(mapping_NotificationPlacingWayName_to_procedure_group) %>%
+    left_join(mapping_NotificationPlacingWayName_to_procedure_group, by = "NotificationPlacingWayName") %>%
     mutate(TenderProcedureGroup = factor(TenderProcedureGroup, 
                                          levels = c("Open electronic auction", "Open tender", "Request for quotes", "Olympic construction", "Preliminary selection", "Registration of interest in open tender"),
                                          ordered = F),
@@ -138,12 +138,22 @@ for(r in 1:regions_number){
   stopifnot(sum(is.na(notifications_contracts_products_ungrouped$NotificationPlacingWayName)) == sum(is.na(notifications_contracts_products_ungrouped$TenderProcedureDiscretion)))
   
 
-  
   # Notification revised (binary)
+  notifications_contracts_products_grouped$NotificationRevised <- ifelse(notifications_contracts_products_grouped$NotificationVersionNumber == 1,
+                                                                         "N", "Y")
+  notifications_contracts_products_ungrouped$NotificationRevised <- ifelse(notifications_contracts_products_ungrouped$NotificationVersionNumber == 1,
+                                                                         "N", "Y")
+  table(notifications_contracts_products_ungrouped$NotificationVersionNumber); table(notifications_contracts_products_ungrouped$NotificationRevised);
   
   # Contract revised (binary)
+  notifications_contracts_products_grouped$ContractRevised <- ifelse(notifications_contracts_products_grouped$ContractVersionNumber == 0,
+                                                                         "N", "Y")
+  notifications_contracts_products_ungrouped$ContractRevised <- ifelse(notifications_contracts_products_ungrouped$ContractVersionNumber == 0,
+                                                                           "N", "Y")
+  table(notifications_contracts_products_ungrouped$ContractVersionNumber); table(notifications_contracts_products_ungrouped$ContractRevised);
   
   # Current contract stage (user friendly)
+  
   
 ###########
   

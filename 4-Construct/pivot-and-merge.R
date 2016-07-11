@@ -594,7 +594,7 @@ for(r in 1:regions_number){
   notifications_contracts_products_grouped <- notifications_contracts_products_grouped %>%
     left_join(contracts_product_grouped, by = "BusinessKey")
   # Saving happens later
-  # rm(contracts_product_grouped); 
+  rm(contracts_product_grouped);
   rm(contracts_single_supplier_single_product_grouped); gc();
   
   
@@ -708,7 +708,7 @@ for(r in 1:regions_number){
   # Check number of cases after summing over price/quantity/sum
   if(length(unique(contracts_product_ungrouped$BusinessKey)) + length(unique(contracts_with_one_product_level_4_multiple_units$BusinessKey)) + length(unique(contracts_with_multiple_products_level_4$BusinessKey)) + length(unique(contracts_with_multiple_suppliers$BusinessKey)) != contracts_cleaned_unique_business_keys_number) print("Missing contracts")
   
-  rm(contracts_single_supplier_single_product_ungrouped_single_unit); 
+  rm(contracts_single_supplier_single_product_ungrouped_single_unit); rm(duplicate_fields)
   rm(contracts_product_ungrouped_additive); rm(contracts_product_ungrouped_non_additive); rm(contracts_product_ungrouped_semi_additive); rm(contracts_with_one_product_level_4_multiple_units)
   rm(contracts_with_multiple_products_level_4); rm(contracts_with_multiple_suppliers)
   gc()
@@ -728,6 +728,7 @@ for(r in 1:regions_number){
   # Join on to master DF
   notifications_contracts_products_ungrouped <- notifications_contracts_products_ungrouped %>%
     left_join(contracts_product_ungrouped, by = "BusinessKey")
+  rm(contracts_product_ungrouped)
   
   ## DELETE VARIABLES THAT NEVER VARY
   notifications_contracts_products_grouped$NotificationLotOrdinalNumber <- NULL # Always = 1
