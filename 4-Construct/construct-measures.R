@@ -203,12 +203,19 @@ for(r in 1:regions_number){
   
  
   
+  ######################################################
+  # 4. Run scripts that create the individual measures #
+  ######################################################
   
-  ############################################################
-  #  4. Save the dataframes containing measures to new files #
-  ############################################################
+  source("4-Construct/measures/prices-for-specific-products.R")
+  
+  
+  ###########################################################
+  # 5. Save the dataframes containing measures to new files #
+  ###########################################################
 
   # Measure scripts should return some kind of key-value pair? Maybe even CSV?
+  # Perhaps Agency/Measure/Month/Value?
   
     
 } # Closes control loop over regions_list
