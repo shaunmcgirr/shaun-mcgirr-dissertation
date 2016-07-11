@@ -112,25 +112,7 @@ for(r in 1:regions_number){
                                                                                      notifications_contracts_products_ungrouped$PriceChangePercentage, NA)
   # hist(notifications_contracts_products_ungrouped$PriceChangePercentageNoOutliers, breaks = 100)
   
-  # Procedure group (user friendly)
-  mapping_NotificationPlacingWayName_to_procedure_group <- rbind(c("Заказ на выполнение проектных, изыскательских работ, работ по строительству, реконструкции, капитальному ремонту объектов капитального строительства, относящихся в соответствии с Федеральным законом от 1 декабря 2007 года № 310-ФЗ к олимпийским объектам федерального значения, олимпийским объектам краевого значения или олимпийским объектам муниципального значения (ч.34 ст.65 Федерального закона №94-ФЗ), размещаемый путем проведения запроса котировок", "Olympic construction", "Other"),
-                                                                 c("Открытый конкурс", "Open tender", "Medium discretion"),
-                                                                 c("Открытый конкурс (научно-исследовательская, опытно-конструкторская или технологическая работа)", "Open tender", "Medium discretion"),
-                                                                 c("Открытый конкурс (размещение заказа на поставку технических средств реабилитации инвалидов, оказание услуг в сфере образования, услуг по санаторно-курортному лечению)", "Open tender", "Medium discretion"),
-                                                                 c("Открытый конкурс (создание произведения литературы или искусства, исполнения)", "Open tender", "Medium discretion"),
-                                                                 c("Открытый конкурс (финансирование проката или показа национального фильма)", "Open tender", "Medium discretion"),
-                                                                 c("Открытый конкурс на размещение заказа на энергосервис для нужд заказчиков (гл. 7.1 Федерального закона №94-ФЗ)", "Open tender", "Medium discretion"),
-                                                                 c("Открытый аукцион в электронной форме", "Open electronic auction", "Lower discretion"),
-                                                                 c("Открытый аукцион в электронной форме на размещение заказа на энергосервис для нужд заказчиков (гл. 7.1 Федерального закона №94-ФЗ)", "Open electronic auction", "Lower discretion"),
-                                                                 c("Запрос котировок", "Request for quotes", "Higher discretion"),
-                                                                 c(" Размещение заказа путем запроса котировок цен товаров, работ, услуг, соответственно производство, выполнение, оказание которых осуществляется не по конкретным заявкам заказчика и для которых есть функционирующий рынок, для обеспечения своей деятельности на территории иностранного государства, на которой находится заказчик, у иностранных поставщиков (исполнителей, подрядчиков) (ч. 5 ст. 42 Федерального закона №94-ФЗ) ", "Request for quotes", "Higher discretion"),
-                                                                 c("Размещение заказа путем запроса котировок на энергосервис для нужд заказчиков (гл. 7.1 Федерального закона №94-ФЗ)", "Request for quotes", "Higher discretion"),
-                                                                 c("Размещение заказа путем проведения запроса котировок на поставку продовольствия, средств, необходимых для оказания скорой или неотложной медицинской помощи, лекарственных средств, топлива, которые необходимы для нормального жизнеобеспечения граждан и отсутствие которых приведет к нарушению их нормального жизнеобеспечения в случаях, указанных в ч. 6 ст. 42 Федерального закона №94-ФЗ ", "Request for quotes", "Higher discretion"),
-                                                                 c("Предварительный отбор", "Preliminary selection", "Other"),
-                                                                 c("Сообщение о заинтересованности в проведении открытого конкурса", "Registration of interest in open tender", "Other")) %>%
-    as.data.frame() %>%
-    rename(NotificationPlacingWayName = V1, TenderProcedureGroup = V2, TenderProcedureDiscretion = V3)
-  
+  # Procedure group (user friendly to do this via config file in Excel)
   mapping_NotificationPlacingWayName_to_procedure_group <- (read.xlsx("4-Construct/NotificationPlacingWayName_groupings.xlsx", 1)) %>%
     select(-Freq)
   
