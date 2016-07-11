@@ -65,7 +65,7 @@ Sys.setlocale("LC_CTYPE", "Russian") # This may not be necessary on Mac/Linux
 # source("3-Unpack//parse-files-functionwise.R") # parses the unzipped xml files from unzipped-data to parsed-data
 # source("4-Construct//clean-data.R") # Cleans the parsed data (mostly deduplicating)
 # source("4-Construct//pivot-and-merge.R") # Implement what we learned from analyze-before-merge.R
+# source("4-Construct//prove-measures.R") # Explores and tests potential measures
 # source("4-Construct//construct-measures.R") # Builds measures for the procurement data
-# source("4-Construct//prove-measures.R") # Validates measures
 # source("5-Test//explore-data.R") # Exploratory analysis
 
