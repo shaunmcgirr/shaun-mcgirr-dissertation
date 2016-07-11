@@ -131,10 +131,13 @@ for(r in 1:regions_number){
     as.data.frame() %>%
     rename(NotificationPlacingWayName = V1, TenderProcedureGroup = V2, TenderProcedureDiscretion = V3)
   
+  mapping_NotificationPlacingWayName_to_procedure_group <- (read.xlsx("4-Construct/NotificationPlacingWayName_groupings.xlsx", 1)) %>%
+    select(-Freq)
+  
   notifications_contracts_products_grouped <- notifications_contracts_products_grouped %>%
     left_join(mapping_NotificationPlacingWayName_to_procedure_group) %>%
     mutate(TenderProcedureGroup = factor(TenderProcedureGroup, 
-                                         levels = c("Open electronic auction", "Open tender", "Request for quotes", "Olympic construction", "Preliminary selection"),
+                                         levels = c("Open electronic auction", "Open tender", "Request for quotes", "Olympic construction", "Preliminary selection", "Registration of interest in open tender"),
                                          ordered = F),
            TenderProcedureDiscretion = factor(TenderProcedureDiscretion, 
                                               levels = c("Lower discretion", "Medium discretion", "Higher discretion", "Other"), 
@@ -143,7 +146,7 @@ for(r in 1:regions_number){
   notifications_contracts_products_ungrouped <- notifications_contracts_products_ungrouped %>%
     left_join(mapping_NotificationPlacingWayName_to_procedure_group) %>%
     mutate(TenderProcedureGroup = factor(TenderProcedureGroup, 
-                                         levels = c("Open electronic auction", "Open tender", "Request for quotes", "Olympic construction", "Preliminary selection"),
+                                         levels = c("Open electronic auction", "Open tender", "Request for quotes", "Olympic construction", "Preliminary selection", "Registration of interest in open tender"),
                                          ordered = F),
            TenderProcedureDiscretion = factor(TenderProcedureDiscretion, 
                                               levels = c("Lower discretion", "Medium discretion", "Higher discretion", "Other"), 
