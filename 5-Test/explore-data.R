@@ -137,8 +137,8 @@ for(r in 1:regions_number){
   # Discretionary procedure choice = -expertise +capacity
   # Discretionary procedure choice = ()|tender + ()|agency
   
-    
-
+  # Use this to run/save multiple models at once
+  # http://www.quantide.com/website/dplyr-do-tips-using-programming/
     
 } # Closes control loop over regions_list
                     
