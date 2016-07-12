@@ -46,6 +46,11 @@ data_output_directory <- set_data_subdirectory(data_directory, data_download_dat
                               current_region, "_notifications_contracts_products_ungrouped_",
                               data_download_date, ".rda")
     load(file=file_to_process)
+    
+    file_to_process <- paste0(data_output_directory, current_region, "/",
+                              current_region, "_notifications_contracts_products_grouped_",
+                              data_download_date, ".rda")
+    load(file=file_to_process)
   
     # Reshape for graphs below
     
@@ -175,10 +180,12 @@ data_output_directory <- set_data_subdirectory(data_directory, data_download_dat
   ggsave(plot = procedure_choice_by_agency_graph, filename = graph_file_name, device = "pdf", limitsize = T)
   
   
+ 
+    
   ## AUCTION EFFICIENCY BY AGENCY (grouped products)
   auction_efficiency_by_agency <- notifications_contracts_products_grouped %>%
     filter(ContractCurrencyCode == "RUB" & ContractPrice > 0 & NotificationLotCustomerRequirementMaxPrice > 0) %>%
-    transmute(Agency = NotificationOrderPlacerRegNum,
+    transmute(Agency = NotificationOrderPlacerFullName,
               `Initial price` = NotificationLotCustomerRequirementMaxPrice,
               `Final price` = ContractPrice,
               `Auction efficiency` = PriceChangePercentageNoOutliers,
@@ -214,6 +221,9 @@ data_output_directory <- set_data_subdirectory(data_directory, data_download_dat
   # relationship is positive and significant: spending more associated with lower auction efficiency
   # 1,000,000,000 increase in spending associated with 1.5-2.0 percentage point decrease in efficiency under different groupings
   # But clearly spending less not sufficient for higher efficiency, triangular pattern
+  
+  
+  
   
 # } # Closes control loop over regions_list
 

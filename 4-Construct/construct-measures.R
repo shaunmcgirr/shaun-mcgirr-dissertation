@@ -28,9 +28,9 @@ na_count <- function(x) sapply(x, function(y) sum(is.na(y)))
 data_output_directory <- set_data_subdirectory(data_directory, data_download_date, "output")
 
 # Obtain list of regions for which consolidated data is available
-regions_list <- generate_regions_list(data_output_directory)
+# regions_list <- generate_regions_list(data_output_directory)
 # regions_list <- as.list("Adygeja_Resp")
-# regions_list <- as.list("Moskva")
+regions_list <- as.list("Moskva")
 regions_number <- length(regions_list)
 
 #################################################
@@ -201,7 +201,8 @@ for(r in 1:regions_number){
   ######################################################
   # 4. Run scripts that create the individual measures #
   ######################################################
-  
+
+  source("4-Construct/measures/identify-agencies.R")
   source("4-Construct/measures/prices-for-specific-products.R")
   
   
@@ -210,7 +211,7 @@ for(r in 1:regions_number){
   ###########################################################
 
   # Measure scripts should return some kind of key-value pair? Maybe even CSV?
-  # Perhaps Agency/Measure/Month/Value?
+  # Perhaps Region/Agency/Measure/Month/Value?
   
     
 } # Closes control loop over regions_list
