@@ -185,23 +185,25 @@ data_output_directory <- set_data_subdirectory(data_directory, data_download_dat
   ## AUCTION EFFICIENCY BY AGENCY (grouped products)
   auction_efficiency_by_agency <- notifications_contracts_products_grouped %>%
     filter(ContractCurrencyCode == "RUB" & ContractPrice > 0 & NotificationLotCustomerRequirementMaxPrice > 0) %>%
-    transmute(Agency = NotificationOrderPlacerFullName,
+    transmute(AgencyID = ContractCustomerRegNum,
               `Initial price` = NotificationLotCustomerRequirementMaxPrice,
               `Final price` = ContractPrice,
               `Auction efficiency` = PriceChangePercentageNoOutliers,
               `Class of product` = ContractProductCodeLevel1,
               `Procedure type` = TenderProcedureDiscretion) %>%
     filter(!is.na(`Auction efficiency`) & `Final price` >= 1000) %>%
-    group_by(Agency, `Class of product`) %>%
-    # group_by(Agency, `Class of product`, `Procedure type`) %>%
+    group_by(AgencyID) %>%
+    # group_by(AgencyID, `Class of product`) %>%
+    # group_by(AgencyID, `Class of product`, `Procedure type`) %>%
     summarize(`Median auction efficiency` = median(`Auction efficiency`),
+              `Mean auction efficiency` = mean(`Auction efficiency`),
                 `Total spent` = sum(`Final price`),
                 `Total spent (square root)` = sqrt(`Total spent`),
                 `Total spent (log)` = log10(`Total spent`),
                 `Total spent (inverse)` = 1/(`Total spent`),
                 `Number of purchases` = n()) %>%
-    # filter(`Total spent` >= 100000 & `Total spent` <= 100000000000 & `Number of purchases` > 100) # Thresholds for agencies alone
-    filter(`Total spent` >= 100000 & `Total spent` <= 10000000000 & `Number of purchases` > 10)     # Thresholds for agency/product pairs
+    filter(`Total spent` >= 100000 & `Total spent` <= 100000000000 & `Number of purchases` > 100) # Thresholds for agencies alone
+    # filter(`Total spent` >= 100000 & `Total spent` <= 10000000000 & `Number of purchases` > 10)     # Thresholds for agency/product pairs
     # filter(`Total spent` >= 10000 & `Total spent` <= 1000000000 & `Number of purchases` > 2)      # Thresholds for agency/product/procedure pairs
   
   # http://zakupki.gov.ru/pgz/public/action/orders/info/common_info/show?notificationId=694772

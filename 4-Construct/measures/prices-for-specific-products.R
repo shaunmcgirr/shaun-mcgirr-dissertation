@@ -28,9 +28,9 @@ petrol_prices <- notifications_contracts_products_ungrouped %>%
             `Total purchase (log)` = log10(ContractProductSum),
             Procedure = ifelse(NotificationPlacingWayName == "Открытый аукцион в электронной форме", "Less discretionary", 
                                ifelse(NotificationPlacingWayName == "Запрос котировок", "More discretionary", "Unknown")),
-            Agency = (ContractCustomerFullName),
-            INN = as.factor(as.character(ContractCustomerINN)),
-            Purchaser = NotificationOrderPlacerRegNum)
+            AgencyID = (ContractCustomerRegNum)) #,
+            # INN = as.factor(as.character(ContractCustomerINN)),
+            # Purchaser = NotificationOrderPlacerRegNum)
 
 agency_per_INN <- petrol_prices %>%
   group_by(INN) %>%
@@ -46,8 +46,11 @@ agency_INN_correspondence <- petrol_prices %>%
 petrol_prices <- petrol_prices %>%
   left_join(agency_INN_correspondence, by = "INN")
 
+petrol_prices <- petrol_prices %>%
+  left_join(agency_metadata, by = "AgencyID")
+
 petrol_prices_by_agency <- petrol_prices %>%
-  group_by(INN, `Agency (definitive)`) %>%
+  group_by(AgencyID, AgencyName) %>%
   summarize(`Average price per liter` = mean(`Price per liter`),
             `Median price per liter` = median(`Price per liter`)) %>% ungroup() %>%
   arrange(`Average price per liter`) 
@@ -75,7 +78,7 @@ ggsave(plot = petrol_prices_by_month_graph, filename = graph_file_name, device =
 graph_title <- paste0("Price per liter paid for gasoline, by agencies in ", current_region_english, "\n")
 graph_file_name <- paste0(data_output_directory_region, current_region, "_petrol_price_per_liter_by_agency.pdf")
 petrol_prices_by_agency_graph <- petrol_prices %>%
-  ggplot(aes(x = `Agency (definitive)`, y = `Price per liter`, colour = Procedure)) +
+  ggplot(aes(x = `AgencyName`, y = `Price per liter`, colour = Procedure)) +
   geom_point() +
   theme(axis.ticks = element_blank(), axis.text.x  = element_blank()) +
   labs(title = graph_title, x = "\nAgencies arranged by average price per liter", y = "Price per liter (rubles)") +

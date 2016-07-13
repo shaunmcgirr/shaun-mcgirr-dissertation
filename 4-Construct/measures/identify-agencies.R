@@ -78,6 +78,7 @@
 ########################
 
 # First select a definitive agency name for each of AgencyID (which I've decided should be ContractCustomerRegNum)
+# Go with the longest name, as it is most descriptive
 agency_metadata_products_grouped <- notifications_contracts_products_grouped %>%
                                       transmute(AgencyID = ContractCustomerRegNum,
                                                 AgencyName = ContractCustomerFullName,
@@ -85,7 +86,7 @@ agency_metadata_products_grouped <- notifications_contracts_products_grouped %>%
                                       filter(!is.na(AgencyID) & !is.na(AgencyName)) %>%
                                       group_by(AgencyID, AgencyName) %>%
                                         summarize(ShortestAgencyName = min(LengthOfAgencyName)) %>%
-                                        arrange(ShortestAgencyName) %>%
+                                        arrange(-ShortestAgencyName) %>%
                                         filter(row_number() == 1) %>% ungroup() %>%
                                       select(-ShortestAgencyName)
                                         
@@ -95,12 +96,14 @@ agency_metadata_products_ungrouped <- notifications_contracts_products_ungrouped
             LengthOfAgencyName = nchar(AgencyName)) %>%
   filter(!is.na(AgencyID) & !is.na(AgencyName)) %>%
   group_by(AgencyID, AgencyName) %>%
-  summarize(ShortestAgencyName = min(LengthOfAgencyName)) %>%
-  arrange(ShortestAgencyName) %>%
-  filter(row_number() == 1) %>% ungroup() %>%
+    summarize(ShortestAgencyName = min(LengthOfAgencyName)) %>%
+    arrange(-ShortestAgencyName) %>%
+    filter(row_number() == 1) %>% ungroup() %>%
   select(-ShortestAgencyName)  
+
 # Did we get the same for the two versions?
 stopifnot(identical(agency_metadata_products_grouped, agency_metadata_products_ungrouped))
+
 # If so, simplify
 agency_metadata <- agency_metadata_products_grouped %>%
                     mutate(AgencyRegion = current_region,
