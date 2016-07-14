@@ -123,13 +123,13 @@ data_output_directory <- set_data_subdirectory(data_directory, data_download_dat
   
   ## STACKED BAR CHART OF PROCEDURE CHOICE BY AGENCY
   procedure_choice_by_agency <- notifications_contracts_products_ungrouped %>%
-    group_by(NotificationOrderPlacerRegNum, TenderProcedureDiscretion) %>%
+    group_by(ContractCustomerRegNum, TenderProcedureDiscretion) %>%
       summarize(NotificationsPerProcedure = n()) %>% ungroup() %>%
     filter(!is.na(TenderProcedureDiscretion)) %>%
     spread(key = TenderProcedureDiscretion, value = NotificationsPerProcedure, fill = 0) %>%
     mutate(`Total notifications` = (`Lower discretion` + `Medium discretion` + `Higher discretion` + Other)) %>%
     filter(`Total notifications` > 2) %>%
-    transmute(Agency = NotificationOrderPlacerRegNum,
+    transmute(Agency = ContractCustomerRegNum,
               `Other` = Other/`Total notifications`,
               `Lower discretion` = `Lower discretion`/`Total notifications`,
               `Medium discretion` = `Medium discretion`/`Total notifications`,
