@@ -123,47 +123,47 @@ data_output_directory <- set_data_subdirectory(data_directory, data_download_dat
   
   ## STACKED BAR CHART OF PROCEDURE CHOICE BY AGENCY
   procedure_choice_by_agency <- notifications_contracts_products_ungrouped %>%
-    group_by(ContractCustomerRegNum, TenderProcedureDiscretion) %>%
+    group_by(ContractCustomerRegNum, TenderProcedureGroup) %>%
       summarize(NotificationsPerProcedure = n()) %>% ungroup() %>%
-    filter(!is.na(TenderProcedureDiscretion)) %>%
-    spread(key = TenderProcedureDiscretion, value = NotificationsPerProcedure, fill = 0) %>%
-    mutate(`Total notifications` = (`Lower discretion` + `Medium discretion` + `Higher discretion` + Other)) %>%
+    filter(TenderProcedureGroup %in% c("Open electronic auction", "Open tender", "Request for quotes")) %>%
+    spread(key = TenderProcedureGroup, value = NotificationsPerProcedure, fill = 0) %>%
+    mutate(`Total notifications` = (`Open electronic auction` + `Open tender` + `Request for quotes`)) %>%
     filter(`Total notifications` > 2) %>%
     transmute(Agency = ContractCustomerRegNum,
-              `Other` = Other/`Total notifications`,
-              `Lower discretion` = `Lower discretion`/`Total notifications`,
-              `Medium discretion` = `Medium discretion`/`Total notifications`,
-              `Higher discretion` = `Higher discretion`/`Total notifications`,
-              DominantProcedure = ifelse(`Lower discretion` == 1, "0 Lower discretion", 
-                                         ifelse(`Medium discretion` == 1, "1 Medium discretion", 
-                                                ifelse(`Higher discretion` == 1, "2 Higher discretion", "3 None")))) %>%
+              # `Other` = Other/`Total notifications`,
+              `Open electronic auction` = `Open electronic auction`/`Total notifications`,
+              `Open tender` = `Open tender`/`Total notifications`,
+              `Request for quotes` = `Request for quotes`/`Total notifications`,
+              DominantProcedure = ifelse(`Open electronic auction` == 1, "0 Open electronic auction", 
+                                         ifelse(`Open tender` == 1, "1 Open tender", 
+                                                ifelse(`Request for quotes` == 1, "2 Request for quotes", "3 None")))) %>%
   # slice(1:20) %>%
-    arrange(DominantProcedure, -`Lower discretion`, -`Medium discretion`, -`Higher discretion`, Other) %>%
-    # arrange(DominantProcedure, -`Higher discretion`, -`Medium discretion`, -`Lower discretion`, -Other) %>%
-    # arrange(-`Medium discretion`, -`Lower discretion`, -`Higher discretion`, -Other) %>%
-    # arrange(-`Medium discretion`, `Higher discretion`, -`Lower discretion`, -Other) %>%
+    arrange(DominantProcedure, -`Open electronic auction`, -`Open tender`, -`Request for quotes`) %>%
+    # arrange(DominantProcedure, -`Request for quotes`, -`Open tender`, -`Open electronic auction`, -Other) %>%
+    # arrange(-`Open tender`, -`Open electronic auction`, -`Request for quotes`, -Other) %>%
+    # arrange(-`Open tender`, `Request for quotes`, -`Open electronic auction`, -Other) %>%
     mutate(SortByProportionHigher = row_number(),
-           ProportionOfAllAgencies = SortByProportionHigher/length(unique(notifications_contracts_products_ungrouped$NotificationOrderPlacerRegNum))) %>%
-    gather(key = `Procedure type`, value = Proportion, -Agency, -SortByProportionHigher, -ProportionOfAllAgencies, -DominantProcedure) %>%
-    filter(`Procedure type` != "Other")
+           ProportionOfAllAgencies = SortByProportionHigher/length(unique(notifications_contracts_products_ungrouped$ContractCustomerRegNum))) %>%
+    gather(key = `Procedure`, value = Proportion, -Agency, -SortByProportionHigher, -ProportionOfAllAgencies, -DominantProcedure) %>%
+    filter(`Procedure` != "Other")
   
-  procedure_choice_by_agency$`Procedure type` <- factor(procedure_choice_by_agency$`Procedure type`,
-                                                                   levels = c("Lower discretion", "Medium discretion",
-                                                                              "Higher discretion", "Other"))
+  procedure_choice_by_agency$`Procedure` <- factor(procedure_choice_by_agency$`Procedure`,
+                                                                   levels = c("Open electronic auction", "Open tender",
+                                                                              "Request for quotes", "Other"))
   
   # Some variables to help label axes
   maximum_agency_number <- max(procedure_choice_by_agency$SortByProportionHigher)
-  all_lower_discretion_agency_number <- max(procedure_choice_by_agency[procedure_choice_by_agency$DominantProcedure == "0 Lower discretion", "SortByProportionHigher"])
+  all_lower_discretion_agency_number <- max(procedure_choice_by_agency[procedure_choice_by_agency$DominantProcedure == "0 Open electronic auction", "SortByProportionHigher"])
     all_lower_discretion_agency_label <- round(all_lower_discretion_agency_number/maximum_agency_number, digits = 2)
-  all_medium_discretion_agency_number <- max(procedure_choice_by_agency[procedure_choice_by_agency$DominantProcedure == "1 Medium discretion", "SortByProportionHigher"])
+  all_medium_discretion_agency_number <- max(procedure_choice_by_agency[procedure_choice_by_agency$DominantProcedure == "1 Open tender", "SortByProportionHigher"])
     all_medium_discretion_agency_label <- round(all_medium_discretion_agency_number/maximum_agency_number, digits = 2)
-  all_higher_discretion_agency_number <- max(procedure_choice_by_agency[procedure_choice_by_agency$DominantProcedure == "2 Higher discretion", "SortByProportionHigher"])
+  all_higher_discretion_agency_number <- max(procedure_choice_by_agency[procedure_choice_by_agency$DominantProcedure == "2 Request for quotes", "SortByProportionHigher"])
     all_higher_discretion_agency_label <- round(all_higher_discretion_agency_number/maximum_agency_number, digits = 2)
     
-  graph_title <- paste0("Choice of procurement procedure by agencies in ", current_region_english, ", 2011-2015\n(agencies with at least three purchases)\n")
+  graph_title <- paste0("Choice of procurement procedure by agencies in ", current_region_english, ",\n2011-2015 (agencies with at least three purchases)\n")
     graph_file_name <- paste0(data_output_directory_region, current_region, "_procedure_choice.pdf")
   procedure_choice_by_agency_graph <- procedure_choice_by_agency %>%
-    ggplot(aes(x = SortByProportionHigher, y = Proportion, fill = `Procedure type`)) +
+    ggplot(aes(x = SortByProportionHigher, y = Proportion, fill = `Procedure`)) +
     # ggplot(aes(x = SortByProportionHigher, fill = `Proportion of\nprocedures`)) +
     geom_bar(stat = "identity", width = 1) +
     # geom_histogram(bins = 50) +
@@ -172,10 +172,12 @@ data_output_directory <- set_data_subdirectory(data_directory, data_download_dat
     scale_fill_tableau() +
     labs(title = graph_title,
          x = "Proportion of individual agencies\n",
-         y = "\nProportion of agency procedures") +
+         y = "\nProportion of agency purchases") +
     # theme(axis.text.y=element_blank(), axis.ticks.y=element_blank()) +
-    scale_x_continuous(breaks = c(0, all_lower_discretion_agency_number, all_medium_discretion_agency_number, all_higher_discretion_agency_number, maximum_agency_number, maximum_agency_number/2, 3*maximum_agency_number/4),
-                       labels = c("0", all_lower_discretion_agency_label, all_medium_discretion_agency_label, all_higher_discretion_agency_label, "1", "0.5", "0.75"))
+    scale_x_continuous(breaks = c(0, all_medium_discretion_agency_number, all_higher_discretion_agency_number, maximum_agency_number, maximum_agency_number/2, 3*maximum_agency_number/4),
+                       labels = c("0", all_medium_discretion_agency_label, all_higher_discretion_agency_label, "1", "0.5", "0.75")) +
+    theme(legend.position="bottom") +
+    theme(legend.title=element_blank())
   print(procedure_choice_by_agency_graph)
   ggsave(plot = procedure_choice_by_agency_graph, filename = graph_file_name, device = "pdf", limitsize = T)
   
@@ -217,6 +219,29 @@ data_output_directory <- set_data_subdirectory(data_directory, data_download_dat
     lines(lowess(auction_efficiency_by_agency$`Total spent (log)`, auction_efficiency_by_agency$`Median auction efficiency`), col = "blue")
   # plot(auction_efficiency_by_agency$`Total spent (inverse)`, auction_efficiency_by_agency$`Median auction efficiency`)
   
+  # Two graphs here: auction efficiency vs spend  
+    
+  graph_title <- paste0("Efficiency of median auction vs total spent\nby agencies in ", current_region_english, ", 2011-2015\n")
+    graph_file_name <- paste0(data_output_directory_region, current_region, "_auction_efficiency_vs_spend.pdf")
+    auction_efficiency_vs_spend_graph <- auction_efficiency_by_agency %>%
+      ggplot(aes(x = `Total spent (log)`, y = `Median auction efficiency`)) +
+      geom_point(aes(size = `Number of purchases`), alpha = 1/2) +
+      stat_smooth(se = F, col = "orange") +
+      theme_few() +
+      scale_fill_tableau() +
+      labs(title = graph_title,
+           x = "\nTotal spent by agency (log scale)\n",
+           y = "Median auction efficiency\n") +
+      theme(legend.position="bottom")
+    print(auction_efficiency_vs_spend_graph)
+    ggsave(plot = auction_efficiency_vs_spend_graph, filename = graph_file_name, device = "pdf", limitsize = T)
+    
+  
+  # And auction efficiency vs procedure
+  
+  # And contract starting value vs ending value?
+    
+    
   efficiency_vs_spend <- lm(`Median auction efficiency` ~ `Total spent`, data = auction_efficiency_by_agency)
   summary(efficiency_vs_spend)
   # No matter which rules you apply to exclude extreme values, grouping by agency/product/procedure, 
@@ -225,6 +250,11 @@ data_output_directory <- set_data_subdirectory(data_directory, data_download_dat
   # But clearly spending less not sufficient for higher efficiency, triangular pattern
   
   
+  # % CALCULATE AVERAGE GAP BY HIGH-LEVEL PRODUCT CODE, THEN AGENCY DEVIATIONS
+  # % DOES VARIANCE OF THE GAP TELL US ANYTHING?
+  # % MODEL THE GAP AS FUNCTION OF SOME THINGS, LOOK AT RESIDUALS?
+  # % Can go within agency, see proportion of purchases where padding+restriction
+  # 
   
   
 # } # Closes control loop over regions_list
