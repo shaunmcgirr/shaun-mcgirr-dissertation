@@ -129,7 +129,10 @@ efficiency_vs_specificity_model_2_mean <- lm(`Mean auction efficiency` ~ MeanAbs
   
 # Add spend to model 1
 plot(efficiency_vs_specificity$`Total spent`, efficiency_vs_specificity$SumAbsoluteDeviationFromAverageSpendPerProduct)
-  cor(efficiency_vs_specificity$`Total spent`, efficiency_vs_specificity$SumAbsoluteDeviationFromAverageSpendPerProduct)
+plot(efficiency_vs_specificity$`Total spent (log)`, efficiency_vs_specificity$MeanAbsoluteDeviationFromAverageSpendPerProduct)
+plot(efficiency_vs_specificity$MeanAbsoluteDeviationFromAverageSpendPerProduct, efficiency_vs_specificity$`Median auction efficiency`)
+
+  cor(efficiency_vs_specificity$`Total spent (log)`, efficiency_vs_specificity$MeanAbsoluteDeviationFromAverageSpendPerProduct)
   cor(efficiency_vs_specificity$`Median auction efficiency`, efficiency_vs_specificity$SumAbsoluteDeviationFromAverageSpendPerProduct)
   cor(efficiency_vs_specificity$`Mean auction efficiency`, efficiency_vs_specificity$SumAbsoluteDeviationFromAverageSpendPerProduct)
 # Specificity and spending not highly correlated, can include both in model
