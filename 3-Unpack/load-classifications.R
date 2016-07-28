@@ -1,4 +1,4 @@
-# 3-Construct\load-classifications.R
+# 3-Unpack\load-classifications.R
 
 # Goals of this script are:
 #   - Load and parse the official statistical classifications 
@@ -40,7 +40,7 @@ data_classifications_directory <- "2-Obtain/data_other/classifications"
 okdp_product_classification_raw <- read.csv(file = "2-Obtain/data_other/classifications/ОКДП.csv",
                                         header = T, stringsAsFactors = F, encoding = "utf8",
                                         colClasses = "character") %>%
-                                rename(ProductCode = Код, ProductName = Наименование.группировки) %>%
+                                dplyr::rename(ProductCode = Код, ProductName = Наименование.группировки) %>%
                                 filter(ProductCode != "") %>%
                                 mutate(ProductCodeLevel1 = paste0(substr(ProductCode, 1, 2), "00000"),
                                        ProductCodeLevel2 = paste0(substr(ProductCode, 1, 3), "0000"),
@@ -53,6 +53,11 @@ okdp_product_classification_raw$ProductCode[okdp_product_classification_raw$Prod
 # Fix two product names for 3532112 (space craft etc), delete that name not appearing here http://classifikators.ru/okdp/3532110
 okdp_product_classification_raw <- okdp_product_classification_raw %>%
                                     filter(!(ProductCode == 3532112 & ProductName == "Космические станции"))
+
+# Add line for level 1 product name for code 140000
+okdp_product_classification_raw <- okdp_product_classification_raw %>%
+  rbind(c("1400000", "КАМЕНЬ, ГЛИНА, ПЕСОК И ПРОЧИЕ ВИДЫ МИНЕРАЛЬНОГО СЫРЬЯ", "1400000", "1400000", "1400000")) %>%
+  arrange(ProductCode)
 
 # CODE BELOW SETS UP FULL BRIDGING TABLE
 okdp_product_classification_level_1 <- okdp_product_classification_raw %>%
