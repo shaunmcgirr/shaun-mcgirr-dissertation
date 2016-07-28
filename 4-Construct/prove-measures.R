@@ -181,8 +181,7 @@ data_output_directory <- set_data_subdirectory(data_directory, data_download_dat
   print(procedure_choice_by_agency_graph)
   ggsave(plot = procedure_choice_by_agency_graph, filename = graph_file_name, device = "pdf", limitsize = T)
   
-  
- 
+
     
   ## AUCTION EFFICIENCY BY AGENCY (grouped products)
   auction_efficiency_by_agency <- notifications_contracts_products_grouped %>%
@@ -254,9 +253,49 @@ data_output_directory <- set_data_subdirectory(data_directory, data_download_dat
     ggsave(plot = purchase_specificity_vs_spend_graph, filename = graph_file_name, device = "pdf", limitsize = T)
     
     
-  # And auction efficiency vs procedure
+  # And auction efficiency vs procedure (or product, boxplots)
+  auction_efficiency_by_procedure <- notifications_contracts_products_grouped %>%
+    filter(ContractCurrencyCode == "RUB" & ContractPrice > 0 & NotificationLotCustomerRequirementMaxPrice > 0) %>%
+    transmute(AgencyID = ContractCustomerRegNum,
+              `Initial price` = NotificationLotCustomerRequirementMaxPrice,
+              `Final price` = ContractPrice,
+              `Auction efficiency` = PriceChangePercentageNoOutliers,
+              `ProductCode` = ContractProductCodeLevel1,
+              `Procedure type` = TenderProcedureGroup) %>%
+    filter(!is.na(`Auction efficiency`) & `Final price` >= 1000) #%>%
+    # group_by(`Procedure type`) %>%
+    # summarize(`Median auction efficiency` = median(`Auction efficiency`),
+    #           `Mean auction efficiency` = mean(`Auction efficiency`),
+    #           `Total spent` = sum(`Final price`),
+    #           `Total spent (square root)` = sqrt(`Total spent`),
+    #           `Total spent (log)` = log10(`Total spent`),
+    #           `Total spent (inverse)` = 1/(`Total spent`),
+    #           `Number of purchases` = n()) #%>%
+    # filter(`Total spent` >= 100000 & `Total spent` <= 100000000000 & `Number of purchases` > 100) %>% # Thresholds for agencies alone
+    # filter(`Total spent` >= 100000 & `Total spent` <= 10000000000 & `Number of purchases` > 10) %>%  # Thresholds for agency/product pairs
+    # filter(`Total spent` >= 10000 & `Total spent` <= 1000000000 & `Number of purchases` > 2)      # Thresholds for agency/product/procedure pairs
+    # left_join(okdp_product_classification, by = c("ProductCode"))
   
-    
+  graph_title <- paste0("Auction efficiency by procedure,\nfor agencies in ", current_region_english, ", 2011-2015\n")
+    graph_file_name <- paste0(data_output_directory_region, current_region, "_auction_efficiency_by_procedure.png")
+  auction_efficiency_by_procedure_graph <- auction_efficiency_by_procedure %>%
+                                            filter(`Procedure type` != "Olympic construction") %>%
+                                            ggplot(aes(`Procedure type`, `Auction efficiency`)) +
+                                            geom_boxplot() +
+                                            geom_jitter(width = 0.5) +
+                                            # coord_flip() +
+                                            theme_few() +
+                                            scale_fill_tableau() +
+                                            labs(title = graph_title,
+                                                 x = "",
+                                                 y = "\nAuction efficiency")
+  # print(auction_efficiency_by_procedure_graph)
+  ggsave(plot = auction_efficiency_by_procedure_graph, filename = graph_file_name, device = "png", limitsize = T)
+  
+  # ggplot(auction_efficiency_by_product, aes(ProductName, `Median auction efficiency`)) + geom_point() + coord_flip()
+  # Transport services have greatest padding
+  
+   
   ## RED FLAGS
   
   # Increase in contract price
@@ -320,7 +359,7 @@ data_output_directory <- set_data_subdirectory(data_directory, data_download_dat
 
   # Contracts not notified (ie use of single-supplier)
   single_supplier_by_agency <- notifications_contracts_products_ungrouped %>%
-    # filter(!is.na(PriceChange)) %>%
+    filter(ContractPrice >= 100000) %>% # Not a violation below 100k
     dplyr::rename(AgencyID = ContractCustomerRegNum) %>%
     count(AgencyID, Match) %>%
     mutate(`Proportion of purchases` = prop.table(n)) %>%
@@ -380,6 +419,99 @@ data_output_directory <- set_data_subdirectory(data_directory, data_download_dat
   # Greater opps means tons of money to go round?
   interplot(bunching_model_2, var1 = "CorruptionOpportunities", var2 = "PurchaseSpecificity", hist = T)
   # Weak evidence for anything
+  
+  
+  ## REVISIONS
+  revisions_by_agency <- notifications_contracts_products_grouped %>%
+    filter(Match == "Notification matches contract") %>%
+    transmute(AgencyID = ContractCustomerRegNum,
+              NotificationRevised,
+              ContractRevised,
+              AnyRevision = ifelse((NotificationRevised == "Y" | ContractRevised == "Y"), 1, 0)) %>%
+    group_by(AgencyID) %>%
+    summarize(ProportionOfPurchasesModified = mean(AnyRevision))
+  
+  # Check distribution of irregularities
+  hist((revisions_by_agency$ProportionOfPurchasesModified), breaks = 100)
+  
+  efficiency_vs_specificity_vs_revisions <- efficiency_vs_specificity_vs_increases %>%
+    inner_join(revisions_by_agency) 
+  
+  revisions_model_1 <- lm(ProportionOfPurchasesModified ~ PurchaseSpecificity, data = efficiency_vs_specificity_vs_revisions)
+  summary(revisions_model_1)
+  # More specific purchasing, more modifications to contract (but consistent with capacity)
+  
+  revisions_model_2 <- lm(ProportionOfPurchasesModified ~ PurchaseSpecificity + CorruptionOpportunities + (PurchaseSpecificity * CorruptionOpportunities) + `Total spent (log)`, data = efficiency_vs_specificity_vs_revisions)  
+  summary(revisions_model_2)
+  interplot(revisions_model_2, var1 = "PurchaseSpecificity", var2 = "CorruptionOpportunities", hist = T)
+  # When opps low, increasing spec means more likely to have modifications, weakens as opportunities increase
+  interplot(revisions_model_2, var1 = "CorruptionOpportunities", var2 = "PurchaseSpecificity", hist = T)
+  # When buying generic, effect of opportunities on modiciations is roughly nil
+  # When buying specific, increasing opportunities correlated with fewer modifications
+  
+  
+  ## DRAMATIC PRICE DECREASE >50%
+  large_price_decrease_by_agency <- notifications_contracts_products_ungrouped %>%
+    filter(!is.na(PriceChangePercentage) & TenderProcedureGroup == "Open electronic auction") %>%
+    dplyr::rename(AgencyID = ContractCustomerRegNum) %>%
+    mutate(LargePriceDecrease = ifelse(PriceChangePercentage <= -50, "Large price decrease", "No large price decrease")) %>%
+    # table(large_price_decrease_by_agency$LargePriceDecrease)
+    count(AgencyID, LargePriceDecrease) %>%
+    mutate(`Proportion of purchases` = prop.table(n)) %>%
+    ungroup() %>%
+    dplyr::select(-n) %>%
+    spread(key = LargePriceDecrease, value = `Proportion of purchases`, fill = 0)
+  
+  # Check distribution of irregularities
+  hist((large_price_decrease_by_agency$`Large price decrease`), breaks = 100)
+  
+  efficiency_vs_specificity_vs_large_price_decrease <- efficiency_vs_specificity_vs_increases %>%
+    inner_join(large_price_decrease_by_agency) 
+  
+  decreases_model_1 <- lm(`Large price decrease` ~ PurchaseSpecificity, data = efficiency_vs_specificity_vs_large_price_decrease)
+  summary(revisions_model_1)
+  # More specific purchasing, larger proportion of electronic auctions with price decrease > 50%
+  
+  decreases_model_2 <- lm(`Large price decrease` ~ PurchaseSpecificity + CorruptionOpportunities + (PurchaseSpecificity * CorruptionOpportunities) + `Total spent (log)`, data = efficiency_vs_specificity_vs_large_price_decrease)  
+  summary(decreases_model_2)
+  interplot(decreases_model_2, var1 = "PurchaseSpecificity", var2 = "CorruptionOpportunities", hist = T)
+  # When opps low, increasing spec means less likely to experience large price decrease; effect deadens w/ larger opps
+  # A kind of zero-sum scarcity story possible here: when opps plentiful, specificity matters less as plenty to go round?
+  # When opps not so plentiful, specificity (expertise gap) has 
+  interplot(decreases_model_2, var1 = "CorruptionOpportunities", var2 = "PurchaseSpecificity", hist = T)
+  # When buying generic, greater opportunities lead to less corruption
+  # When buying specific, increasing opportunities doesn't reduce corruption by nearly as much
+
+  
+  ## REPEAT WINNERS
+  contracts_per_supplier_per_agency <- notifications_contracts_products_grouped %>%
+    filter(!is.na(ContractSupplierParticipantINN)) %>%
+    dplyr::rename(AgencyID = ContractCustomerRegNum) %>%
+    group_by(AgencyID, ContractSupplierParticipantINN) %>%
+      count(AgencyID, ContractSupplierParticipantINN) %>% 
+    mutate(`Proportion of purchases` = prop.table(n)) %>%
+    group_by(AgencyID) %>%
+      summarize(`Median percentage of contracts` = 100 * median(`Proportion of purchases`),
+                `Mean percentage of contracts` = 100 * mean(`Proportion of purchases`))
+  
+  # Check distribution of irregularities
+  hist(contracts_per_supplier_per_agency$`Median percentage of contracts`, breaks = 100)
+  
+  efficiency_vs_specificity_vs_repeat_winners <- contracts_per_supplier_per_agency %>%
+    inner_join(efficiency_vs_specificity_vs_increases)
+  
+  repeat_winners_model_1 <- lm(`Median percentage of contracts` ~ PurchaseSpecificity, data = efficiency_vs_specificity_vs_repeat_winners)
+  summary(repeat_winners_model_1)
+  # Increased specificity associated with higher median proportion of agency contracts awarded to each supplier
+  
+  repeat_winners_model_2 <- lm(`Median percentage of contracts` ~ PurchaseSpecificity + CorruptionOpportunities + (PurchaseSpecificity * CorruptionOpportunities) + `Total spent (log)`, data = efficiency_vs_specificity_vs_repeat_winners)  
+  summary(repeat_winners_model_2)
+  interplot(repeat_winners_model_2, var1 = "PurchaseSpecificity", var2 = "CorruptionOpportunities", hist = T)
+  # Difficult to interpret as quantity is so small
+  interplot(repeat_winners_model_2, var1 = "CorruptionOpportunities", var2 = "PurchaseSpecificity", hist = T)
+  # Difficult to interpret as quantity is so small
+  
+  
   
   
   
