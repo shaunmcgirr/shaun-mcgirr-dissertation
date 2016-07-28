@@ -1,0 +1,317 @@
+<?xml version="1.0" encoding="utf-8"?>
+<export xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns="http://zakupki.gov.ru/oos/export/1" xmlns:oos="http://zakupki.gov.ru/oos/types/1">
+	<protocolEF3>
+		<oos:notificationNumber>0373200082912000010</oos:notificationNumber>
+		<oos:protocolNumber>0373200082912000010-3</oos:protocolNumber>
+		<oos:foundationProtocolNumber>0373200082912000010-2</oos:foundationProtocolNumber>
+		<oos:versionNumber>1</oos:versionNumber>
+		<oos:place/>
+		<oos:protocolDate>2012-04-24T15:51:09Z</oos:protocolDate>
+		<oos:signDate>2012-04-24T15:51:09Z</oos:signDate>
+		<oos:publishDate>2012-04-24T15:52:04Z</oos:publishDate>
+		<oos:commission>
+			<oos:regNumber>974</oos:regNumber>
+			<oos:name>Совсем нет данных о комиссии</oos:name>
+			<oos:protocolCommissionMembers>
+				<oos:protocolCommissionMember>
+					<oos:id>1144</oos:id>
+					<oos:name>Иванов Иван Иванович</oos:name>
+					<oos:role>
+						<oos:roleId>28</oos:roleId>
+						<oos:name>Член комиссии</oos:name>
+					</oos:role>
+					<oos:present>1</oos:present>
+				</oos:protocolCommissionMember>
+			</oos:protocolCommissionMembers>
+		</oos:commission>
+		<oos:printForm>
+			<oos:fileName/>
+			<oos:url>www.sberbank-ast.ru/ViewDocument.aspx?id=56450129</oos:url>
+		</oos:printForm>
+		<oos:href>http://zakupki.gov.ru/pgz/public/action/orders/info/common_info/show?notificationId=3043277</oos:href>
+		<oos:protocolLots>
+			<oos:protocolLot>
+				<oos:lotNumber>1</oos:lotNumber>
+				<oos:applications>
+					<oos:application>
+						<oos:journalNumber>2460913</oos:journalNumber>
+						<oos:applicationParticipants>
+							<oos:applicationParticipant>
+								<oos:participantType>U</oos:participantType>
+								<oos:inn>7714867747</oos:inn>
+								<oos:kpp>771401001</oos:kpp>
+								<oos:idNumber/>
+								<oos:idNumberExtension/>
+								<oos:organizationName>Общество с ограниченной ответственностью "Базис сервис"</oos:organizationName>
+								<oos:factualAddress/>
+								<oos:postAddress/>
+								<oos:contactInfo>
+									<oos:lastName/>
+									<oos:firstName/>
+									<oos:middleName/>
+								</oos:contactInfo>
+								<oos:additionalInfo/>
+							</oos:applicationParticipant>
+						</oos:applicationParticipants>
+						<oos:admitted>1</oos:admitted>
+						<oos:appRating>1</oos:appRating>
+					</oos:application>
+					<oos:application>
+						<oos:journalNumber>2460791</oos:journalNumber>
+						<oos:applicationParticipants>
+							<oos:applicationParticipant>
+								<oos:participantType>U</oos:participantType>
+								<oos:inn>7736606467</oos:inn>
+								<oos:kpp>773601001</oos:kpp>
+								<oos:idNumber/>
+								<oos:idNumberExtension/>
+								<oos:organizationName>Закрытое акционерное общество «Система»</oos:organizationName>
+								<oos:factualAddress/>
+								<oos:postAddress/>
+								<oos:contactInfo>
+									<oos:lastName/>
+									<oos:firstName/>
+									<oos:middleName/>
+								</oos:contactInfo>
+								<oos:additionalInfo/>
+							</oos:applicationParticipant>
+						</oos:applicationParticipants>
+						<oos:admitted>1</oos:admitted>
+						<oos:appRating>2</oos:appRating>
+					</oos:application>
+				</oos:applications>
+			</oos:protocolLot>
+		</oos:protocolLots>
+	</protocolEF3>
+	<protocolEF3>
+		<oos:notificationNumber>0373100064612000481</oos:notificationNumber>
+		<oos:protocolNumber>0373100064612000481-3</oos:protocolNumber>
+		<oos:foundationProtocolNumber>0373100064612000481-2</oos:foundationProtocolNumber>
+		<oos:versionNumber>1</oos:versionNumber>
+		<oos:place/>
+		<oos:protocolDate>2012-04-24T15:51:45Z</oos:protocolDate>
+		<oos:signDate>2012-04-24T15:51:45Z</oos:signDate>
+		<oos:publishDate>2012-04-24T15:52:04Z</oos:publishDate>
+		<oos:commission>
+			<oos:regNumber>974</oos:regNumber>
+			<oos:name>Совсем нет данных о комиссии</oos:name>
+			<oos:protocolCommissionMembers>
+				<oos:protocolCommissionMember>
+					<oos:id>1144</oos:id>
+					<oos:name>Иванов Иван Иванович</oos:name>
+					<oos:role>
+						<oos:roleId>28</oos:roleId>
+						<oos:name>Член комиссии</oos:name>
+					</oos:role>
+					<oos:present>1</oos:present>
+				</oos:protocolCommissionMember>
+			</oos:protocolCommissionMembers>
+		</oos:commission>
+		<oos:printForm>
+			<oos:fileName/>
+			<oos:url>www.sberbank-ast.ru/ViewDocument.aspx?id=56450255</oos:url>
+		</oos:printForm>
+		<oos:href>http://zakupki.gov.ru/pgz/public/action/orders/info/common_info/show?notificationId=3083646</oos:href>
+		<oos:protocolLots>
+			<oos:protocolLot>
+				<oos:lotNumber>1</oos:lotNumber>
+				<oos:applications>
+					<oos:application>
+						<oos:journalNumber>2486420</oos:journalNumber>
+						<oos:applicationParticipants>
+							<oos:applicationParticipant>
+								<oos:participantType>U</oos:participantType>
+								<oos:inn>7724550989</oos:inn>
+								<oos:kpp>772401001</oos:kpp>
+								<oos:idNumber/>
+								<oos:idNumberExtension/>
+								<oos:organizationName>Общество с ограниченной ответственностью «Торгово-промышленная компания «РусСнабКомплект»</oos:organizationName>
+								<oos:factualAddress/>
+								<oos:postAddress/>
+								<oos:contactInfo>
+									<oos:lastName/>
+									<oos:firstName/>
+									<oos:middleName/>
+								</oos:contactInfo>
+								<oos:additionalInfo/>
+							</oos:applicationParticipant>
+						</oos:applicationParticipants>
+						<oos:admitted>1</oos:admitted>
+						<oos:appRating>1</oos:appRating>
+					</oos:application>
+					<oos:application>
+						<oos:journalNumber>2488253</oos:journalNumber>
+						<oos:applicationParticipants>
+							<oos:applicationParticipant>
+								<oos:participantType>U</oos:participantType>
+								<oos:inn>7721575150</oos:inn>
+								<oos:kpp>772101001</oos:kpp>
+								<oos:idNumber/>
+								<oos:idNumberExtension/>
+								<oos:organizationName>Общество с ограниченной ответственностью "Промсбыт"</oos:organizationName>
+								<oos:factualAddress/>
+								<oos:postAddress/>
+								<oos:contactInfo>
+									<oos:lastName/>
+									<oos:firstName/>
+									<oos:middleName/>
+								</oos:contactInfo>
+								<oos:additionalInfo/>
+							</oos:applicationParticipant>
+						</oos:applicationParticipants>
+						<oos:admitted>1</oos:admitted>
+						<oos:appRating>3</oos:appRating>
+					</oos:application>
+					<oos:application>
+						<oos:journalNumber>2488093</oos:journalNumber>
+						<oos:applicationParticipants>
+							<oos:applicationParticipant>
+								<oos:participantType>U</oos:participantType>
+								<oos:inn>7722692963</oos:inn>
+								<oos:kpp>772201001</oos:kpp>
+								<oos:idNumber/>
+								<oos:idNumberExtension/>
+								<oos:organizationName>Общество с ограниченной ответственностью "Высокие Технологии в Промышленности"</oos:organizationName>
+								<oos:factualAddress/>
+								<oos:postAddress/>
+								<oos:contactInfo>
+									<oos:lastName/>
+									<oos:firstName/>
+									<oos:middleName/>
+								</oos:contactInfo>
+								<oos:additionalInfo/>
+							</oos:applicationParticipant>
+						</oos:applicationParticipants>
+						<oos:admitted>1</oos:admitted>
+						<oos:appRating>2</oos:appRating>
+					</oos:application>
+				</oos:applications>
+			</oos:protocolLot>
+		</oos:protocolLots>
+	</protocolEF3>
+	<protocolEF3>
+		<oos:notificationNumber>0373200555812000011</oos:notificationNumber>
+		<oos:protocolNumber>0373200555812000011-5</oos:protocolNumber>
+		<oos:foundationProtocolNumber>0373200555812000011-4</oos:foundationProtocolNumber>
+		<oos:versionNumber>1</oos:versionNumber>
+		<oos:place/>
+		<oos:protocolDate>2012-04-24T15:50:13Z</oos:protocolDate>
+		<oos:signDate>2012-04-24T15:50:13Z</oos:signDate>
+		<oos:publishDate>2012-04-24T15:52:08Z</oos:publishDate>
+		<oos:commission>
+			<oos:regNumber>974</oos:regNumber>
+			<oos:name>Совсем нет данных о комиссии</oos:name>
+			<oos:protocolCommissionMembers>
+				<oos:protocolCommissionMember>
+					<oos:id>1144</oos:id>
+					<oos:name>Иванов Иван Иванович</oos:name>
+					<oos:role>
+						<oos:roleId>28</oos:roleId>
+						<oos:name>Член комиссии</oos:name>
+					</oos:role>
+					<oos:present>1</oos:present>
+				</oos:protocolCommissionMember>
+			</oos:protocolCommissionMembers>
+		</oos:commission>
+		<oos:printForm>
+			<oos:fileName/>
+			<oos:url>http://www.rts-tender.ru/DFile.ashx?guid=3b617ba1-9e49-430e-87c3-e728c30607b4</oos:url>
+		</oos:printForm>
+		<oos:documentMetas>
+			<oos:documentMeta>
+				<oos:sid>62701450</oos:sid>
+				<oos:fileName>Протокол 2 ч.pdf</oos:fileName>
+				<oos:docDescription>Копия оригинала протокола подведения итогов открытого аукциона в электронной форме </oos:docDescription>
+				<oos:url>http://www.rts-tender.ru/DFile.ashx?guid=db460dd6-4b03-480b-8774-992931564921</oos:url>
+			</oos:documentMeta>
+		</oos:documentMetas>
+		<oos:href>http://zakupki.gov.ru/pgz/public/action/orders/info/common_info/show?notificationId=3130899</oos:href>
+		<oos:protocolLots>
+			<oos:protocolLot>
+				<oos:lotNumber>1</oos:lotNumber>
+				<oos:applications>
+					<oos:application>
+						<oos:journalNumber>1</oos:journalNumber>
+						<oos:applicationParticipants>
+							<oos:applicationParticipant>
+								<oos:participantType>U</oos:participantType>
+								<oos:inn>7713552938</oos:inn>
+								<oos:kpp>771301001</oos:kpp>
+								<oos:idNumber/>
+								<oos:idNumberExtension/>
+								<oos:organizationName>ООО 'Темп Авто М'</oos:organizationName>
+								<oos:country>
+									<oos:countryCode>643</oos:countryCode>
+									<oos:countryFullName>Российская Федерация</oos:countryFullName>
+								</oos:country>
+								<oos:factualAddress>107076, Российская Федерация, г. Москва, Дмитровское, 46 (1), ОКАТО: 45277592000</oos:factualAddress>
+								<oos:postAddress>г. Москва, Краснобогатырская ул., д. 89 (1)</oos:postAddress>
+								<oos:contactInfo>
+									<oos:lastName>Тадеущук</oos:lastName>
+									<oos:firstName>Денис</oos:firstName>
+									<oos:middleName>Александрович</oos:middleName>
+								</oos:contactInfo>
+								<oos:additionalInfo>+7(926)5503854</oos:additionalInfo>
+							</oos:applicationParticipant>
+						</oos:applicationParticipants>
+						<oos:admissionResults>
+							<oos:admissionResult>
+								<oos:protocolCommissionMember>
+									<oos:id>1144</oos:id>
+									<oos:name>Иванов Иван Иванович</oos:name>
+									<oos:role>
+										<oos:roleId>28</oos:roleId>
+										<oos:name>Член комиссии</oos:name>
+									</oos:role>
+								</oos:protocolCommissionMember>
+								<oos:admitted>1</oos:admitted>
+							</oos:admissionResult>
+						</oos:admissionResults>
+						<oos:admitted>1</oos:admitted>
+						<oos:appRating>1</oos:appRating>
+					</oos:application>
+					<oos:application>
+						<oos:journalNumber>2</oos:journalNumber>
+						<oos:applicationParticipants>
+							<oos:applicationParticipant>
+								<oos:participantType>U</oos:participantType>
+								<oos:inn>5256107030</oos:inn>
+								<oos:kpp>525601001</oos:kpp>
+								<oos:idNumber/>
+								<oos:idNumberExtension/>
+								<oos:organizationName>ООО "СоюзТрейд""</oos:organizationName>
+								<oos:country>
+									<oos:countryCode>643</oos:countryCode>
+									<oos:countryFullName>Российская Федерация</oos:countryFullName>
+								</oos:country>
+								<oos:factualAddress>Российская Федерация, Нижегородская обл., г. Нижний Новгород, ш. Казанское, 18, 77, ОКАТО: 22401373000</oos:factualAddress>
+								<oos:postAddress>Российская Федерация, Нижегородская обл., г. Нижний Новгород, ш. Казанское, 18, 77, ОКАТО: 22401373000</oos:postAddress>
+								<oos:contactInfo>
+									<oos:lastName>Седов</oos:lastName>
+									<oos:firstName>Дмитрий</oos:firstName>
+									<oos:middleName>Валерьевич</oos:middleName>
+								</oos:contactInfo>
+								<oos:additionalInfo/>
+							</oos:applicationParticipant>
+						</oos:applicationParticipants>
+						<oos:admissionResults>
+							<oos:admissionResult>
+								<oos:protocolCommissionMember>
+									<oos:id>1144</oos:id>
+									<oos:name>Иванов Иван Иванович</oos:name>
+									<oos:role>
+										<oos:roleId>28</oos:roleId>
+										<oos:name>Член комиссии</oos:name>
+									</oos:role>
+								</oos:protocolCommissionMember>
+								<oos:admitted>1</oos:admitted>
+							</oos:admissionResult>
+						</oos:admissionResults>
+						<oos:admitted>1</oos:admitted>
+						<oos:appRating>2</oos:appRating>
+					</oos:application>
+				</oos:applications>
+			</oos:protocolLot>
+		</oos:protocolLots>
+	</protocolEF3>
+</export>
