@@ -34,26 +34,7 @@ data_output_directory <- set_data_subdirectory(data_directory, data_download_dat
 # 3. Load data, reshape it for graphs #
 ##############################################
 
-# Loop over regions, processing them in turn (not needed for proving)
-# for(r in 1:regions_number){
-  r <- 1
-  current_region <- as.character(regions_list[r])
-  current_region_english <- generate_english_region_name(current_region)
-  data_output_directory_region <- paste0(data_output_directory, current_region, "/")
-  
-    # Load the file of measures
-    file_to_process <- paste0(data_output_directory, current_region, "/",
-                              current_region, "_notifications_contracts_products_ungrouped_",
-                              data_download_date, ".rda")
-    load(file=file_to_process)
-    
-    file_to_process <- paste0(data_output_directory, current_region, "/",
-                              current_region, "_notifications_contracts_products_grouped_",
-                              data_download_date, ".rda")
-    load(file=file_to_process)
-  
-    # Reshape for graphs below
-    
+
 
 ##############################################
 # 4. Create graphs #
@@ -301,23 +282,24 @@ data_output_directory <- set_data_subdirectory(data_directory, data_download_dat
   # Increase in contract price
   price_increases_by_agency <- notifications_contracts_products_ungrouped %>%
     filter(!is.na(PriceChange)) %>%
-    dplyr::rename(AgencyID = ContractCustomerRegNum) %>%
+    rename(AgencyID = ContractCustomerRegNum) %>%
     mutate(PriceChangeDescription = ifelse(PriceChange < 0, "Decrease",
                                            ifelse(PriceChange == 0, "No change",
                                                   ifelse(PriceChange > 0, "Increase", NA)))) %>%
     count(AgencyID, PriceChangeDescription) %>%
     mutate(`Proportion of purchases` = prop.table(n)) %>%
     ungroup() %>%
-    dplyr::select(-n) %>%
-    spread(key = PriceChangeDescription, value = `Proportion of purchases`, fill = 0)
+    select(-n) %>%
+    spread(key = PriceChangeDescription, value = `Proportion of purchases`, fill = 0) %>%
+    mutate(`No decrease` = `No change` + Increase)
 
   # Check distribution of irregularities
-  hist(log10(price_increases_by_agency$Increase), breaks = 100)
+  hist(log10(price_increases_by_agency$`No decrease`), breaks = 100)
   hist(log10(price_increases_by_agency$`No change`), breaks = 100)
   
   efficiency_vs_specificity_vs_increases <- efficiency_vs_specificity %>%
     inner_join(price_increases_by_agency) %>%
-    dplyr::rename(NoChange = `No change`) %>%
+    rename(NoChange = `No change`) %>%
     mutate(MeanAuctionEfficiency = `Mean auction efficiency`,
            MedianAuctionEfficiency = `Median auction efficiency`,
            PurchaseSpecificity = MeanAbsoluteDeviationFromAverageSpendPerProduct/max(MeanAbsoluteDeviationFromAverageSpendPerProduct),
@@ -325,24 +307,39 @@ data_output_directory <- set_data_subdirectory(data_directory, data_download_dat
     filter(`Number of purchases` > 9)
     
   # Try a model predicting increases/no change as function of IVs already specified
-  price_increases_model_1 <- lm(NoChange ~ PurchaseSpecificity, data = efficiency_vs_specificity_vs_increases)  
+  price_increases_model_1 <- lm(`No decrease` ~ PurchaseSpecificity, data = efficiency_vs_specificity_vs_increases)  
   summary(price_increases_model_1)
   # The more specific purchases, lower percentage of no-change auctions, consistent with theory
-  plot(efficiency_vs_specificity_vs_increases$PurchaseSpecificity, efficiency_vs_specificity_vs_increases$NoChange)
-    lines(lowess(efficiency_vs_specificity_vs_increases$PurchaseSpecificity, efficiency_vs_specificity_vs_increases$NoChange), col = "blue")
-  plot(efficiency_vs_specificity_vs_increases$CorruptionOpportunities, efficiency_vs_specificity_vs_increases$NoChange)
-    lines(lowess(efficiency_vs_specificity_vs_increases$CorruptionOpportunities, efficiency_vs_specificity_vs_increases$NoChange), col = "blue")
+  plot(efficiency_vs_specificity_vs_increases$PurchaseSpecificity, efficiency_vs_specificity_vs_increases$`No decrease`)
+    lines(lowess(efficiency_vs_specificity_vs_increases$PurchaseSpecificity, efficiency_vs_specificity_vs_increases$`No decrease`), col = "blue")
+  plot(efficiency_vs_specificity_vs_increases$CorruptionOpportunities, efficiency_vs_specificity_vs_increases$`No decrease`)
+    lines(lowess(efficiency_vs_specificity_vs_increases$CorruptionOpportunities, efficiency_vs_specificity_vs_increases$`No decrease`), col = "blue")
   # Shows can't have this irregularity without larger opportunities
-    
-  price_increases_model_2 <- lm(NoChange ~ PurchaseSpecificity + CorruptionOpportunities, data = efficiency_vs_specificity_vs_increases)  
+  # Graph this properly
+  graph_title <- paste0("Proportion of purchases with no price decrease vs corruption opportunities,\nby agencies in ", current_region_english, ", 2011-2015\n")
+    graph_file_name <- paste0(data_output_directory_region, current_region, "_no_price_decrease_vs_opportunities.pdf")
+  no_price_decrease_graph <- efficiency_vs_specificity_vs_increases %>%
+    ggplot(aes(x = CorruptionOpportunities, y = `No decrease`)) +
+    geom_point(aes(size = `Number of purchases`), alpha = 1/2) +
+    # stat_smooth(se = F, col = "orange") +
+    theme_few() +
+    scale_fill_tableau() +
+    labs(title = graph_title,
+         x = "\nCorruption opportunities (measured by auction efficiency)\n",
+         y = "Red flag: proportion of purchases with no price decrease\n") +
+    theme(legend.position="bottom")
+  print(no_price_decrease_graph)
+    ggsave(plot = no_price_decrease_graph, filename = graph_file_name, device = "pdf", limitsize = T, width = 8, height = 8)
+      
+  price_increases_model_2 <- lm(`No decrease` ~ PurchaseSpecificity + CorruptionOpportunities, data = efficiency_vs_specificity_vs_increases)  
   summary(price_increases_model_2)
   # Effect holds, but CorruptionOpportunities and NoChange obviously quite highly correlated
 
-  price_increases_model_3 <- lm(NoChange ~ PurchaseSpecificity + TotalSpent, data = efficiency_vs_specificity_vs_increases)  
+  price_increases_model_3 <- lm(`No decrease` ~ PurchaseSpecificity + TotalSpent, data = efficiency_vs_specificity_vs_increases)  
   summary(price_increases_model_3)
   # Negative effect of specificity on no-change auctions holds, more spending associated with more no-change auctions
 
-  price_increases_model_4 <- lm(NoChange ~ PurchaseSpecificity + CorruptionOpportunities + (PurchaseSpecificity * CorruptionOpportunities) + `Total spent (log)`, data = efficiency_vs_specificity_vs_increases)  
+  price_increases_model_4 <- lm(`No decrease` ~ PurchaseSpecificity + CorruptionOpportunities + (PurchaseSpecificity * CorruptionOpportunities) + `Total spent (log)`, data = efficiency_vs_specificity_vs_increases)  
   summary(price_increases_model_4)
   # Unconditional negative effect of specificity holds, weaker. 
   interplot(price_increases_model_4, var1 = "PurchaseSpecificity", var2 = "CorruptionOpportunities", hist = T)
@@ -357,19 +354,31 @@ data_output_directory <- set_data_subdirectory(data_directory, data_download_dat
   # as basket becomes more specific, effect of increased padding becomes stronger
       
 
-  # Contracts not notified (ie use of single-supplier)
+  ## SINGLE-SUPPLIER Contracts not notified (ie use of single-supplier)
   single_supplier_by_agency <- notifications_contracts_products_ungrouped %>%
     filter(ContractPrice >= 100000) %>% # Not a violation below 100k
-    dplyr::rename(AgencyID = ContractCustomerRegNum) %>%
+    rename(AgencyID = ContractCustomerRegNum) %>%
     count(AgencyID, Match) %>%
     mutate(`Proportion of purchases` = prop.table(n)) %>%
     ungroup() %>%
-    dplyr::select(-n) %>%
+    select(-n) %>%
     spread(key = Match, value = `Proportion of purchases`, fill = 0)
   
+ single_supplier_by_agency_value <- notifications_contracts_products_ungrouped %>%
+    filter(ContractPrice >= 100000) %>% # Not a violation below 100k
+    rename(AgencyID = ContractCustomerRegNum) %>%
+    group_by(AgencyID, Match) %>%
+    summarize(ValueOfPurchases = sum(ContractPrice)) %>%
+    mutate(`Proportion of value` = prop.table(ValueOfPurchases)) %>%
+    ungroup() %>%
+    select(-ValueOfPurchases) %>%
+    spread(key = Match, value = `Proportion of value`, fill = 0)
+   
   # Check distribution of irregularities
   hist(log10(single_supplier_by_agency$`Contract without notification`), breaks = 100)
+  hist(log10(single_supplier_by_agency_value$`Contract without notification`), breaks = 100)
   
+    
   efficiency_vs_specificity_vs_single_supplier <- efficiency_vs_specificity_vs_increases %>%
     inner_join(single_supplier_by_agency) %>%
     filter(`Number of purchases` > 9)
@@ -378,7 +387,8 @@ data_output_directory <- set_data_subdirectory(data_directory, data_download_dat
   summary(single_supplier_model_1)
   # No relationship, as expected with rare-ish event
   plot(efficiency_vs_specificity_vs_single_supplier$PurchaseSpecificity, efficiency_vs_specificity_vs_single_supplier$`Contract without notification`)
-  
+  plot(efficiency_vs_specificity_vs_single_supplier$CorruptionOpportunities, efficiency_vs_specificity_vs_single_supplier$`Contract without notification`)
+    
   single_supplier_model_2 <- lm(`Contract without notification` ~ PurchaseSpecificity + CorruptionOpportunities + (PurchaseSpecificity * CorruptionOpportunities) + `Total spent (log)`, data = efficiency_vs_specificity_vs_single_supplier)  
   summary(single_supplier_model_2)
   interplot(single_supplier_model_2, var1 = "PurchaseSpecificity", var2 = "CorruptionOpportunities", hist = T)
@@ -390,14 +400,14 @@ data_output_directory <- set_data_subdirectory(data_directory, data_download_dat
   ## BUNCHED LISTING PRICES (discontinuities)
   purchases_bunched_at_thresholds <- notifications_contracts_products_ungrouped %>%
     filter(!is.na(NotificationLotCustomerRequirementMaxPrice)) %>%
-    dplyr::rename(AgencyID = ContractCustomerRegNum) %>%
+    rename(AgencyID = ContractCustomerRegNum) %>%
     mutate(BunchedAtThreshold = ifelse(TenderProcedureGroup == "Request for quotes" & NotificationLotCustomerRequirementMaxPrice > (0.99 * 500000) & NotificationLotCustomerRequirementMaxPrice < (1.01 * 500000), "Bunched at request for quotes threshold",
                                        ifelse(TenderProcedureGroup == "Open electronic auction" & NotificationLotCustomerRequirementMaxPrice > (0.99 * 3000000) & NotificationLotCustomerRequirementMaxPrice < (1.01 * 3000000), "Bunched at open electronic auction threshold", "Not bunched"))) %>%
   # table(purchases_bunched_at_thresholds$BunchedAtThreshold)
   count(AgencyID, BunchedAtThreshold) %>%
     mutate(`Proportion of purchases` = prop.table(n)) %>%
     ungroup() %>%
-  dplyr::select(-n) %>%
+  select(-n) %>%
   spread(key = BunchedAtThreshold, value = `Proportion of purchases`, fill = 0) %>%
   mutate(Bunched = 1-`Not bunched`)
   
@@ -411,7 +421,26 @@ data_output_directory <- set_data_subdirectory(data_directory, data_download_dat
   summary(bunching_model_1)
   # Weak relationship
   plot(efficiency_vs_specificity_vs_bunching$PurchaseSpecificity, efficiency_vs_specificity_vs_bunching$Bunched)
+  plot(efficiency_vs_specificity_vs_bunching$CorruptionOpportunities, efficiency_vs_specificity_vs_bunching$Bunched)
+  plot(efficiency_vs_specificity_vs_bunching$CorruptionOpportunities, efficiency_vs_specificity_vs_bunching$`Bunched at request for quotes threshold`)
+  plot(efficiency_vs_specificity_vs_bunching$CorruptionOpportunities, efficiency_vs_specificity_vs_bunching$`Bunched at open electronic auction threshold`)
   
+  # Graph the higher-level bunching
+  graph_title <- paste0("Proportion of purchases near thresholds vs corruption opportunites,\nby agencies in ", current_region_english, ", 2011-2015\n")
+    graph_file_name <- paste0(data_output_directory_region, current_region, "_bunching_vs_opportunities.pdf")
+  bunching_graph <- efficiency_vs_specificity_vs_bunching %>%
+    ggplot(aes(x = CorruptionOpportunities, y = `Bunched at open electronic auction threshold`)) +
+    geom_point(aes(size = `Number of purchases`), alpha = 1/2) +
+    # stat_smooth(se = F, col = "orange") +
+    theme_few() +
+    scale_fill_tableau() +
+    labs(title = graph_title,
+         x = "\nCorruption opportunities (measured by auction efficiency)\n",
+         y = "Red flag: proportion of purchases listed within 1% of threshold\n") +
+    theme(legend.position="bottom")
+  print(bunching_graph)
+  ggsave(plot = bunching_graph, filename = graph_file_name, device = "pdf", limitsize = T, width = 8, height = 8)
+    
   bunching_model_2 <- lm(Bunched ~ PurchaseSpecificity + CorruptionOpportunities + (PurchaseSpecificity * CorruptionOpportunities) + `Total spent (log)`, data = efficiency_vs_specificity_vs_bunching)  
   summary(bunching_model_2)
   interplot(bunching_model_2, var1 = "PurchaseSpecificity", var2 = "CorruptionOpportunities", hist = T)
@@ -431,8 +460,21 @@ data_output_directory <- set_data_subdirectory(data_directory, data_download_dat
     group_by(AgencyID) %>%
     summarize(ProportionOfPurchasesModified = mean(AnyRevision))
   
+  revisions_by_agency_count <- notifications_contracts_products_grouped %>%
+    filter(Match == "Notification matches contract") %>%
+    transmute(AgencyID = ContractCustomerRegNum,
+              `Revisions to notification` = (NotificationVersionNumber - 1), # Version numbers start at 1
+              `Revisions to contract` = ContractVersionNumber, # Version numbers start at 0
+              `Total revisions` = `Revisions to notification` + `Revisions to contract`) %>%
+    group_by(AgencyID) %>%
+    summarize(`Median total revisions` = median(`Total revisions`),
+              `Mean total revisions` = mean(`Total revisions`),
+              `Mean contract revisions` = mean(`Revisions to contract`))
+  
   # Check distribution of irregularities
   hist((revisions_by_agency$ProportionOfPurchasesModified), breaks = 100)
+  hist(revisions_by_agency_count$`Mean contract revisions`, breaks = 100)
+  hist(revisions_by_agency_count$`Mean total revisions`, breaks = 100)
   
   efficiency_vs_specificity_vs_revisions <- efficiency_vs_specificity_vs_increases %>%
     inner_join(revisions_by_agency) 
@@ -453,13 +495,13 @@ data_output_directory <- set_data_subdirectory(data_directory, data_download_dat
   ## DRAMATIC PRICE DECREASE >50%
   large_price_decrease_by_agency <- notifications_contracts_products_ungrouped %>%
     filter(!is.na(PriceChangePercentage) & TenderProcedureGroup == "Open electronic auction") %>%
-    dplyr::rename(AgencyID = ContractCustomerRegNum) %>%
+    rename(AgencyID = ContractCustomerRegNum) %>%
     mutate(LargePriceDecrease = ifelse(PriceChangePercentage <= -50, "Large price decrease", "No large price decrease")) %>%
     # table(large_price_decrease_by_agency$LargePriceDecrease)
     count(AgencyID, LargePriceDecrease) %>%
     mutate(`Proportion of purchases` = prop.table(n)) %>%
     ungroup() %>%
-    dplyr::select(-n) %>%
+    select(-n) %>%
     spread(key = LargePriceDecrease, value = `Proportion of purchases`, fill = 0)
   
   # Check distribution of irregularities
@@ -471,6 +513,22 @@ data_output_directory <- set_data_subdirectory(data_directory, data_download_dat
   decreases_model_1 <- lm(`Large price decrease` ~ PurchaseSpecificity, data = efficiency_vs_specificity_vs_large_price_decrease)
   summary(revisions_model_1)
   # More specific purchasing, larger proportion of electronic auctions with price decrease > 50%
+  
+  # Graph the large price decreases
+  graph_title <- paste0("Proportion of purchases with dramatic price decrease vs corruption opportunities,\nby agencies in ", current_region_english, ", 2011-2015\n")
+    graph_file_name <- paste0(data_output_directory_region, current_region, "_large_price_decreases_vs_opportunities.pdf")
+  large_price_decrease_graph <- efficiency_vs_specificity_vs_large_price_decrease %>%
+    ggplot(aes(x = CorruptionOpportunities, y = `Large price decrease`)) +
+    geom_point(aes(size = `Number of purchases`), alpha = 1/2) +
+    # stat_smooth(se = F, col = "orange") +
+    theme_few() +
+    scale_fill_tableau() +
+    labs(title = graph_title,
+         x = "\nCorruption opportunities (measured by auction efficiency)\n",
+         y = "Red flag: proportion of purchases where price decreased >50% over auction\n") +
+    theme(legend.position="bottom")
+  print(large_price_decrease_graph)
+  ggsave(plot = large_price_decrease_graph, filename = graph_file_name, device = "pdf", limitsize = T, width = 8, height = 8)
   
   decreases_model_2 <- lm(`Large price decrease` ~ PurchaseSpecificity + CorruptionOpportunities + (PurchaseSpecificity * CorruptionOpportunities) + `Total spent (log)`, data = efficiency_vs_specificity_vs_large_price_decrease)  
   summary(decreases_model_2)
@@ -486,7 +544,7 @@ data_output_directory <- set_data_subdirectory(data_directory, data_download_dat
   ## REPEAT WINNERS
   contracts_per_supplier_per_agency <- notifications_contracts_products_grouped %>%
     filter(!is.na(ContractSupplierParticipantINN)) %>%
-    dplyr::rename(AgencyID = ContractCustomerRegNum) %>%
+    rename(AgencyID = ContractCustomerRegNum) %>%
     group_by(AgencyID, ContractSupplierParticipantINN) %>%
       count(AgencyID, ContractSupplierParticipantINN) %>% 
     mutate(`Proportion of purchases` = prop.table(n)) %>%
@@ -494,23 +552,73 @@ data_output_directory <- set_data_subdirectory(data_directory, data_download_dat
       summarize(`Median percentage of contracts` = 100 * median(`Proportion of purchases`),
                 `Mean percentage of contracts` = 100 * mean(`Proportion of purchases`))
   
-  # Check distribution of irregularities
-  hist(contracts_per_supplier_per_agency$`Median percentage of contracts`, breaks = 100)
+  contract_value_per_supplier_per_agency <- notifications_contracts_products_grouped %>%
+    filter(!is.na(ContractSupplierParticipantINN) & !is.na(ContractPrice)) %>%
+    rename(AgencyID = ContractCustomerRegNum) %>%
+    group_by(AgencyID, ContractSupplierParticipantINN) %>%
+      summarize(ValueOfPurchases = sum(ContractPrice)) %>%
+    mutate(`Proportion of value` = prop.table(ValueOfPurchases)) %>%
+    group_by(AgencyID) %>%
+    summarize(`Median value of contracts` = median(`Proportion of value`),
+              `Mean value of contracts` = mean(`Proportion of value`))
   
-  efficiency_vs_specificity_vs_repeat_winners <- contracts_per_supplier_per_agency %>%
+  # Check distribution of irregularities
+  hist(contracts_per_supplier_per_agency$`Median percentage of contracts`, breaks = 100) # This version gives pretty flat lines, which just means effect not conditional
+  hist(contracts_per_supplier_per_agency$`Mean percentage of contracts`, breaks = 100) # 
+  hist(contract_value_per_supplier_per_agency$`Median value of contracts`, breaks = 100) # This version gives
+  
+  efficiency_vs_specificity_vs_repeat_winners <- contract_value_per_supplier_per_agency %>%
     inner_join(efficiency_vs_specificity_vs_increases)
   
-  repeat_winners_model_1 <- lm(`Median percentage of contracts` ~ PurchaseSpecificity, data = efficiency_vs_specificity_vs_repeat_winners)
+  repeat_winners_model_1 <- lm(`Median value of contracts` ~ PurchaseSpecificity, data = efficiency_vs_specificity_vs_repeat_winners)
   summary(repeat_winners_model_1)
   # Increased specificity associated with higher median proportion of agency contracts awarded to each supplier
   
-  repeat_winners_model_2 <- lm(`Median percentage of contracts` ~ PurchaseSpecificity + CorruptionOpportunities + (PurchaseSpecificity * CorruptionOpportunities) + `Total spent (log)`, data = efficiency_vs_specificity_vs_repeat_winners)  
+  repeat_winners_model_2 <- lm(`Median value of contracts` ~ PurchaseSpecificity + CorruptionOpportunities + (PurchaseSpecificity * CorruptionOpportunities) + `Total spent (log)`, data = efficiency_vs_specificity_vs_repeat_winners)  
   summary(repeat_winners_model_2)
   interplot(repeat_winners_model_2, var1 = "PurchaseSpecificity", var2 = "CorruptionOpportunities", hist = T)
-  # Difficult to interpret as quantity is so small
+  # When opportunities are low, increasing specificity increases (slightly) red flag
   interplot(repeat_winners_model_2, var1 = "CorruptionOpportunities", var2 = "PurchaseSpecificity", hist = T)
-  # Difficult to interpret as quantity is so small
+  # When buying usual things, opportunties have no effect; when buying unusual basket, increasing opportunities decreases red flag
   
+  
+  ## LISTING DURATION
+  listing_duration_by_agency <- notifications_contracts_products_grouped %>%
+    filter(!is.na(ProcedureDuration) & ProcedureDuration > 0) %>%
+    rename(AgencyID = ContractCustomerRegNum) %>%
+    group_by(AgencyID) %>%
+      summarize(`Median procedure duration` = median(ProcedureDuration))
+  
+  listing_duration_by_agency_threshold <- notifications_contracts_products_grouped %>%
+    filter(!is.na(ProcedureDuration) & ProcedureDuration > 0) %>%
+    rename(AgencyID = ContractCustomerRegNum) %>%
+    mutate(ProcedureLength = ifelse(ProcedureDuration < 23, "Short procedure",
+                                    ifelse(ProcedureDuration >= 23, "Normal procedure", NA))) %>%
+    count(AgencyID, ProcedureLength) %>%
+    mutate(`Proportion of purchases` = prop.table(n)) %>%
+    ungroup() %>%
+    select(-n) %>%
+    spread(key = ProcedureLength, value = `Proportion of purchases`, fill = 0)
+  
+  # Check distribution of irregularities
+  hist(listing_duration_by_agency$`Median procedure duration`, breaks = 100)
+  hist(listing_duration_by_agency_threshold$`Short procedure`, breaks = 100) # Using this version doesn't clear anything up
+
+  efficiency_vs_specificity_vs_duration <- efficiency_vs_specificity_vs_increases %>%
+    inner_join(listing_duration_by_agency) 
+  
+  plot(efficiency_vs_specificity_vs_duration$CorruptionOpportunities, efficiency_vs_specificity_vs_duration$`Median procedure duration`)
+    
+  listing_duration_model_1 <- lm(`Median procedure duration` ~ PurchaseSpecificity, data = efficiency_vs_specificity_vs_duration)
+  summary(listing_duration_model_1)
+  # More specific purchasing, longer median duration
+  
+  listing_duration_model_2 <- lm(`Median procedure duration` ~ PurchaseSpecificity + CorruptionOpportunities + (PurchaseSpecificity * CorruptionOpportunities) + `Total spent (log)`, data = efficiency_vs_specificity_vs_duration)  
+  summary(listing_duration_model_2)
+  interplot(listing_duration_model_2, var1 = "PurchaseSpecificity", var2 = "CorruptionOpportunities", hist = T)
+  # When opportunities are low, increasing specificity increases (slightly) red flag
+  interplot(listing_duration_model_2, var1 = "CorruptionOpportunities", var2 = "PurchaseSpecificity", hist = T)
+  # When buying usual things, opportunties have no effect; when buying unusual basket, increasing opportunities decreases red flag
   
   
   

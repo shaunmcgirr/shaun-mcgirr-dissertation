@@ -79,9 +79,13 @@ for(r in 1:regions_number){
     
   # Convert other one-offs
   notifications_contracts_products_grouped$NotificationPublishDate <- as.Date(substr(notifications_contracts_products_grouped$NotificationPublishDate, 1, 10))
-  notifications_contracts_products_ungrouped$NotificationPublishDate <- as.Date(substr(notifications_contracts_products_ungrouped$NotificationPublishDate, 1, 10))
+    notifications_contracts_products_ungrouped$NotificationPublishDate <- as.Date(substr(notifications_contracts_products_ungrouped$NotificationPublishDate, 1, 10))
+  notifications_contracts_products_grouped$ContractSignDate <- as.Date(notifications_contracts_products_grouped$ContractSignDate)
+    notifications_contracts_products_ungrouped$ContractSignDate <- as.Date(notifications_contracts_products_ungrouped$ContractSignDate)
+  notifications_contracts_products_grouped$ProcedureDuration <- notifications_contracts_products_grouped$ContractSignDate - notifications_contracts_products_grouped$NotificationPublishDate
+    notifications_contracts_products_ungrouped$ProcedureDuration <- notifications_contracts_products_ungrouped$ContractSignDate - notifications_contracts_products_ungrouped$NotificationPublishDate
     # Draw histogram by date
-  
+    hist(as.numeric(notifications_contracts_products_grouped$ProcedureDuration), breaks = 100)
   
   ## NEW VARIABLES
   # Add region this tender came from
