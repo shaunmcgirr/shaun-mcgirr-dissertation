@@ -573,6 +573,7 @@ data_output_directory <- set_data_subdirectory(data_directory, data_download_dat
   repeat_winners_model_1 <- lm(`Median value of contracts` ~ PurchaseSpecificity, data = efficiency_vs_specificity_vs_repeat_winners)
   summary(repeat_winners_model_1)
   # Increased specificity associated with higher median proportion of agency contracts awarded to each supplier
+  plot(efficiency_vs_specificity_vs_repeat_winners$PurchaseSpecificity, efficiency_vs_specificity_vs_repeat_winners$`Median value of contracts`)
   
   repeat_winners_model_2 <- lm(`Median value of contracts` ~ PurchaseSpecificity + CorruptionOpportunities + (PurchaseSpecificity * CorruptionOpportunities) + `Total spent (log)`, data = efficiency_vs_specificity_vs_repeat_winners)  
   summary(repeat_winners_model_2)
@@ -580,6 +581,57 @@ data_output_directory <- set_data_subdirectory(data_directory, data_download_dat
   # When opportunities are low, increasing specificity increases (slightly) red flag
   interplot(repeat_winners_model_2, var1 = "CorruptionOpportunities", var2 = "PurchaseSpecificity", hist = T)
   # When buying usual things, opportunties have no effect; when buying unusual basket, increasing opportunities decreases red flag
+  
+  # Herfindahl index probably more useful
+  value_of_purchases_per_supplier_per_agency <- notifications_contracts_products_grouped %>%
+    filter(!is.na(ContractSupplierParticipantINN) & !is.na(ContractPrice) & ContractPrice > 0) %>%
+    rename(AgencyID = ContractCustomerRegNum) %>%
+    group_by(AgencyID, ContractSupplierParticipantINN) %>%
+      summarize(ValueOfPurchases = sum(ContractPrice)) %>%
+    ungroup() %>%
+    data.frame()
+  
+  HHI <- diversity(value_of_purchases_per_supplier_per_agency, type = "herfindahl-hirschman")
+  herfindahl_index_suppliers_per_agency <- data.frame(AgencyID = as.character(row.names(HHI)), HHI = HHI[,1], stringsAsFactors = F)
+  rm(HHI)
+  hist(herfindahl_index_suppliers_per_agency$HHI, breaks = 20)
+  
+  efficiency_vs_specificity_vs_repeat_winners_hhi <- herfindahl_index_suppliers_per_agency %>%
+    inner_join(efficiency_vs_specificity_vs_increases) %>%
+    mutate(HHIinverselog = log10(HHI))
+  hist(efficiency_vs_specificity_vs_repeat_winners_hhi$HHI, breaks = 40)
+  hist(efficiency_vs_specificity_vs_repeat_winners_hhi$HHIinverselog, breaks = 40)
+  
+  repeat_winners_hhi_model_1 <- lm(HHI ~ PurchaseSpecificity, data = efficiency_vs_specificity_vs_repeat_winners_hhi)
+  summary(repeat_winners_hhi_model_1)
+  # Increased specificity associated with higher HHI concentration
+  plot(efficiency_vs_specificity_vs_repeat_winners_hhi$PurchaseSpecificity, efficiency_vs_specificity_vs_repeat_winners_hhi$HHI)
+  plot(efficiency_vs_specificity_vs_repeat_winners_hhi$CorruptionOpportunities, efficiency_vs_specificity_vs_repeat_winners_hhi$HHI)
+  
+  # Save the HHI vs specificity graph
+  graph_title <- paste0("Concentration of spending on winning suppliers vs purchase specificity,\nby agencies in ", current_region_english, ", 2011-2015\n")
+    graph_file_name <- paste0(data_output_directory_region, current_region, "_winner_concentration_vs_specificity.pdf")
+  hhi_vs_specificity_graph <- efficiency_vs_specificity_vs_repeat_winners_hhi %>%
+    ggplot(aes(x = PurchaseSpecificity, y = HHI)) +
+    geom_point(aes(size = `Number of purchases`), alpha = 1/2) +
+    stat_smooth(se = F, col = "orange") +
+    theme_few() +
+    scale_fill_tableau() +
+    labs(title = graph_title,
+         x = "\nMeasure of purchase specificity\n",
+         y = "Red flag: winner concentration (Herfindahl-Hirschman Index)\n") +
+    theme(legend.position="bottom")
+  print(hhi_vs_specificity_graph)
+  ggsave(plot = hhi_vs_specificity_graph, filename = graph_file_name, device = "pdf", limitsize = T, width = 8, height = 8)
+  
+  repeat_winners_hhi_model_2 <- lm(HHI ~ PurchaseSpecificity + CorruptionOpportunities + (PurchaseSpecificity * CorruptionOpportunities) + `Total spent (log)`, data = efficiency_vs_specificity_vs_repeat_winners_hhi)  
+  summary(repeat_winners_hhi_model_2)
+  interplot(repeat_winners_hhi_model_2, var1 = "PurchaseSpecificity", var2 = "CorruptionOpportunities", hist = T)
+  # When opportunities are low, increasing specificity decreases (insignificantly)
+  interplot(repeat_winners_hhi_model_2, var1 = "CorruptionOpportunities", var2 = "PurchaseSpecificity", hist = T)
+  # When buying usual things, opportunties have negative effect; 
+  
+  # Can also do herfindahl on a product basis and then calculate deviations from that?
   
   
   ## LISTING DURATION
@@ -621,6 +673,33 @@ data_output_directory <- set_data_subdirectory(data_directory, data_download_dat
   # When buying usual things, opportunties have no effect; when buying unusual basket, increasing opportunities decreases red flag
   
   
+  ## MERGE EVERY MEASURES TOGETHER
+  all_red_flags <- efficiency_vs_specificity_vs_increases %>%
+    inner_join(efficiency_vs_specificity_vs_single_supplier) %>%
+    inner_join(efficiency_vs_specificity_vs_bunching) %>%
+    inner_join(efficiency_vs_specificity_vs_large_price_decrease) %>%
+    inner_join(efficiency_vs_specificity_vs_repeat_winners_hhi) %>%
+    select(`No decrease`, `Contract without notification`, Bunched, `Large price decrease`, HHI)
+  
+  cor(all_red_flags)
+  # The large negative correlations are where we expect it by construction: eg "no decrease" vs "large decrease"
+  
+  # Quick PCA based on http://rstatistics.net/principal-component-analysis/
+  all_red_flags_scaled <- data.frame(scale(all_red_flags))
+  all_red_flags_pca <- prcomp(all_red_flags_scaled)
+  summary(all_red_flags_pca)
+  screeplot(all_red_flags_pca, type = "lines")
+  variances <- all_red_flags_pca$sdev^2
+  library(qcc)
+  pareto.chart(variances, ylab = "Variances")
+  
+  # PCA based on http://www.statmethods.net/advstats/factor.html
+  fit <- princomp(all_red_flags_scaled, cor = T)
+  summary(fit) # print variance accounted for 
+  loadings(fit) # pc loadings 
+  plot(fit,type="lines") # scree plot 
+  fit$scores # the principal components
+  biplot(fit) # Shows that no/large decrease work against each other (as expected), while single supplier & HHI orthogonal
   
   
   efficiency_vs_spend <- lm(`Median auction efficiency` ~ `Total spent`, data = auction_efficiency_by_agency)
