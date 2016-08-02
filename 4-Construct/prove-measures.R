@@ -736,8 +736,64 @@ data_output_directory <- set_data_subdirectory(data_directory, data_download_dat
   table(nrpz_vs_red_flags_medians$AgreeConcentration)
   
   
-
+  ## OUTPUT INTERACTION PLOTS OF ALL MODELS
+  graph_title <- paste0("Marginal effect of purchase specificity on 'no price decrease' corruption indicator,\nfor agencies in ", current_region_english, ", 2011-2015\n")
+    graph_file_name <- paste0(data_output_directory_region, current_region, "_interplot_price_increase.pdf")
+  price_increase_interplot <- interplot(price_increases_model_4, var1 = "PurchaseSpecificity", var2 = "CorruptionOpportunities", hist = T) +
+                                # theme_few() +
+                                # scale_fill_tableau() +
+                                labs(title = graph_title,
+                                     x = "\nCorruption opportunities (measured by auction efficiency)",
+                                     y = "Estimated coefficient\n")
+  print(price_increase_interplot)
+  ggsave(plot = price_increase_interplot, filename = graph_file_name, device = "pdf", limitsize = T) #, width = 8, height = 8)
   
+  graph_title <- paste0("Marginal effect of purchase specificity on 'single supplier' corruption indicator,\nfor agencies in ", current_region_english, ", 2011-2015\n")
+    graph_file_name <- paste0(data_output_directory_region, current_region, "_interplot_single_supplier.pdf")
+  single_supplier_interplot <- interplot(single_supplier_model_2, var1 = "PurchaseSpecificity", var2 = "CorruptionOpportunities", hist = T) +
+    # theme_few() +
+    # scale_fill_tableau() +
+    labs(title = graph_title,
+         x = "\nCorruption opportunities (measured by auction efficiency)",
+         y = "Estimated coefficient\n")
+  print(single_supplier_interplot)
+  ggsave(plot = single_supplier_interplot, filename = graph_file_name, device = "pdf", limitsize = T) #, width = 8, height = 8)
+  
+  graph_title <- paste0("Marginal effect of purchase specificity on 'bunched initial prices' corruption indicator,\nfor agencies in ", current_region_english, ", 2011-2015\n")
+    graph_file_name <- paste0(data_output_directory_region, current_region, "_interplot_bunched_prices.pdf")
+  bunched_prices_interplot <- interplot(bunching_model_2, var1 = "PurchaseSpecificity", var2 = "CorruptionOpportunities", hist = T) +
+    # theme_few() +
+    # scale_fill_tableau() +
+    labs(title = graph_title,
+         x = "\nCorruption opportunities (measured by auction efficiency)",
+         y = "Estimated coefficient\n")
+  print(bunched_prices_interplot)
+  ggsave(plot = bunched_prices_interplot, filename = graph_file_name, device = "pdf", limitsize = T) #, width = 8, height = 8)
+  
+  graph_title <- paste0("Marginal effect of purchase specificity on 'dramatic price decrease' corruption indicator,\nfor agencies in ", current_region_english, ", 2011-2015\n")
+    graph_file_name <- paste0(data_output_directory_region, current_region, "_interplot_price_decreases.pdf")
+  price_decreases_interplot <- interplot(decreases_model_2, var1 = "PurchaseSpecificity", var2 = "CorruptionOpportunities", hist = T) +
+    # theme_few() +
+    # scale_fill_tableau() +
+    labs(title = graph_title,
+         x = "\nCorruption opportunities (measured by auction efficiency)",
+         y = "Estimated coefficient\n")
+  print(price_decreases_interplot)
+  ggsave(plot = price_decreases_interplot, filename = graph_file_name, device = "pdf", limitsize = T) #, width = 8, height = 8)
+  
+  graph_title <- paste0("Marginal effect of purchase specificity on 'winner concentration' corruption indicator,\nfor agencies in ", current_region_english, ", 2011-2015\n")
+    graph_file_name <- paste0(data_output_directory_region, current_region, "_interplot_winner_concentration.pdf")
+  winner_concentration_interplot <- interplot(repeat_winners_hhi_model_2, var1 = "PurchaseSpecificity", var2 = "CorruptionOpportunities", hist = T) +
+    # theme_few() +
+    # scale_fill_tableau() +
+    labs(title = graph_title,
+         x = "\nCorruption opportunities (measured by auction efficiency)",
+         y = "Estimated coefficient\n")
+  print(winner_concentration_interplot)
+  ggsave(plot = winner_concentration_interplot, filename = graph_file_name, device = "pdf", limitsize = T) #, width = 8, height = 8)
+  
+  plot(density(efficiency_vs_specificity_vs_repeat_winners_hhi$HHI)) # Right skew
+  summary(efficiency_vs_specificity_vs_repeat_winners_hhi$HHI)
   
   
   efficiency_vs_spend <- lm(`Median auction efficiency` ~ `Total spent`, data = auction_efficiency_by_agency)

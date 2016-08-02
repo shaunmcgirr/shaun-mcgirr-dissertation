@@ -91,6 +91,7 @@ hist(agency_total_and_average_spend_per_product_ungrouped$MeanAbsoluteDeviationF
 efficiency_vs_specificity <- agency_total_and_average_spend_per_product_grouped %>%
   inner_join(auction_efficiency_by_agency) %>%
   mutate(TotalSpent = `Total spent`) %>% filter(MeanAbsoluteDeviationFromAverageSpendPerProduct < 0.08)
+# At the agency level better to use grouped products otherwise too much noise
 
 # How does specificity look now?
 hist(efficiency_vs_specificity$SumAbsoluteDeviationFromAverageSpendPerProduct, breaks = 300)
