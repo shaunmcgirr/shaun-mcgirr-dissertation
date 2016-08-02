@@ -32,31 +32,48 @@ petrol_prices <- notifications_contracts_products_ungrouped %>%
             # INN = as.factor(as.character(ContractCustomerINN)),
             # Purchaser = NotificationOrderPlacerRegNum)
 
-agency_per_INN <- petrol_prices %>%
-  group_by(INN) %>%
-  summarize(AgenciesPerINN = n_distinct(Agency))
-
-agency_INN_correspondence <- petrol_prices %>%
-  mutate(LengthOfAgencyName = nchar(Agency)) %>%
-  group_by(INN, Agency) %>%
-  summarize(ShortestAgencyName = min(LengthOfAgencyName)) %>%
-  filter(row_number() == 1) %>% ungroup() %>%
-  transmute(INN = INN, `Agency (definitive)` = Agency)
-
-petrol_prices <- petrol_prices %>%
-  left_join(agency_INN_correspondence, by = "INN")
+# agency_per_INN <- petrol_prices %>%
+#   group_by(INN) %>%
+#   summarize(AgenciesPerINN = n_distinct(Agency))
+# 
+# agency_INN_correspondence <- petrol_prices %>%
+#   mutate(LengthOfAgencyName = nchar(Agency)) %>%
+#   group_by(INN, Agency) %>%
+#   summarize(ShortestAgencyName = min(LengthOfAgencyName)) %>%
+#   filter(row_number() == 1) %>% ungroup() %>%
+#   transmute(INN = INN, `Agency (definitive)` = Agency)
 
 petrol_prices <- petrol_prices %>%
-  left_join(agency_metadata, by = "AgencyID")
+  inner_join(efficiency_vs_specificity_vs_bunching) %>%
+  inner_join(efficiency_vs_specificity_vs_increases) %>%
+  inner_join(efficiency_vs_specificity_vs_repeat_winners_hhi) %>%
+  inner_join(efficiency_vs_specificity_vs_large_price_decrease) %>%
+  inner_join(efficiency_vs_specificity_vs_single_supplier)
+
+# petrol_prices <- petrol_prices %>%
+#   left_join(agency_metadata, by = "AgencyID")
 
 petrol_prices_by_agency <- petrol_prices %>%
-  group_by(AgencyID, AgencyName) %>%
+  group_by(AgencyID, AgencyName, Bunched, `No decrease`, HHI, `Large price decrease`, `Contract without notification`) %>%
   summarize(`Average price per liter` = mean(`Price per liter`),
             `Median price per liter` = median(`Price per liter`)) %>% ungroup() %>%
   arrange(`Average price per liter`) 
 
-petrol_prices_by_agency$`Agency (definitive)` <- factor(petrol_prices_by_agency$`Agency (definitive)`, levels = petrol_prices_by_agency$`Agency (definitive)`[order(petrol_prices_by_agency$`Average price per liter`)])
-petrol_prices$`Agency (definitive)` <- factor(petrol_prices$`Agency (definitive)`, levels = petrol_prices_by_agency$`Agency (definitive)`)
+# Correlation with bunching
+plot(petrol_prices_by_agency$`Bunched at open electronic auction threshold`, petrol_prices_by_agency$`Median price per liter`)
+# With increases
+plot(petrol_prices_by_agency$`No decrease`, petrol_prices_by_agency$`Median price per liter`)
+# With HHI
+plot(petrol_prices_by_agency$HHI, petrol_prices_by_agency$`Median price per liter`)
+# With dramatic decrease
+plot(petrol_prices_by_agency$`Large price decrease`, petrol_prices_by_agency$`Median price per liter`)
+# With single supplier
+plot(petrol_prices_by_agency$`Contract without notification`, petrol_prices_by_agency$`Median price per liter`)
+### ABOUT THE BEST WE CAN SAY IS THAT IT IS NOT NEGATIVELY CORRELATED WITH PETROL PRICES
+
+
+# petrol_prices_by_agency$`Agency (definitive)` <- factor(petrol_prices_by_agency$`Agency (definitive)`, levels = petrol_prices_by_agency$`Agency (definitive)`[order(petrol_prices_by_agency$`Average price per liter`)])
+# petrol_prices$`Agency (definitive)` <- factor(petrol_prices$`Agency (definitive)`, levels = petrol_prices_by_agency$`Agency (definitive)`)
 petrol_prices$Procedure <- factor(petrol_prices$Procedure, levels = c("More discretionary", "Less discretionary"))
 
 petrol_prices <- petrol_prices %>%

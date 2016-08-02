@@ -82,8 +82,8 @@ for(r in 1:regions_number){
     notifications_contracts_products_ungrouped$NotificationPublishDate <- as.Date(substr(notifications_contracts_products_ungrouped$NotificationPublishDate, 1, 10))
   notifications_contracts_products_grouped$ContractSignDate <- as.Date(notifications_contracts_products_grouped$ContractSignDate)
     notifications_contracts_products_ungrouped$ContractSignDate <- as.Date(notifications_contracts_products_ungrouped$ContractSignDate)
-  notifications_contracts_products_grouped$ProcedureDuration <- notifications_contracts_products_grouped$ContractSignDate - notifications_contracts_products_grouped$NotificationPublishDate
-    notifications_contracts_products_ungrouped$ProcedureDuration <- notifications_contracts_products_ungrouped$ContractSignDate - notifications_contracts_products_ungrouped$NotificationPublishDate
+  notifications_contracts_products_grouped$ProcedureDuration <- as.numeric(notifications_contracts_products_grouped$ContractSignDate - notifications_contracts_products_grouped$NotificationPublishDate)
+    notifications_contracts_products_ungrouped$ProcedureDuration <- as.numeric(notifications_contracts_products_ungrouped$ContractSignDate - notifications_contracts_products_ungrouped$NotificationPublishDate)
     # Draw histogram by date
     hist(as.numeric(notifications_contracts_products_grouped$ProcedureDuration), breaks = 100)
   
@@ -162,45 +162,7 @@ for(r in 1:regions_number){
 ###########
   
   ## TODO
-
-    # MEASURES OF CORRUPTION
-    # Initial notification listing price (by tender type) - distribution; by agency
-    # Shares of each tender type (eg single supplier) - by agency
-
-
-    # MEASURES OF AGENCY CHARACTERISTICS
-    # Number of unique products (lowest and highest levels of OKDP) - by agency
-    # Customer != placer (proxy for capacity) - by agency
-    # •	Specificity of goods purchased by agency, defined as the inverse of the rarity with which a given product is purchased across all other agencies (the database includes detailed product codings that make such a measure possible: the score will be highest when only the given agency purchases this product, and lowest when every other agency also purchases it)
-    # •	The Audit Chamber, the main oversight agency of the Executive, releases yearly reports on its activities, including the number of inquiries initiated in to each agency, and the `yield' of these inquiries in terms of cases forwarded to prosecutors. I am planning to use this data to proxy for constraints on agencies.
-    # •	Corruption revelations from press reports, in which I would tag the agency mentioned. Exactly what this data would be measuring depends on how the formal model works out.
- 
-  
-  # National official rating http://nrpz.ru/
-  #   Criteria
-  # Таб. 5. Основные показатели рынка закупок государственных закупщиков *
-  #   - Средняя начальная цена конкурентного способа определения поставщиков, млн. руб.
-  # - Среднее число поданных заявок
-  # - Доля отклоненных заявок
-  # - Среднее число участников закупочных процедур (или допущенных котировочных заявок)
-  # - Доля закупочных процедур с 0 или 1 участником
-  
-  # •	Procedure choice
-  #   o	Proportion of tenders in which the agency chooses a single supplier instead of any kind of competitive procedure (well-demonstrated in literature on public procurement to be correlated with procurement fraud)
-  #   o	Correlation between proc choice and purchase size
-  # •	Bidding environment
-  #   o	Number of bidders
-  #   o	Number of disqualifications
-  # •	Procedure efficiency (start vs end)
-  #   o	By procedure type
-  #   o	Mean, median, and a measure of “crowding” in to space just below 100%
-  #   o	Average increase in contract cost over the lifetime of the procedure (this detects variation in cost changes, another standard place to hide kickbacks)
-  #   o Average price decrease in competitive auctions (bureaucrats choose a maximum/starting price, and potential suppliers bid down; procurement literature identifies this as a good measure for the tolerance of cartel behavior by suppliers)
-  #   o	Increases as irregularities
-  # •	Irregularities
-  #   o	Start prices right at thresholds
-  
- 
+  # Turn the individual measures in prove-measures.R in to individual scripts and call from below
   
   ######################################################
   # 4. Run scripts that create the individual measures #

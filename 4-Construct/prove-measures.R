@@ -679,7 +679,7 @@ data_output_directory <- set_data_subdirectory(data_directory, data_download_dat
     inner_join(efficiency_vs_specificity_vs_bunching) %>%
     inner_join(efficiency_vs_specificity_vs_large_price_decrease) %>%
     inner_join(efficiency_vs_specificity_vs_repeat_winners_hhi) %>%
-    select(`No decrease`, `Contract without notification`, Bunched, `Large price decrease`, HHI)
+    select(AgencyID, AgencyName, `No decrease`, `Contract without notification`, Bunched, `Large price decrease`, HHI)
   
   cor(all_red_flags)
   # The large negative correlations are where we expect it by construction: eg "no decrease" vs "large decrease"
@@ -700,6 +700,44 @@ data_output_directory <- set_data_subdirectory(data_directory, data_download_dat
   plot(fit,type="lines") # scree plot 
   fit$scores # the principal components
   biplot(fit) # Shows that no/large decrease work against each other (as expected), while single supplier & HHI orthogonal
+  
+  ## COMPARE TO NRPZ data
+  nrpz_vs_red_flags <- nrpz_data_cleaned %>%
+    # anti_join(efficiency_vs_specificity_vs_bunching) # Nothing too big is missing without reason (eg road agency has mostly multi-lot auctions)
+    inner_join(all_red_flags) 
+  
+  cor(nrpz_vs_red_flags[,c(2, 4, 5, 6, 7, 8)])
+  # Only no decrease is any use here
+  
+  no_decrease_median <- median(nrpz_vs_red_flags$`No decrease`)
+  nrpz_median <- median(nrpz_vs_red_flags$NRPZscore)
+  bunched_median <- median(nrpz_vs_red_flags$Bunched)
+  HHI_median <- median(nrpz_vs_red_flags$HHI)
+
+  plot(nrpz_vs_red_flags$NPRZscore, nrpz_vs_red_flags$`No decrease`)
+    abline(h = no_decrease_median)
+    abline(v = nrpz_median)
+    
+  nrpz_vs_red_flags_medians <- nrpz_vs_red_flags %>%
+    mutate(Concentration = ifelse(HHI >= HHI_median, "Above median",
+                             ifelse(HHI < HHI_median, "Below median", NA)),
+           Bunching = ifelse(Bunched >= bunched_median, "Above median",
+                             ifelse(Bunched < bunched_median, "Below median", NA)),
+           Decrease = ifelse(`No decrease` >= no_decrease_median, "Above median",
+                             ifelse(`No decrease` < no_decrease_median, "Below median", NA)),
+           NRPZ = ifelse(NRPZscore >= nrpz_median, "Below median",
+                         ifelse(NRPZscore < nrpz_median, "Above median", NA)),
+           AgreeDecrease = ifelse(Decrease == NRPZ, "Y", "N"),
+           AgreeBunching = ifelse(Bunching == NRPZ, "Y", "N"),
+           AgreeConcentration = ifelse(Concentration == NRPZ, "Y", "N"))
+  
+  table(nrpz_vs_red_flags_medians$AgreeDecrease)
+  table(nrpz_vs_red_flags_medians$AgreeBunching)
+  table(nrpz_vs_red_flags_medians$AgreeConcentration)
+  
+  
+
+  
   
   
   efficiency_vs_spend <- lm(`Median auction efficiency` ~ `Total spent`, data = auction_efficiency_by_agency)

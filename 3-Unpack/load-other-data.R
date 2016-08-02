@@ -74,6 +74,21 @@ v_dem_data_file <- paste0(downloads_directory, "/Country_Year_V-Dem_other_SPSS_v
 v_dem_data_raw <- read.spss(v_dem_data_file, to.data.frame = T)
 
 
+#########################
+# 6. Load NRPZ rankings #
+#########################
+
+# Copied from http://nrpz.ru/raiting_2015.html#content-inner
+# Saved in to data_other/nrpz
+
+nrpz_data_file <- paste0(data_other_directory, "/nrpz/National_regional_ratings_from_www.nrpz.ru_2015.xlsx")
+nrpz_data_raw <- read_excel(nrpz_data_file, sheet = 1, c("AgencyName", "NRPZscore"))
+
+nrpz_data_cleaned <- nrpz_data_raw %>%
+  filter(NRPZscore != "Балл" & AgencyName != "Государственные заказчики федерального уровня") %>%
+  mutate(NRPZscore = as.numeric(gsub(" ", "", NRPZscore)))
+
+
 # DPI data
 
 
