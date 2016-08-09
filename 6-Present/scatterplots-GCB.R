@@ -70,26 +70,26 @@ gcb_agencies_vs_polyarchy <- ggplot(gcb_agencies_only_long, aes(x = v2x_polyarch
                               geom_point() +
                                labs(title = "Sector-specific bribery rates vs index of electoral democracy,\nGlobal Corruption Barometer and V-Dem 2013\n",
                                x = "\nIndex derived from V-Dem expert assessments of electoral democracy",
-                               y = "Citizen-reported bribery rate per sector\n")
+                               y = "Citizen-reported bribery rate by sector\n")
 print(gcb_agencies_vs_polyarchy)           
-ggsave(plot = gcb_agencies_vs_polyarchy, filename = "6-Present/GCB-scatterplots/gcb_agencies_vs_polyarchy.pdf", device = "pdf")
+ggsave(plot = gcb_agencies_vs_polyarchy, filename = "6-Present/GCB-scatterplots/gcb_agencies_vs_polyarchy.pdf", device = "pdf", width = 6, height = 5)
 
 gcb_agencies_vs_pubcorr <- ggplot(gcb_agencies_only_long, aes(x = v2x_pubcorr, y = `Bribery rate`)) +
                               geom_point() + # geom_point(aes(colour = Country)) + theme(legend.position = "none")
                               labs(title = "Sector-specific bribery rates vs overall public sector corruption,\nGlobal Corruption Barometer and V-Dem 2013\n",
                                    x = "\nV-Dem expert assessment of public sector corruption at the national level",
-                                   y = "Citizen-reported bribery rate per sector\n")
+                                   y = "Citizen-reported bribery rate by sector\n")
 print(gcb_agencies_vs_pubcorr)          
-ggsave(plot = gcb_agencies_vs_pubcorr, filename = "6-Present/GCB-scatterplots/gcb_agencies_vs_pubcorr.pdf", device = "pdf")
+ggsave(plot = gcb_agencies_vs_pubcorr, filename = "6-Present/GCB-scatterplots/gcb_agencies_vs_pubcorr.pdf", device = "pdf", width = 6, height = 5)
 
 gcb_agencies_vs_oppaut <- gcb_agencies_only_long %>% filter(Country != "VNM") %>%
                               ggplot(aes(x = v2psoppaut, y = `Bribery rate`)) +
                                 geom_point() + # geom_point(aes(colour = Country)) + theme(legend.position = "none")
-                                 labs(title = "Sector-specific bribery rates vs 'robust opposition' (measured as opposition autonomy),\nGlobal Corruption Barometer and V-Dem 2013\n",
-                                  x = "\nV-Dem expert assessment of autonomy of opposition parties from ruling regime at the national level",
-                                  y = "Citizen-reported bribery rate per sector\n")
+                                 labs(title = "Sector-specific bribery rates vs opposition autonomy,\nGlobal Corruption Barometer and V-Dem 2013\n",
+                                  x = "\nV-Dem expert assessment of autonomy of opposition parties from ruling regime",
+                                  y = "Citizen-reported bribery rate by sector\n")
 print(gcb_agencies_vs_oppaut)          
-ggsave(plot = gcb_agencies_vs_oppaut, filename = "6-Present/GCB-scatterplots/gcb_agencies_vs_oppaut.pdf", device = "pdf")
+ggsave(plot = gcb_agencies_vs_oppaut, filename = "6-Present/GCB-scatterplots/gcb_agencies_vs_oppaut.pdf", device = "pdf", width = 6, height = 5)
 
 gcb_agencies_vs_excrptps <- ggplot(gcb_agencies_only_long, aes(x = v2excrptps, y = `Bribery rate`)) +
   geom_point() + # geom_point(aes(colour = Country)) + theme(legend.position = "none")
