@@ -58,7 +58,7 @@ document_types <- as.list(c("contracts", "notifications", "protocols")) # only i
 document_types_number <- length(document_types)
 
 # List of regions from 2. above is called here, looped through by region, then documents loop inside
-for (r in 69:regions_number){ # Manually restarted after empty Crimea/Sevastopol directory stopped it
+for (r in 1:regions_number){ 
 current_region <- as.character(regions_list[r])
 
   for (d in 1:document_types_number){

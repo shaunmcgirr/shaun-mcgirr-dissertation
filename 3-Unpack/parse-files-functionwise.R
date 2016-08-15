@@ -13,6 +13,7 @@ source(file="3-Unpack/parse-files-functions.R")
 
 # Tell R where unzipped data is stored (at the end of 3-Unpack/unzip-files.R) and where to send it
 data_unzipped_directory <- set_data_subdirectory(data_directory, data_download_date, "unzipped")
+  # data_unzipped_directory <- set_data_subdirectory("/Volumes/SHAUN-HDD/Data/zakupki/", data_download_date, "unzipped")
 data_parsed_directory <- set_data_subdirectory(data_directory, data_download_date, "parsed")
 
 ############################################
