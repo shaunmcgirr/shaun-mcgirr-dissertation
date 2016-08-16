@@ -21,11 +21,10 @@ data_parsed_directory <- set_data_subdirectory(data_directory, data_download_dat
 ############################################
 
 # Gather metadata about the regions to be worked on
-# regions_list <- generate_regions_list(data_unzipped_directory)
+# regions_available_to_parse <- generate_regions_list(data_unzipped_directory)
+# regions_already_parsed <- generate_regions_list(data_parsed_directory)
+# regions_list <- setdiff(regions_available_to_parse, regions_already_parsed)
 regions_list <- as.list("Adygeja_Resp")
-# regions_list <- as.list("Burjatija_Resp")
-# regions_list <- as.list("Leningradskaja_obl")
-# regions_list <- as.list("Moskva")
 # regions_list <- as.list(c("Adygeja_Resp", "Moskva"))
 regions_number <- length(regions_list)
 
@@ -116,54 +115,11 @@ for(r in 1:regions_number){
 STOP <- 1
 if(STOP == 1) stop("Stopping here")
 
-# Stitch it back toegether again and work out what it means
-load(file = "~/data/zakupki/2015-06-13/zakupki-2015-06-13-parsed-data/94fz/Adygeja_Resp/contracts/Adygeja_Resp_contracts_parsed_key_value_2015-06-13.rda")
-  contracts <- batch_output_key_value
-load(file = "~/data/zakupki/2015-06-13/zakupki-2015-06-13-parsed-data/94fz/Adygeja_Resp/notifications/Adygeja_Resp_notifications_parsed_key_value_2015-06-13.rda")
-  notifications <- batch_output_key_value
-rm(batch_output_key_value)
-
-contracts_missing <- contracts[!complete.cases(contracts),]
-  contracts_missing_table <- as.data.frame(table(contracts_missing$Key)) %>% arrange(-Freq)
-notifications_missing <- notifications[!complete.cases(notifications),]
-  notifications_missing_table <- as.data.frame(table(notifications_missing$Key)) %>% arrange(-Freq)
-
-# Add in the loaded XML and calculate documents per row, reduce to files that have useful XML
-parsed_data_matrix$ParsedData <- documents_in_this_directory_list
-parsed_data_matrix$DocumentCount <- as.numeric(lapply(documents_in_this_directory_list, function(x) length(x)))
-parsed_data_matrix <- parsed_data_matrix[parsed_data_matrix$DocumentCount > 0, ]
-sum(parsed_data_matrix$DocumentCount)
-
-
-# Navigating XML documents
-xml_type(document_to_parse)
-xml_siblings(document_to_parse)
-xml_children(document_to_parse)
-xml_attr()
-xml_name(document_to_parse)
-xml_path(document_to_parse)
-xml_structure(document_to_parse)
-xml_text(xml_find_all(document_to_parse, "/*/*[4]"))
-
-test_list <- as_list(document_to_parse)
-test_list$notificationNumber
-
-
-# Version using lapply on the whole list (no batch)
-# Load files (loop first, then lapply, then lapply on a truncated list that fits in memory)
-documents_in_this_directory_list <- lapply(files_list, load_documents_from_file)
-documents_in_this_directory_list <- remove_empty_lists(documents_in_this_directory_list)
-# documents_in_this_directory_list_length <- length(documents_in_this_directory_list)
-
-# Process this list in to one object per XML node
-documents_in_this_directory_list <- unlist(documents_in_this_directory_list, recursive = FALSE)
-
-# Process a test case
-testing_output <- lapply(documents_in_this_directory_list, output_document, fields_to_parse = fields_to_parse)
-head(testing_output)
-testing_output[[1]]
-testing_output_data_frame <- do.call("rbind", testing_output)
-colnames(testing_output_data_frame) <- parsing_configuration$VariableName[parsing_configuration$DocumentType == document_type]
-
+# Stitch it back together again and work out what it means
+# load(file = "~/data/zakupki/2015-06-13/zakupki-2015-06-13-parsed-data/94fz/Adygeja_Resp/contracts/Adygeja_Resp_contracts_parsed_key_value_2015-06-13.rda")
+#   contracts <- batch_output_key_value
+# load(file = "~/data/zakupki/2015-06-13/zakupki-2015-06-13-parsed-data/94fz/Adygeja_Resp/notifications/Adygeja_Resp_notifications_parsed_key_value_2015-06-13.rda")
+#   notifications <- batch_output_key_value
+# rm(batch_output_key_value)
 
 # ENDS
