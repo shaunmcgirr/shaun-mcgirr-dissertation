@@ -5,6 +5,7 @@
 # https://github.com/shaunmcgirr/shaun-mcgirr-dissertation/blob/master/2-Obtain/download-raw-procurement-data.md
 
 # Packages are loaded here unless there is a special reason to load them in the scripts below
+# Run this to install all packages in one go: source("install-packages.R")
 library(xml2)         # install.packages('xml2')
 library(magrittr)     # install.packages('magrittr')
 library(readxl)       # install.packages('readxl')
