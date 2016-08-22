@@ -57,18 +57,6 @@ Grain of output tables (maybe add new script "generate tables")
 Notification-Lot vs Notification-Lot-Product
 Problem is that parser goes by search field, not by order in document, so need to restrict attention to single-lot/single-product auctions as before (but worth sizing the problem)
 
-Measures:
-1) Procedure type
-2) Product flags (gas, printers, etc)
-3) Difference between notification and contract price
-
-Ideas
-Unofficial email addresses as "capacity"?
-
-Counts and amounts (good complex one is 0376100001911000004, many products)
-http://zakupki.gov.ru/pgz/public/action/orders/info/common_info/show?notificationId=204952
-- lots per notification
-- products per lot
 
 
 # Timings from batch processing
@@ -472,4 +460,46 @@ Time difference of 6.43190288543701 secs
 Time difference of 1.31173325777054 mins
 [1] "Processing Zabajkalskij_kraj_Aginskij_Burjatskij_okrug took"
 Time difference of 1.41896000703176 mins
+
+## Adding currentContractStage and parsing off external HDD - no perceptible difference!
+[1] "Processing contracts from Adygeja_Resp took"
+Time difference of 1.5557638168335 mins
+[1] "Processing notifications from Adygeja_Resp took"
+Time difference of 29.6855111122131 secs
+[1] "Processing Adygeja_Resp took"
+Time difference of 2.05055356820424 mins
+[1] "Processing contracts from Altaj_Resp took"
+Time difference of 54.9721021652222 secs
+[1] "Processing notifications from Altaj_Resp took"
+Time difference of 29.9078431129456 secs
+[1] "Processing Altaj_Resp took"
+Time difference of 1.41468671957652 mins
+
+[1] "Processing contracts from Krasnodarskij_kraj took"
+Time difference of 33.8006769855817 mins
+[1] "Processing notifications from Krasnodarskij_kraj took"
+Time difference of 9.13293268283208 mins
+[1] "Processing Krasnodarskij_kraj took"
+Time difference of 42.9336285154025 mins
+
+[1] "Processing contracts from Leningradskaja_obl took"
+Time difference of 6.40799253384272 mins
+[1] "Processing notifications from Leningradskaja_obl took"
+Time difference of 1.72665055195491 mins
+[1] "Processing Leningradskaja_obl took"
+Time difference of 8.13466206789017 mins
+
+[1] "Processing contracts from Moskovskaja_obl took"
+Time difference of 29.2580398837725 mins
+[1] "Processing notifications from Moskovskaja_obl took"
+Time difference of 7.55354331731796 mins
+[1] "Processing Moskovskaja_obl took"
+Time difference of 36.8116043845813 mins
+
+[1] "Processing contracts from Moskva took"
+Time difference of 1.34263465722402 hours
+[1] "Processing notifications from Moskva took"
+Time difference of 20.8870863159498 mins
+[1] "Processing Moskva took"
+Time difference of 1.69075404995018 hours (2.5 hours in past off SSD!)
 
