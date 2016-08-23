@@ -28,7 +28,8 @@ set_data_subdirectory_region <- function(current_region, document_type, directio
 # Function to generate metadata about the regions to be processed
 generate_regions_list <- function(data_subdirectory){
   regions_list <- as.list(list.files(path=data_subdirectory))
-  regions_list <- Filter((function(x) !grepl('Sevastopol_g', x)), regions_list) # Remove Sevastopol
+  regions_list <- Filter((function(x) !grepl('Sevastopol_g', x)), regions_list) # Remove Sevastopol (has no notifications)
+  regions_list <- Filter((function(x) !grepl('Irkutskaja_obl_Ust-Ordynskij_Burjatskij_okrug', x)), regions_list) # Remove Irkutskaja_obl_Ust-Ordynskij_Burjatskij_okrug (has no notifications)
   # Filter out non-regions in to their own list, remove the log files from list of regions
   # others_list <- Filter((function(x) (x %in% c("_FCS_nsi", "nsi"))), regions_list)
 }
