@@ -11,22 +11,23 @@
 # Load functions
 source(file="3-Unpack/parse-files-functions.R")
 
-# Change in to the directory where parsed data are stored (at the end of step 3)
-# setwd('~/data/zakupki/2015-06-13/zakupki-2015-06-13-parsed-data/')
+# Define location of parsed data
 data_parsed_directory <- set_data_subdirectory(data_directory, data_download_date, "parsed")
+
+# Define target of cleaned data
+data_cleaned_directory <- set_data_subdirectory(data_directory, data_download_date, "cleaned")
 
 ############################################
 # 2. Gather parameters about the job ahead #
 ############################################
 
 # Obtain list of regions for which consolidated data is available
-# regions_list <- generate_regions_list(data_parsed_directory)
+# regions_available_to_clean <- generate_regions_list(data_parsed_directory)
+# regions_already_cleaned <- generate_regions_list(data_cleaned_directory)
+# regions_list <- setdiff(regions_available_to_clean, regions_already_cleaned)
 regions_list <- as.list("Adygeja_Resp")
-# regions_list <- as.list("Burjatija_Resp")
+# regions_list <- as.list("Moskva")
 regions_number <- length(regions_list)
-
-# Define target of cleaned data
-data_cleaned_directory <- set_data_subdirectory(data_directory, data_download_date, "cleaned")
 
 ##############################################
 # 3. Define functions to process each region #
@@ -50,11 +51,17 @@ for(r in 1:regions_number){
     load(file=file_to_process)
     
   ### DATA QUALITY STEPS ###
+    # Drop rows where version is NA, as these are very low-quality data (almost all fields actually missing)
+    # STILL NECESSARY? Results in taking Moscow from 414383 to 401636 contracts
+    # batch_output_key_value <- filter(batch_output_key_value, !is.na(Version))
+    # gc()
+    
     # Concatenate document ID with version number (doesn't resolve duplicates!)
     batch_output_key_value$DocumentVersion <- as.character(paste(batch_output_key_value$Document,
                                                                batch_output_key_value$Version,
                                                                sep = "."))
-
+    gc()
+    
     # Count number of docs parsed from the XML to produce file, generate a unique ID for each
     number_of_documents_parsed <- length(batch_output_key_value$Key[batch_output_key_value$Key == "oos:id"])
     UniqueID <- seq(number_of_documents_parsed)
@@ -73,42 +80,45 @@ for(r in 1:regions_number){
                                add_rownames() %>%
                               left_join(rows_with_UniqueID, by = "rowname") %>%
                               mutate(UniqueID = na.locf(UniqueID))
+    rm(rows_with_UniqueID, UniqueID)
 
     # Concatenate all our identifiers to provide a completely unique identifier for each doc parsed
     batch_output_key_value$DocumentVersionUniqueID <- paste(batch_output_key_value$DocumentVersion, batch_output_key_value$UniqueID, sep = ".")
+    gc()
     
     # We actually care about having the best data for each entity, in this case "notificationNumber", extract these
     business_keys <- batch_output_key_value %>%
                             filter(Key == "oos:notificationNumber" | Key == "oos:foundation/oos:order/oos:notificationNumber") %>% # Not oos:regNum!
                             select(DocumentVersionUniqueID, Value) %>%
-                            rename(BusinessKey = Value)
+                            rename(BusinessKey = Value) %>%
+                            filter(BusinessKey != "") # Some strange empty-but-not-NA cells
 
     # Quite slow but not too rough on memory    
     # Merge those on
     batch_output_key_value <- batch_output_key_value %>%
                                 left_join(business_keys, by = "DocumentVersionUniqueID")
+    rm(business_keys)
+    gc()
     
     # Find out which document has the best data for a given notificationNumber
     most_fields <- batch_output_key_value %>%
       filter(!is.na(Value)) %>%
       group_by(BusinessKey, DocumentVersionUniqueID) %>%
       tally(n()) %>% ungroup() %>%
-      arrange(BusinessKey, -n, -UniqueID) %>%
-      distinct(BusinessKey) # Returns most recently parsed doc for each notificationNumber (out of docs with most fields)
+      arrange(BusinessKey, -n, xtfrm(DocumentVersionUniqueID)) %>%
+      distinct(BusinessKey, .keep_all = T) %>% # Returns most recently parsed doc for each notificationNumber (out of docs with most fields)
+      select(-n) 
     
     # Very slow (probably a smarter way to do this, eg assign simpler number to each)
     # Might also want to preallocate this and other large objects
     # Use info above to cut down parsed data frame to just the best documents
     one_version_per_document <- batch_output_key_value %>%
       right_join(most_fields, by = c("DocumentVersionUniqueID", "BusinessKey")) %>%
-      select(BusinessKey, DocumentVersionUniqueID, Key, Value)
+      select(BusinessKey, DocumentVersionUniqueID, Key, Value) %>%
+      filter(!is.na(BusinessKey))
     
-    # Print how many rows that got rid of!
-    print(paste0(current_region, "/", document_type, ": ",
-                "Reducing the parsed data to one document per business key reduced the initial row count (",
-                length(batch_output_key_value$Document), ") by ",
-                round((1-length(one_version_per_document$Document)/length(batch_output_key_value$Document))*100, digits = 1),
-                "% to ", length(one_version_per_document$Document)))
+    # Still gives same number of unique business keys for Moscow: 548,436 notifications; 414,382 contracts
+    rm(most_fields)
     
     # Save the cleaned data (renaming object to something useful beforehand)
     to_directory <- paste0(data_cleaned_directory, current_region)
@@ -118,8 +128,16 @@ for(r in 1:regions_number){
     if(document_type == "contracts"){contracts_cleaned <- one_version_per_document; save(contracts_cleaned, file=filename); rm(contracts_cleaned)}
     if(document_type == "notifications"){notifications_cleaned <- one_version_per_document; save(notifications_cleaned, file=filename); rm(notifications_cleaned)}
     
+    # Print how many rows that got rid of!
+    print(paste0(current_region, "/", document_type, ": ",
+                 "Reducing the parsed data to one document per business key reduced the initial row count (",
+                 length(batch_output_key_value$Document), ") by ",
+                 round((1-length(one_version_per_document$BusinessKey)/length(batch_output_key_value$Document))*100, digits = 1),
+                 "% to ", length(one_version_per_document$BusinessKey)))
+    
     # Clean up
-    rm(most_fields); rm(one_version_per_document); rm(batch_output_key_value); rm(business_keys); rm(rows_with_UniqueID); gc()
+    rm(one_version_per_document); rm(batch_output_key_value)
+    gc()
     
   } # Closes control loop over document_types_list in this region
   
