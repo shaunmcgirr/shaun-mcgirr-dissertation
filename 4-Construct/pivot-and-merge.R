@@ -47,6 +47,7 @@ for(r in 1:regions_number){
   # r <- 1
   current_region <- as.character(regions_list[r])
   current_region_english <- generate_english_region_name(current_region)
+  print(paste0("Starting ", current_region))
   
   # Create output directory
   data_output_directory_region <- paste0(data_output_directory, current_region, "/")
@@ -150,11 +151,11 @@ for(r in 1:regions_number){
                                 filter(Key == "oos:lots/oos:lot/oos:ordinalNumber") %>%
                                 group_by(BusinessKey) %>%
                                 summarize(NumberOfLots = as.numeric(max(Value)))
-  # table(notifications_lots_number$NumberOfLots)
+  # table(notifications_lots_number$NumberOfLots, useNA = "always")
   
-  # Which notifications are for multiple lots (and so have to be dropped later)?
+  # Which notifications are for multiple lots, or NA lots (and so have to be dropped later)?
   notifications_with_multiple_lots <- notifications_lots_number %>%
-                                        filter(NumberOfLots > 1) %>%
+                                        filter(NumberOfLots > 1 | is.na(NumberOfLots)) %>%
                                         select(BusinessKey) %>%
                                         mutate(NotificationMissingReason = "Notification with multiple lots")
   # Send these to master DF
@@ -209,7 +210,8 @@ for(r in 1:regions_number){
 
   # Check our cases so far add up to total notifications
   if(length(notifications_with_one_lot_one_customer$BusinessKey) + length(notifications_with_one_lot_multiple_customers$BusinessKey) + length(notifications_with_multiple_lots$BusinessKey) != notifications_cleaned_unique_business_keys_number) print("Merge failed, investigate")
-
+  # Khabarovskij_kraj is off-by-one here (fixed by treating NumberOfLots = NA as "multiple lots")
+  
   # Subset single lot to those with one customer
   notifications_single_lot_single_customer <- notifications_single_lot %>%
                                                 right_join(notifications_with_one_lot_one_customer, by = "BusinessKey")
@@ -495,8 +497,8 @@ for(r in 1:regions_number){
                       "oos:suppliers/oos:supplier/oos:inn",
                       "oos:suppliers/oos:supplier/oos:kpp",
                       "oos:suppliers/oos:supplier/oos:organizationName")) %>%
-    # group_by(BusinessKey, Key) %>%
-    #   filter(row_number() == 1) %>% ungroup() %>%
+    group_by(BusinessKey, Key) %>%
+      filter(row_number() == 1) %>% ungroup() %>% # Need this de-dup for very occasional instance (eg Bashkortostan_Resp)
     spread(key = Key, value = Value) %>%
     select(-DocumentVersionUniqueID)
   
@@ -799,6 +801,7 @@ for(r in 1:regions_number){
     
   # Clean up
   rm(notifications_contracts_products_grouped); rm(notifications_contracts_products_ungrouped)
+  print(paste0("Completed ", current_region))
 } # Closes control loop over this region
 gc()
 # ENDS
