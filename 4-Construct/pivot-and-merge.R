@@ -29,9 +29,11 @@ parsing_configuration <- na.omit(read.xlsx(xlsxFile="3-Unpack/how-I-parse-the-xm
 ############################################
 
 # Obtain list of regions for which consolidated data is available
-# regions_list <- generate_regions_list(data_cleaned_directory)
-# regions_list <- as.list("Adygeja_Resp")
-regions_list <- as.list(c("Moskva", "Moskovskaja_obl"))
+# regions_available_to_pivot <- generate_regions_list(data_cleaned_directory)
+# regions_already_pivoted <- generate_regions_list(data_output_directory)
+# regions_list <- setdiff(regions_available_to_pivot, regions_already_pivoted)
+regions_list <- as.list("Adygeja_Resp")
+# regions_list <- as.list(c("Moskva"))
 regions_number <- length(regions_list)
 
 ##############################################
@@ -64,7 +66,7 @@ for(r in 1:regions_number){
 
   # REMOVE Keys found to be of no value (could also be moved to clean-data.R, would save memory)
   notifications_cleaned <- notifications_cleaned %>% filter(Key != "oos:lots/oos:lot/oos:notificationFeatures/oos:notificationFeature/oos:placementFeature/oos:name")
-  contracts_cleaned <- contracts_cleaned %>% filter(BusinessKey != "")
+  contracts_cleaned <- contracts_cleaned %>% filter(BusinessKey != "")  #| Key != "oos:currentContractStage")
   
   # How many total cases are there, and how many matches?
   notifications_cleaned_unique_business_keys <- data.frame(Notification = "Notification", BusinessKey = unique(notifications_cleaned$BusinessKey), stringsAsFactors = F)
@@ -112,7 +114,8 @@ for(r in 1:regions_number){
                                             "oos:customer/oos:kpp", "oos:customer/oos:tofk", "oos:price", "oos:currency/oos:code",
                                             "oos:execution/oos:month", "oos:execution/oos:year", "oos:finances/oos:financeSource",
                                             "oos:currentContractStage", "oos:finances/oos:budget/oos:code",
-                                            "oos:finances/oos:budget/oos:name", "oos:finances/oos:extrabudget/oos:name")) %>%
+                                            "oos:finances/oos:budget/oos:name", "oos:finances/oos:extrabudget/oos:name",
+                                            "oos:currentContractStage")) %>%
                           select(-DocumentVersionUniqueID) %>%
                           spread(key = Key, value = Value)
   if(length(contracts_universal$BusinessKey) != length(contracts_cleaned_unique_business_keys$BusinessKey)) print("Merge failed, investigate")
