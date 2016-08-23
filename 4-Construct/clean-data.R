@@ -89,6 +89,7 @@ for(r in 1:regions_number){
     # We actually care about having the best data for each entity, in this case "notificationNumber", extract these
     business_keys <- batch_output_key_value %>%
                             filter(Key == "oos:notificationNumber" | Key == "oos:foundation/oos:order/oos:notificationNumber") %>% # Not oos:regNum!
+                            # filter(Key == "oos:notificationNumber" | Key == "oos:regNum") %>% 
                             select(DocumentVersionUniqueID, Value) %>%
                             rename(BusinessKey = Value) %>%
                             filter(BusinessKey != "") # Some strange empty-but-not-NA cells
