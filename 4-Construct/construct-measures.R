@@ -169,7 +169,7 @@ for(r in 1:regions_number){
   ######################################################
 
   source("4-Construct/measures/identify-agencies.R")
-  source("4-Construct/measures/prices-for-specific-products.R")
+  # source("4-Construct/measures/prices-for-specific-products.R")
   
   
   ###########################################################
