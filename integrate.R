@@ -45,7 +45,7 @@ data_download_date <- "2015-06-13"
 downloads_directory <- "~/Downloads/data/" # For data not tracked by Git
 
 # What kind of documents to parse?
-document_types_list <- as.list(c("contracts", "notifications"))
+document_types_list <- as.list(c("contracts", "notifications", "protocols"))
 
 # Configure number of cores available (will default to 1 on Windows due to non-availability of easy parallelisation via library(parallel))
 number_of_cores <- max(1, detectCores() - 1) # Can change last number to 1 or 2 depending on tolerance for responsiveness of other processes

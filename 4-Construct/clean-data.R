@@ -41,7 +41,7 @@ for(r in 1:regions_number){
 
   # Begin control loop over document types
   for(d in 1:length(document_types_list)){
-      # document_type <- "notifications"; # document_type <- "contracts"
+      # document_type <- "notifications"; # document_type <- "contracts"; # document_type <- "protocols"
     document_type <- as.character(document_types_list[d])
     
     # Load the next file to process
@@ -63,14 +63,16 @@ for(r in 1:regions_number){
     gc()
     
     # Count number of docs parsed from the XML to produce file, generate a unique ID for each
-    number_of_documents_parsed <- length(batch_output_key_value$Key[batch_output_key_value$Key == "oos:id"])
+    if(document_type == "contracts"){number_of_documents_parsed <- length(batch_output_key_value$Key[batch_output_key_value$Key == "oos:id"])}
+    if(document_type == "notifications"){number_of_documents_parsed <- length(batch_output_key_value$Key[batch_output_key_value$Key == "oos:id"])}
+    if(document_type == "protocols"){number_of_documents_parsed <- length(batch_output_key_value$Key[batch_output_key_value$Key == "oos:protocolNumber"])}
     UniqueID <- seq(number_of_documents_parsed)
     
     # Not slow
     # Work out which rows are associated with a change to a new document (as identified by oos:id)
     rows_with_UniqueID <- batch_output_key_value %>%
                                  add_rownames() %>%
-                                 filter(Key == "oos:id") %>%
+                                 filter(Key == "oos:id" | Key == "oos:protocolNumber") %>%
                                  select(rowname) %>%
                                  cbind(UniqueID)
     
@@ -128,6 +130,7 @@ for(r in 1:regions_number){
                        data_download_date, ".rda")
     if(document_type == "contracts"){contracts_cleaned <- one_version_per_document; save(contracts_cleaned, file=filename); rm(contracts_cleaned)}
     if(document_type == "notifications"){notifications_cleaned <- one_version_per_document; save(notifications_cleaned, file=filename); rm(notifications_cleaned)}
+    if(document_type == "protocols"){protocols_cleaned <- one_version_per_document; save(protocols_cleaned, file=filename); rm(protocols_cleaned)}
     
     # Print how many rows that got rid of!
     print(paste0(current_region, "/", document_type, ": ",

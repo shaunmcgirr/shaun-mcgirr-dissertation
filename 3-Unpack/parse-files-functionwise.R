@@ -25,7 +25,7 @@ data_parsed_directory <- set_data_subdirectory(data_directory, data_download_dat
 # regions_already_parsed <- generate_regions_list(data_parsed_directory)
 # regions_list <- setdiff(regions_available_to_parse, regions_already_parsed)
 regions_list <- as.list("Adygeja_Resp")
-# regions_list <- as.list(c("Adygeja_Resp", "Moskva"))
+# regions_list <- as.list(c("Moskva"))
 regions_number <- length(regions_list)
 
 #########################################################################
@@ -48,7 +48,7 @@ for(r in 1:regions_number){
   
   # Begin control loop over document types
   for(d in 1:length(document_types_list)){
-  # document_type <- "notifications"; # document_type <- "contracts"
+  # document_type <- "notifications"; # document_type <- "contracts"; # document_type <- "protocols"
   document_type <- as.character(document_types_list[d])
   document_type_start_time <- Sys.time()
     
