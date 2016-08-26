@@ -18,7 +18,8 @@ test <- notifications_contracts_products_ungrouped %>%
                  # AnyBunching = as.factor(ifelse(BunchedAtThreshold == "Not bunched", "NotBunched", "Bunched")),
                  AnyBunching = as.factor(ifelse(BunchedAtThreshold == "Not bunched", 0, 1)),
                  SurplusAvailableForCorruption = ifelse(PriceChangePercentageNoOutliers > 0, NA, 100+PriceChangePercentageNoOutliers),
-                 SubstantialRevisions = as.factor(ifelse(ContractRevised == "N" | NotificationRevised == "N", 0, 1)))
+                 SubstantialRevisions = as.factor(ifelse(ContractRevised == "N" | NotificationRevised == "N", 0, 1)),
+                 Year = as.factor(substr(NotificationPublishDate, 1, 4)))
   
 
 # Quick models
@@ -176,6 +177,15 @@ summary(test_model_17)
 interplot(test_model_17, var1 = "ProductProbabilityLevel4", var2 = "AnyBunching")
 # Still holds
 
+# output a tidy graph
+bunching_vs_opportunities_graph <- interplot(test_model_17, var1 = "ProductProbabilityLevel4", var2 = "AnyBunching") +
+  labs(title = "Buying more generic goods reduces corruption opportunities,\nbut only in auctions without `bunching'\n",
+       x = "\n0 denotes purchases without red flag; 1 denotes purchases with red flag",
+       y = "Effect of increased commonality of purchase (more generic good)\non change in price over auction\n")
+print(bunching_vs_opportunities_graph)
+ggsave(plot = bunching_vs_opportunities_graph, filename = "bunching_vs_opportunities_graph.pdf", device = "pdf", limitsize = T) #, width = 8, height = 8)
+
+
 # Test another red flag: substantial revisions to the purchase from notification through contract
 test_model_18 <- lm(PriceChangePercentageNoOutliers ~ NotificationLotCustomerRequirementMaxPrice + log10(TotalAgencySpending) + (ProductProbabilityLevel4 * SubstantialRevisions), data = test_large_agencies)
 summary(test_model_18)
@@ -263,11 +273,25 @@ summary(test_model_27)
 interplot(test_model_27, var1 = "ProductProbabilityLevel4", var2 = "AnyBunching", sims = 50)
 # Within agencies, on the other hand, more generic goods cost more when no bunching, indeterminate when bunching
 
+# Now without forcing intercept
 test_model_28 <- glm(PriceChangePercentageNoOutliers ~ (ProductProbabilityLevel4 * AnyBunching) + factor(AgencyID), data = test_large_agencies)
 summary(test_model_28)
 interplot(test_model_28, var1 = "ProductProbabilityLevel4", var2 = "AnyBunching", sims = 50)
 # Shows same thing: can sell this as "some agencies conform to the pooled model, eg MinDef, on average (FE) other way round as per my story"
 # Need to be careful about conclusions without red flags, isn't this when corruption supposed to break down?
+
+# Is there a year effect?
+test_model_29 <- glm(PriceChangePercentageNoOutliers ~ (ProductProbabilityLevel4 * AnyBunching) + factor(Year) - 1, data = test_large_agencies)
+summary(test_model_29)
+interplot(test_model_29, var1 = "ProductProbabilityLevel4", var2 = "AnyBunching", sims = 500)
+# Robust to within-year version of test
+
+test_model_30 <- glm(PriceChangePercentageNoOutliers ~ ProductProbabilityLevel4 + factor(Year) - 1, data = test_large_agencies)
+summary(test_model_30)
+# Intercepts are the same for each year
+#interplot(test_model_30, var1 = "ProductProbabilityLevel4", var2 = "AnyBunching", sims = 500)
+
+
 
 #####################
 # 3. Store measures #
