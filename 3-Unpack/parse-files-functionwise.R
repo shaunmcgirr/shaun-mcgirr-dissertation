@@ -112,8 +112,8 @@ for(r in 1:regions_number){
 # 5. SCRATCHPAD #
 ################################################
 
-STOP <- 1
-if(STOP == 1) stop("Stopping here")
+# STOP <- 1
+# if(STOP == 1) stop("Stopping here")
 
 # Stitch it back together again and work out what it means
 # load(file = "~/data/zakupki/2015-06-13/zakupki-2015-06-13-parsed-data/94fz/Adygeja_Resp/contracts/Adygeja_Resp_contracts_parsed_key_value_2015-06-13.rda")
