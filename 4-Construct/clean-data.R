@@ -91,11 +91,11 @@ for(r in 1:regions_number){
     # We actually care about having the best data for each entity, in this case "notificationNumber", extract these
     business_keys <- batch_output_key_value %>%
                             filter(Key == "oos:notificationNumber" | Key == "oos:foundation/oos:order/oos:notificationNumber") %>% # Not oos:regNum!
-                            # filter(Key == "oos:notificationNumber" | Key == "oos:regNum") %>% 
+                            # filter(Key == "oos:notificationNumber" | Key == "oos:protocolNumber") %>% 
                             select(DocumentVersionUniqueID, Value) %>%
                             rename(BusinessKey = Value) %>%
                             filter(BusinessKey != "") # Some strange empty-but-not-NA cells
-
+  
     # Quite slow but not too rough on memory    
     # Merge those on
     batch_output_key_value <- batch_output_key_value %>%
@@ -103,22 +103,49 @@ for(r in 1:regions_number){
     rm(business_keys)
     gc()
     
-    # Find out which document has the best data for a given notificationNumber
-    most_fields <- batch_output_key_value %>%
+       # Find out which document has the best data for a given notificationNumber (protocolNumber for protocols)
+    if(document_type == "contracts" | document_type == "notifications"){
+      most_fields <- batch_output_key_value %>%
       filter(!is.na(Value)) %>%
       group_by(BusinessKey, DocumentVersionUniqueID) %>%
       tally(n()) %>% ungroup() %>%
       arrange(BusinessKey, -n, xtfrm(DocumentVersionUniqueID)) %>%
       distinct(BusinessKey, .keep_all = T) %>% # Returns most recently parsed doc for each notificationNumber (out of docs with most fields)
-      select(-n) 
+      select(-n)} 
+    
+    # Will need to take two passes at protocols (see https://trello.com/c/xpJCDmW9/52-parse-protocols-for-bids)
+    # For protocols, 0158300029813000018 is a good case here.
+    ## How many versions per protocol?
+    # 0176300001511000001 is good case - fields can change order without substance changing
+    # 0176300003713000019 another good case, two "version 1", one with better data
+    # versions_per_protocol <- batch_output_key_value %>%
+    #   group_by(Document) %>%
+    #     summarize(VersionsPerDocument = n_distinct(UniqueID))
+    
+    if(document_type == "protocols"){
+      most_fields <- batch_output_key_value %>%
+        filter(!is.na(Value)) %>%
+        group_by(DocumentVersion, DocumentVersionUniqueID) %>%
+        tally(n()) %>% ungroup() %>%
+        arrange(DocumentVersion, -n, -xtfrm(DocumentVersionUniqueID)) %>%
+        distinct(DocumentVersion, .keep_all = T) %>% # Returns most recently parsed doc for each notificationNumber (out of docs with most fields)
+        select(-n)} 
+    
     
     # Very slow (probably a smarter way to do this, eg assign simpler number to each)
     # Might also want to preallocate this and other large objects
     # Use info above to cut down parsed data frame to just the best documents
-    one_version_per_document <- batch_output_key_value %>%
+    if(document_type == "contracts" | document_type == "notifications"){
+      one_version_per_document <- batch_output_key_value %>%
       right_join(most_fields, by = c("DocumentVersionUniqueID", "BusinessKey")) %>%
       select(BusinessKey, DocumentVersionUniqueID, Key, Value) %>%
-      filter(!is.na(BusinessKey))
+      filter(!is.na(BusinessKey))}
+    
+    if(document_type == "protocols"){
+      one_version_per_document <- batch_output_key_value %>%
+        right_join(most_fields, by = c("DocumentVersionUniqueID", "DocumentVersion")) %>%
+        select(BusinessKey, DocumentVersion, DocumentVersionUniqueID, Key, Value) %>%
+        filter(!is.na(BusinessKey))}
     
     # Still gives same number of unique business keys for Moscow: 548,436 notifications; 414,382 contracts
     rm(most_fields)
