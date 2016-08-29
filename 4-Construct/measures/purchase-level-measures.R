@@ -218,7 +218,7 @@ interplot(test_opps_vs_spec, var1 = "ProductProbabilityLevel4Scaled", "Notificat
 
 # What about with price of purchase? What about with both?
 
-# Robustness: are there really more suppliers for more generic goods?
+# Robustness: are there really more suppliers for more generic goods? (Yes, also holds at level 1)
 suppliers_per_product <- notifications_contracts_products_ungrouped %>%
                           filter(!is.na(NotificationLotProductCode) & !is.na(ContractSupplierParticipantINN)) %>%
                           group_by(NotificationLotProductCode) %>%
