@@ -32,6 +32,7 @@ library(ggthemes)     # install.packages('ggthemes')
 library(dplyr)        # install.packages('dplyr')
 
 options(digits = 15) # So display of lat/lon isn't truncated
+as.numeric.factor <- function(x) {as.numeric(levels(x))[x]} # To convert factors to underlying numeric values
 
 #----- 2. Set project-wide parameters -----
 # The scripts run below will assume data is available in this directory, named according to the pattern described in section 1 above, eg E:/Data/zakupki/2015-06-13/zakupki-2015-06-13-raw-data
