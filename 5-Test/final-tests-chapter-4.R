@@ -82,25 +82,30 @@ ggsave(total_revisions_graph, file = "./6-Present/chapter-four/total_revisions_g
 
 # 4.1.4
 # Number of applicants/admitted/disqualified
+model_disqualifications <- lm(PriceChangePercentageNegativeOnly ~ NotificationLotCustomerRequirementMaxPrice + ProductProbabilityLevel4Scaled + ProportionDisqualified + (ProductProbabilityLevel4Scaled * ProportionDisqualified), data = purchases_moscow)
+summary(model_disqualifications)
+disqualifications_graph <- interplot(model_disqualifications, var1 = "ProductProbabilityLevel4Scaled", var2 = "ProportionDisqualified", esize = 0.5, point = F) +
+  theme_bw() +
+  scale_fill_tableau() +
+  labs(title = "Effect of 'disqualifications' red flag on association between\npurchase specificity and auction efficiency, Moscow agencies\n",
+       x = "\nProportion of bidders disqualified from auction",
+       y = "Expected change in price decrease over course of auction\nwhen moving from most specific to most generic good\n") +
+  scale_y_continuous(breaks = c(-2, 0, 2, 4, 6, 8, 10))
+print(disqualifications_graph)
+ggsave(disqualifications_graph, file = "./6-Present/chapter-four/disqualifications_graph_moscow.pdf")
 
 
-
-
-# 4.1.5
-# Repeat winners, code now in build-purchase-level-data.R
-
-# Model this as a red flag
-model_favoritism_odds <- lm(PriceChangePercentageNegativeOnly ~ NotificationLotCustomerRequirementMaxPrice + ProductProbabilityLevel4Scaled + FavoritismOdds + (ProductProbabilityLevel4Scaled * FavoritismOdds), data = purchases_moscow)
-summary(model_favoritism_odds)
-interplot(model_favoritism_odds, var1 = "ProductProbabilityLevel4Scaled", var2 = "FavoritismOdds", esize = 0.5, point = F)
-
+# 4.1.X
+# Repeat winners, code now in build-purchase-level-data.R; Model this as a red flag
 model_favoritism_simple <- lm(PriceChangePercentageNegativeOnly ~ NotificationLotCustomerRequirementMaxPrice + ProductProbabilityLevel4Scaled + FavoritismSimpleLog + (ProductProbabilityLevel4Scaled * FavoritismSimpleLog), data = purchases_moscow)
 summary(model_favoritism_simple)
 interplot(model_favoritism_simple, var1 = "ProductProbabilityLevel4Scaled", var2 = "FavoritismSimpleLog", esize = 0.5, point = F)
-
-
+# Shows that market logic wears off with increasing favoritism
 # At purchase level, isn't favoritism just increasing in number of other potential suppliers?
 # Not quite, because even random allocation would yield that
+# Leave out of 4.1, probably better to deploy interacted with specificity later on
+
+
 
 
 
@@ -120,11 +125,8 @@ plot(density(single_supplier_usage$MatchProportion))
 worst_offenders <- single_supplier_usage %>% filter(MatchProportion >= 0.8)
 
 
-
 # What is the story behind this? Do I need it any longer?
 test_model_14_corr <- lm(ProximityRuleThreshold ~ NotificationLotCustomerRequirementMaxPrice + ProductProbabilityLevel4Scaled + PriceChangePercentageNegativeOnly + (ProductProbabilityLevel4Scaled * PriceChangePercentageNegativeOnly), data = purchases_all)
 summary(test_model_14_corr)
 interplot(test_model_14_corr, var1 = "ProductProbabilityLevel4Scaled", var2 = "PriceChangePercentageNegativeOnly")
-
-
 

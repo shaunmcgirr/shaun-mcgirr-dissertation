@@ -260,10 +260,13 @@ for(r in 1:regions_number){
   bidder_statistics_file_name <- paste0(data_output_directory_region, current_region, "_bidder_statistics_", data_download_date, ".rda")
   load(bidder_statistics_file_name)
   
-  # Drop those we don't need
+  # Drop those variables we don't need, merge on bidder stats
   purchases <- select(purchases, one_of(purchase_variables)) %>% 
-    left_join(bidder_statistics, by = c("NotificationNumber" = "BusinessKey"))
-  rm(notifications_contracts_products_ungrouped); rm(bidder_statistics); rm(bidder_statistics_file_name); gc();
+    left_join(bidder_statistics, by = c("NotificationNumber" = "BusinessKey")) %>%
+    mutate(ProportionDisqualified = ifelse(is.na(NumberOfApplicants) | NumberOfApplicants == 0, NA, DisqualifiedApplicants/NumberOfApplicants))
+  
+  rm(notifications_contracts_products_ungrouped); rm(bidder_statistics); rm(bidder_statistics_file_name);
+  rm(product_probabilities_level_1); rm(product_probabilities_level_4); gc();
   
   # Add favoritism measures at product level
   suppliers_per_product <- purchases %>%
