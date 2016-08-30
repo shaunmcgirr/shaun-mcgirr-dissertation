@@ -87,44 +87,17 @@ ggsave(total_revisions_graph, file = "./6-Present/chapter-four/total_revisions_g
 
 
 # 4.1.5
-# Repeat winners, something like agency purchases divided by # winners?
-repeat_winners <- purchases_moscow %>%
-                    filter(!is.na(AgencyID) & !is.na(ContractSupplierParticipantINN)) %>%
-                    group_by(AgencyID) %>%
-                      summarize(NumberOfSuppliersAgency = n_distinct(ContractSupplierParticipantINN),
-                                NumberOfPurchasesAgency = n()) %>% ungroup() %>%
-                    mutate(PurchasesPerSupplier = NumberOfPurchasesAgency/NumberOfSuppliersAgency)
-# Agency scoring "worst" on this is Moscow Public Health department, makes sense as most specialized market
-# Would be amazing if they didn't score so badly on other measures
-# Problem is repeat winners is kind of just a transformation of market concentration, no?
-
-# Need a kind of "favoritism" measure at product level
-repeat_winners_product <- purchases_moscow %>%
-  filter(!is.na(AgencyID) & !is.na(ContractSupplierParticipantINN) & !is.na(NotificationLotProductCode)) %>%
-  group_by(AgencyID, NotificationLotProductCode) %>%
-  summarize(NumberOfSuppliers = n_distinct(ContractSupplierParticipantINN),
-            NumberOfPurchases = n()) %>% ungroup() %>%
-  mutate(PurchasesPerSupplier = NumberOfPurchases/NumberOfSuppliers) %>%
-  left_join(suppliers_per_product, by = c("NotificationLotProductCode" = "NotificationLotProductCode")) %>%
-  mutate(SupplierUnderusage = 1 - (NumberOfSuppliers/NumberOfSuppliersProduct),
-         FavoritismRaw = SupplierUnderusage * (NumberOfPurchases - NumberOfSuppliers),
-         FavoritismRawLog = log(FavoritismRaw+1),
-         FavoritismSimple = ifelse(NumberOfSuppliers==NumberOfPurchases, 0, (NumberOfSuppliersProduct/NumberOfSuppliers)*(NumberOfPurchases-NumberOfSuppliers)), 
-         FavoritismSimpleLog = ifelse(NumberOfSuppliers==NumberOfPurchases, 0, log((NumberOfSuppliersProduct/NumberOfSuppliers)*(NumberOfPurchases-NumberOfSuppliers))),
-         FavoritismOdds = (NumberOfPurchases/NumberOfSuppliers)/(NumberOfPurchases/NumberOfSuppliersProduct),
-         FavoritismOddsLog = log(FavoritismOdds)) %>%
-    dplyr::select(AgencyID, NotificationLotProductCode, FavoritismRawLog, FavoritismSimpleLog, FavoritismOdds, FavoritismOddsLog)
-# This is a good measure, fav decreasing in suppliers used, increasing in purchases made, increasing in overall suppliers
-# summary(lm(FavoritismSimple ~ NumberOfSuppliers + NumberOfPurchases + NumberOfSuppliersProduct - 1, data = repeat_winners_product))
-# Basically says no favoritism if number of purchases is number of suppliers; other cases, favoritism function of n alternative suppliers for each you chose, weighted by number of excess purchases
+# Repeat winners, code now in build-purchase-level-data.R
 
 # Model this as a red flag
-purchases_moscow <- purchases_moscow %>%
-                      left_join(repeat_winners_product)
+model_favoritism_odds <- lm(PriceChangePercentageNegativeOnly ~ NotificationLotCustomerRequirementMaxPrice + ProductProbabilityLevel4Scaled + FavoritismOdds + (ProductProbabilityLevel4Scaled * FavoritismOdds), data = purchases_moscow)
+summary(model_favoritism_odds)
+interplot(model_favoritism_odds, var1 = "ProductProbabilityLevel4Scaled", var2 = "FavoritismOdds", esize = 0.5, point = F)
 
-model_favoritism <- lm(PriceChangePercentageNegativeOnly ~ NotificationLotCustomerRequirementMaxPrice + ProductProbabilityLevel4Scaled + FavoritismOdds + (ProductProbabilityLevel4Scaled * FavoritismOdds), data = purchases_moscow)
-summary(model_favoritism)
-interplot(model_favoritism, var1 = "ProductProbabilityLevel4Scaled", var2 = "FavoritismOdds", esize = 0.5, point = F)
+model_favoritism_simple <- lm(PriceChangePercentageNegativeOnly ~ NotificationLotCustomerRequirementMaxPrice + ProductProbabilityLevel4Scaled + FavoritismSimpleLog + (ProductProbabilityLevel4Scaled * FavoritismSimpleLog), data = purchases_moscow)
+summary(model_favoritism_simple)
+interplot(model_favoritism_simple, var1 = "ProductProbabilityLevel4Scaled", var2 = "FavoritismSimpleLog", esize = 0.5, point = F)
+
 
 # At purchase level, isn't favoritism just increasing in number of other potential suppliers?
 # Not quite, because even random allocation would yield that

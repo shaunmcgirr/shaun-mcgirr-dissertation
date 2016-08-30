@@ -263,7 +263,35 @@ for(r in 1:regions_number){
   # Drop those we don't need
   purchases <- select(purchases, one_of(purchase_variables)) %>% 
     left_join(bidder_statistics, by = c("NotificationNumber" = "BusinessKey"))
-  rm(notifications_contracts_products_ungrouped); rm(bidder_statistics); rm(bidder_statistics_file_name);
+  rm(notifications_contracts_products_ungrouped); rm(bidder_statistics); rm(bidder_statistics_file_name); gc();
+  
+  # Add favoritism measures at product level
+  suppliers_per_product <- purchases %>%
+    filter(!is.na(NotificationLotProductCode) & !is.na(ContractSupplierParticipantINN)) %>%
+    group_by(NotificationLotProductCode, ProductProbabilityLevel4Scaled) %>%
+    summarize(NumberOfSuppliersProduct = n_distinct(ContractSupplierParticipantINN)) %>%
+    left_join(okdp_product_classification, by = c("NotificationLotProductCode" = "ProductCode"))
+  
+  repeat_winners_product <- purchases %>%
+    filter(!is.na(AgencyID) & !is.na(ContractSupplierParticipantINN) & !is.na(NotificationLotProductCode)) %>%
+    group_by(AgencyID, NotificationLotProductCode) %>%
+    summarize(NumberOfSuppliers = n_distinct(ContractSupplierParticipantINN),
+              NumberOfPurchases = n()) %>% ungroup() %>%
+    mutate(PurchasesPerSupplier = NumberOfPurchases/NumberOfSuppliers) %>%
+    left_join(suppliers_per_product, by = c("NotificationLotProductCode" = "NotificationLotProductCode")) %>%
+    mutate(SupplierUnderusage = 1 - (NumberOfSuppliers/NumberOfSuppliersProduct),
+           FavoritismRaw = SupplierUnderusage * (NumberOfPurchases - NumberOfSuppliers),
+           FavoritismRawLog = log(FavoritismRaw+1),
+           FavoritismSimple = ifelse(NumberOfSuppliers==NumberOfPurchases, 0, (NumberOfSuppliersProduct/NumberOfSuppliers)*(NumberOfPurchases-NumberOfSuppliers)), 
+           FavoritismSimpleLog = ifelse(NumberOfSuppliers==NumberOfPurchases, 0, log((NumberOfSuppliersProduct/NumberOfSuppliers)*(NumberOfPurchases-NumberOfSuppliers))),
+           FavoritismOdds = (NumberOfPurchases/NumberOfSuppliers)/(NumberOfPurchases/NumberOfSuppliersProduct),
+           FavoritismOddsLog = log(FavoritismOdds)) %>%
+    dplyr::select(AgencyID, NotificationLotProductCode, FavoritismRawLog, FavoritismSimpleLog, FavoritismOdds, FavoritismOddsLog)
+    # Odds still not quite right, should 1 purchase from 1 supplier (when there are 2134 available) be the maximum?
+    # Simple log is better conceptually
+  
+  purchases <- purchases %>%
+    left_join(repeat_winners_product)
   
   # Save the file
   suppressWarnings(dir.create(data_purchases_directory_regions, recursive=TRUE))
@@ -271,6 +299,8 @@ for(r in 1:regions_number){
                      data_download_date, ".rda")
   save(purchases, file = filename)
   print(paste0("Saved ", current_region, " purchases"))
+
+  rm(suppliers_per_product); rm(repeat_winners_product); rm(purchases); gc();
   
 } # Closes control loop over regions_list
 gc()
