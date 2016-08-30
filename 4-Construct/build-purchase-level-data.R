@@ -256,10 +256,15 @@ for(r in 1:regions_number){
                           "Match", "NotificationMissingReason", "ContractMissingReason", "ProcedureDuration")
                           # "ContractFinanceBudgetName", "NotificationVersionNumber", "ContractVersionNumber",
 
+  # Load bidder statistics here
+  bidder_statistics_file_name <- paste0(data_output_directory_region, current_region, "_bidder_statistics_", data_download_date, ".rda")
+  load(bidder_statistics_file_name)
+  
   # Drop those we don't need
-  purchases <- select(purchases, one_of(purchase_variables))
-  rm(notifications_contracts_products_ungrouped)
-    
+  purchases <- select(purchases, one_of(purchase_variables)) %>% 
+    left_join(bidder_statistics, by = c("NotificationNumber" = "BusinessKey"))
+  rm(notifications_contracts_products_ungrouped); rm(bidder_statistics); rm(bidder_statistics_file_name);
+  
   # Save the file
   suppressWarnings(dir.create(data_purchases_directory_regions, recursive=TRUE))
   filename <- paste0(data_purchases_directory, "regions/", current_region, "_purchases_",

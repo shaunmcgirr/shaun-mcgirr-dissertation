@@ -101,106 +101,21 @@ for(r in 1:regions_number){
   # Still not quite right, shown by test case 0148200000511000011 http://zakupki.gov.ru/pgz/public/action/orders/info/commission_work_result/show?notificationId=171332
   # Should be 9 applicants, and 4 admitted, so need Value == 1 above
   # Fixed! Shows 5 bidders disqualified
-  
-  ### PREVIOUS APPROACH BEGINS HERE
-  # Generally seems to be that the protocol I'm interest has no foundation protocol (ie its the first)
-  # Some have up to five "first protocol", especially when cancellation involved http://zakupki.gov.ru/pgz/public/action/orders/info/common_info/show?notificationId=4341278
-  # Comfortable restricting for now to those with one foundation protocol
-  # Great example here, showing how successive protocols narrow the field, only need to worry about first stage though
-  # http://zakupki.gov.ru/pgz/public/action/orders/info/commission_work_result/show?notificationId=6744059
-  business_keys_with_multiple_foundation_protocols <- protocols_single_lot %>%
-    filter(Key == "oos:foundationProtocolNumber" & is.na(Value)) %>%
-    group_by(BusinessKey) %>%
-      tally() %>% ungroup() %>% # table(business_keys_with_multiple_foundation_protocols$n)
-    filter(n > 1) %>%
-    select(BusinessKey)
-  
-  # Remove these then recalculate
-  protocols_single_lot_single_foundation <- protocols_single_lot %>%
-    anti_join(business_keys_with_multiple_foundation_protocols) %>% ungroup()
-  
-  foundation_protocol_identifiers <- protocols_single_lot_single_foundation %>%
-    filter(Key == "oos:foundationProtocolNumber" & is.na(Value)) %>%
-    group_by(BusinessKey, DocumentVersionUniqueID) %>%
-    tally() %>% ungroup() %>%
-    select(DocumentVersionUniqueID)
-  
-  # Reduce to just the foundation protocols then check
-  foundation_protocols <- protocols_single_lot_single_foundation %>%
-    inner_join(foundation_protocol_identifiers)
-  stopifnot(length(unique(foundation_protocols$BusinessKey)) == length(unique(foundation_protocol_identifiers$DocumentVersionUniqueID)))
-  
-  rm(protocols_single_lot); rm(business_keys_with_multiple_foundation_protocols);
-  rm(protocols_single_lot_single_foundation); rm(foundation_protocol_identifiers); gc();
-  
-  # How many applicants (journalNumber) and how many admitted through first stage?
-  applicants_per_business_key <- foundation_protocols %>%
-    filter(Key == "oos:protocolLots/oos:protocolLot/oos:applications/oos:application/oos:journalNumber" & !is.na(Value)) %>%
-    group_by(BusinessKey) %>%
-      summarize(NumberOfApplicants = n())
-  
-  admitted_per_business_key <- foundation_protocols %>%
-    filter(Key == "oos:protocolLots/oos:protocolLot/oos:applications/oos:application/oos:admitted" & Value == 1) %>%
-    group_by(BusinessKey) %>%
-      summarize(NumberAdmittedApplications = n())
-  
-  foundation_protocols_business_keys <- data.frame(BusinessKey = unique(foundation_protocols$BusinessKey), stringsAsFactors = F)
-  
-  bidder_statistics <- unique(foundation_protocols_business_keys) %>%
-    left_join(applicants_per_business_key) %>%
-    left_join(admitted_per_business_key) %>%
-    replace_na(list(NumberOfApplicants = 0, NumberAdmittedApplications = 0))
-  # Doesn't work for open tender, admitted is next stage of proc, need to be robust to this
 
-  rm(applicants_per_business_key); rm(admitted_per_business_key); rm(foundation_protocols_business_keys); rm(foundation_protocols); gc();
-
-  # When joining, declare protocols with NA for these to have 0 (ie no applicants/none admitted)
-  # With na.locf fill thing
-
-
-
-
+  rm(protocols_single_lot); rm(protocols_business_keys); rm(applicants_per_business_key); rm(admitted_per_business_key); gc();
   
-  
-  # Save the joined master DFs (product grouped and ungrouped)
-
-    
-  notifications_contracts_products_ungrouped_file_name <- paste0(data_output_directory_region, current_region,
-                                                               "_notifications_contracts_products_ungrouped_",
-                                                               data_download_date, ".rda")
-  save(notifications_contracts_products_ungrouped, file = notifications_contracts_products_ungrouped_file_name)
+  # Save the bidder statistics
+  bidder_statistics_file_name <- paste0(data_output_directory_region,
+                                        current_region, "_bidder_statistics_",
+                                        data_download_date, ".rda")
+  save(bidder_statistics, file = bidder_statistics_file_name)
     
   ###################
   ## Report stats  ##
   ###################  
-  
-  # Report statistics on matching, append to file matching_statistic.csv
-  number_of_cases <- length(notifications_contracts_products_ungrouped$BusinessKey)
-  
-  notification_matches_contract <- length(notifications_contracts_products_ungrouped$Match[notifications_contracts_products_ungrouped$Match == "Notification matches contract"])
-  notification_without_contract <- length(notifications_contracts_products_ungrouped$Match[notifications_contracts_products_ungrouped$Match == "Notification without contract"])
-  contract_without_notification <- length(notifications_contracts_products_ungrouped$Match[notifications_contracts_products_ungrouped$Match == "Contract without notification"])
-  
-  notification_contract_matches_proportion <- c(current_region, format(Sys.Date(), "%Y-%m-%d"),
-                                                "Notifications with matching contract",
-                                                notification_matches_contract,
-                                                notification_matches_contract/number_of_cases)                                              
-  # print(paste0("Notifications with matching contract: ", notification_contract_matches_proportion))
-  notifications_without_contract_proportion <- c(current_region, format(Sys.Date(), "%Y-%m-%d"),
-                                                 "Notifications without matching contract",
-                                                 notification_without_contract,
-                                                 notification_without_contract/number_of_cases)
-  # print(paste0("Notifications without matching contract: ", notifications_without_contract_proportion))
-  contracts_without_notification_proportion <- c(current_region, format(Sys.Date(), "%Y-%m-%d"),
-                                                 "Contracts without matching notification",
-                                                 contract_without_notification,
-                                                 contract_without_notification/number_of_cases)
-  # print(paste0("Contracts without matching notification: ", contracts_without_notification_proportion))
-  # notification_contract_matches_proportion + notifications_without_contract_proportion + contracts_without_notification_proportion
 
-    
   # Clean up
-  rm(notifications_contracts_products_grouped); rm(notifications_contracts_products_ungrouped)
+  rm(bidder_statistics); rm(bidder_statistics_file_name)
   print(paste0("Completed extracting bidder information from ", current_region))
   
 } # Closes control loop over this region
