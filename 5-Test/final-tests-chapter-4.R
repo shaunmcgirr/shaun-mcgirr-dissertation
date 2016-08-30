@@ -14,6 +14,11 @@ purchases_moscow <- purchases; rm(purchases);
 # load("~/data/zakupki/2015-06-13/zakupki-2015-06-13-purchases-data/94fz/regions/Leningradskaja_obl_purchases_2015-06-13.rda")
 # purchases_leningrad <- purchases; rm(purchases)
 
+########
+## 4.1 #
+########
+
+# 4.1.2
 # Are auctions with red flags different? Yes
 test_model_6 <- lm(PriceChangePercentageNegativeOnly ~ NotificationLotCustomerRequirementMaxPrice + (ProductProbabilityLevel4Scaled * AnyBunching), data = purchases_moscow)
 summary(test_model_6)
@@ -26,15 +31,16 @@ bunched_different <- interplot(test_model_6, var1 = "ProductProbabilityLevel4Sca
 print(bunched_different)
 ggsave(bunched_different, file = "./6-Present/chapter-four/bunched_different_moscow.pdf")
 
+# 4.1.1
 # Robustness: are there really more suppliers for more generic goods?
 suppliers_per_product <- purchases_moscow %>%
   filter(!is.na(NotificationLotProductCode) & !is.na(ContractSupplierParticipantINN)) %>%
   group_by(NotificationLotProductCode, ProductProbabilityLevel4Scaled) %>%
-  summarize(NumberOfSuppliers = n_distinct(ContractSupplierParticipantINN)) %>%
+  summarize(NumberOfSuppliersProduct = n_distinct(ContractSupplierParticipantINN)) %>%
   left_join(okdp_product_classification, by = c("NotificationLotProductCode" = "ProductCode"))
 # plot(log10(suppliers_per_product$ProductProbabilityLevel4Scaled), log10(suppliers_per_product$NumberOfSuppliers))
 #   lines(lowess(log10(suppliers_per_product$ProductProbabilityLevel4Scaled), log10(suppliers_per_product$NumberOfSuppliers), f = 1/100), col = "blue")
-suppliers_per_product_graph <- ggplot(suppliers_per_product, aes(x = ProductProbabilityLevel4Scaled, y = NumberOfSuppliers)) +
+suppliers_per_product_graph <- ggplot(suppliers_per_product, aes(x = ProductProbabilityLevel4Scaled, y = NumberOfSuppliersProduct)) +
   geom_point() +
   scale_x_log10() +
   scale_y_log10() +
@@ -55,6 +61,7 @@ ggsave(suppliers_per_product_graph, file = "./6-Present/chapter-four/suppliers_p
 # suppliers_per_product_regional <- lm(NumberOfSuppliers ~ ProductProbabilityLevel4Scaled + factor(TenderPostingRegion) - 1, data = suppliers_per_product_all)
 # summary(suppliers_per_product_regional)
 
+# 4.1.3
 # Same thing for revisions
 model_revisions <- lm(PriceChangePercentageNegativeOnly ~ NotificationLotCustomerRequirementMaxPrice + ProductProbabilityLevel4Scaled + TotalRevisions + (ProductProbabilityLevel4Scaled * TotalRevisions), data = purchases_moscow[purchases_moscow$TotalRevisions < 11,])
 summary(model_revisions)
@@ -73,7 +80,56 @@ ggsave(total_revisions_graph, file = "./6-Present/chapter-four/total_revisions_g
 # interplot(model_revisions_fe, var1 = "ProductProbabilityLevel4Scaled", var2 = "TotalRevisions", esize = 0.5, point = T, sims = 10)
 # Effect reverses but now we have agencies to deal with so no big deal...
 
-# Repeat winners
+# 4.1.4
+# Number of applicants/admitted/disqualified
+
+
+
+
+# 4.1.5
+# Repeat winners, something like agency purchases divided by # winners?
+repeat_winners <- purchases_moscow %>%
+                    filter(!is.na(AgencyID) & !is.na(ContractSupplierParticipantINN)) %>%
+                    group_by(AgencyID) %>%
+                      summarize(NumberOfSuppliersAgency = n_distinct(ContractSupplierParticipantINN),
+                                NumberOfPurchasesAgency = n()) %>% ungroup() %>%
+                    mutate(PurchasesPerSupplier = NumberOfPurchasesAgency/NumberOfSuppliersAgency)
+# Agency scoring "worst" on this is Moscow Public Health department, makes sense as most specialized market
+# Would be amazing if they didn't score so badly on other measures
+# Problem is repeat winners is kind of just a transformation of market concentration, no?
+
+# Need a kind of "favoritism" measure at product level
+repeat_winners_product <- purchases_moscow %>%
+  filter(!is.na(AgencyID) & !is.na(ContractSupplierParticipantINN) & !is.na(NotificationLotProductCode)) %>%
+  group_by(AgencyID, NotificationLotProductCode) %>%
+  summarize(NumberOfSuppliers = n_distinct(ContractSupplierParticipantINN),
+            NumberOfPurchases = n()) %>% ungroup() %>%
+  mutate(PurchasesPerSupplier = NumberOfPurchases/NumberOfSuppliers) %>%
+  left_join(suppliers_per_product, by = c("NotificationLotProductCode" = "NotificationLotProductCode")) %>%
+  mutate(SupplierUnderusage = 1 - (NumberOfSuppliers/NumberOfSuppliersProduct),
+         FavoritismRaw = SupplierUnderusage * (NumberOfPurchases - NumberOfSuppliers),
+         FavoritismRawLog = log(FavoritismRaw+1),
+         FavoritismSimple = ifelse(NumberOfSuppliers==NumberOfPurchases, 0, (NumberOfSuppliersProduct/NumberOfSuppliers)*(NumberOfPurchases-NumberOfSuppliers)), 
+         FavoritismSimpleLog = ifelse(NumberOfSuppliers==NumberOfPurchases, 0, log((NumberOfSuppliersProduct/NumberOfSuppliers)*(NumberOfPurchases-NumberOfSuppliers))),
+         FavoritismOdds = (NumberOfPurchases/NumberOfSuppliers)/(NumberOfPurchases/NumberOfSuppliersProduct),
+         FavoritismOddsLog = log(FavoritismOdds)) %>%
+    dplyr::select(AgencyID, NotificationLotProductCode, FavoritismRawLog, FavoritismSimpleLog, FavoritismOdds, FavoritismOddsLog)
+# This is a good measure, fav decreasing in suppliers used, increasing in purchases made, increasing in overall suppliers
+# summary(lm(FavoritismSimple ~ NumberOfSuppliers + NumberOfPurchases + NumberOfSuppliersProduct - 1, data = repeat_winners_product))
+# Basically says no favoritism if number of purchases is number of suppliers; other cases, favoritism function of n alternative suppliers for each you chose, weighted by number of excess purchases
+
+# Model this as a red flag
+purchases_moscow <- purchases_moscow %>%
+                      left_join(repeat_winners_product)
+
+model_favoritism <- lm(PriceChangePercentageNegativeOnly ~ NotificationLotCustomerRequirementMaxPrice + ProductProbabilityLevel4Scaled + FavoritismOdds + (ProductProbabilityLevel4Scaled * FavoritismOdds), data = purchases_moscow)
+summary(model_favoritism)
+interplot(model_favoritism, var1 = "ProductProbabilityLevel4Scaled", var2 = "FavoritismOdds", esize = 0.5, point = F)
+
+# At purchase level, isn't favoritism just increasing in number of other potential suppliers?
+# Not quite, because even random allocation would yield that
+
+
 
 
 ### ALL REGIONS
@@ -91,6 +147,8 @@ plot(density(single_supplier_usage$MatchProportion))
 worst_offenders <- single_supplier_usage %>% filter(MatchProportion >= 0.8)
 
 
+
+# What is the story behind this? Do I need it any longer?
 test_model_14_corr <- lm(ProximityRuleThreshold ~ NotificationLotCustomerRequirementMaxPrice + ProductProbabilityLevel4Scaled + PriceChangePercentageNegativeOnly + (ProductProbabilityLevel4Scaled * PriceChangePercentageNegativeOnly), data = purchases_all)
 summary(test_model_14_corr)
 interplot(test_model_14_corr, var1 = "ProductProbabilityLevel4Scaled", var2 = "PriceChangePercentageNegativeOnly")
