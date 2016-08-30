@@ -117,6 +117,7 @@ model_procedure_revisions <- lm(TotalRevisions ~ TenderProcedureGroup - 1, data 
 summary(model_procedure_revisions)
 model_procedure_bunching <- lm(ProximityRuleThreshold ~ TenderProcedureGroup - 1, data = purchases_moscow)
 summary(model_procedure_bunching)
+stargazer(model_procedure_bunching, model_procedure_revisions, model_procedure_disqualifications, title = "Average propensity for corruption by procedure type", style = "apsr", dep.var.labels = c("Bunching", "Revisions", "Disqualifications"), covariate.labels = c("Open electronic auction", "Open tender", "Request for quotes", "Olympic construction", "Preliminary selection"), df = F, omit.stat = c("adj.rsq", "f"), notes = "Note: Some procedures use no initial price, so `bunching' is ruled out", out = "../dissertation-text/tables/corruption_propensity_by_procedure.tex", label = "corruption-propensity-by-procedure")
 # Olympic construction most highly correlated, as expected, then the rest are pretty close really
 
 model_rf_disqualifications <- lm(ProportionDisqualified ~ ProductProbabilityLevel4Scaled + NotificationLotCustomerRequirementMaxPrice + (ProductProbabilityLevel4Scaled * NotificationLotCustomerRequirementMaxPrice), data = purchases_moscow)
@@ -124,17 +125,30 @@ summary(model_rf_disqualifications)
 interplot(model_rf_disqualifications, var1 = "ProductProbabilityLevel4Scaled", var2 = "NotificationLotCustomerRequirementMaxPrice")
 # As you buy more expensive things, more generic goods more assoc with increase in corruption (go after big fish)
 
+# Also holds with regional fe
+# model_rf_disqualifications_fe <- lm(ProportionDisqualified ~ ProductProbabilityLevel4Scaled + NotificationLotCustomerRequirementMaxPrice + (ProductProbabilityLevel4Scaled * NotificationLotCustomerRequirementMaxPrice) + factor(TenderPostingRegion) - 1, data = purchases_all)
+# summary(model_rf_disqualifications_fe)
+interplot(model_rf_disqualifications_fe, var1 = "ProductProbabilityLevel4Scaled", var2 = "NotificationLotCustomerRequirementMaxPrice", sims = 20)
 
 model_rf_revisions <- lm(TotalRevisions ~ ProductProbabilityLevel4Scaled + NotificationLotCustomerRequirementMaxPrice + (ProductProbabilityLevel4Scaled * NotificationLotCustomerRequirementMaxPrice), data = purchases_moscow)
 summary(model_rf_revisions)
 interplot(model_rf_revisions, var1 = "ProductProbabilityLevel4Scaled", var2 = "NotificationLotCustomerRequirementMaxPrice")
 # Same goes for revisions
+# model_rf_revisions_fe <- lm(TotalRevisions ~ ProductProbabilityLevel4Scaled + NotificationLotCustomerRequirementMaxPrice + (ProductProbabilityLevel4Scaled * NotificationLotCustomerRequirementMaxPrice) + factor(TenderPostingRegion) - 1, data = purchases_all)
+# summary(model_rf_revisions_fe)
+interplot(model_rf_revisions_fe, var1 = "ProductProbabilityLevel4Scaled", var2 = "NotificationLotCustomerRequirementMaxPrice", sims = 20)
+# Holds with regional f.e.?
 
 model_rf_bunching <- lm(ProximityRuleThreshold ~ ProductProbabilityLevel4Scaled + NotificationLotCustomerRequirementMaxPrice + (ProductProbabilityLevel4Scaled * NotificationLotCustomerRequirementMaxPrice), data = purchases_moscow)
 summary(model_rf_bunching)
 interplot(model_rf_bunching, var1 = "ProductProbabilityLevel4Scaled", var2 = "NotificationLotCustomerRequirementMaxPrice")
 # Market logic dominates more (OK as this is hokey proximity measure)
 # At very least, the more expensive
+model_rf_bunching_fe <- lm(ProximityRuleThreshold ~ ProductProbabilityLevel4Scaled + NotificationLotCustomerRequirementMaxPrice + (ProductProbabilityLevel4Scaled * NotificationLotCustomerRequirementMaxPrice) + factor(TenderPostingRegion) - 1, data = purchases_all)
+summary(model_rf_bunching_fe)
+interplot(model_rf_bunching_fe, var1 = "ProductProbabilityLevel4Scaled", var2 = "NotificationLotCustomerRequirementMaxPrice", sims = 20)
+# Opposite story for this measure, but it's too correlated with max price
+cor(purchases_all$ProximityRuleThreshold, purchases_all$NotificationLotCustomerRequirementMaxPrice, use = "complete")
 
 ### ALL REGIONS
 
