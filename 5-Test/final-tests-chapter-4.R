@@ -106,9 +106,35 @@ interplot(model_favoritism_simple, var1 = "ProductProbabilityLevel4Scaled", var2
 # Leave out of 4.1, probably better to deploy interacted with specificity later on
 
 
+########
+## 4.2 #
+########
+
+# Are procedures differently susceptible to corruption?
+model_procedure_disqualifications <- lm(ProportionDisqualified ~ TenderProcedureGroup - 1, data = purchases_moscow)
+summary(model_procedure_disqualifications)
+model_procedure_revisions <- lm(TotalRevisions ~ TenderProcedureGroup - 1, data = purchases_moscow)
+summary(model_procedure_revisions)
+model_procedure_bunching <- lm(ProximityRuleThreshold ~ TenderProcedureGroup - 1, data = purchases_moscow)
+summary(model_procedure_bunching)
+# Olympic construction most highly correlated, as expected, then the rest are pretty close really
+
+model_rf_disqualifications <- lm(ProportionDisqualified ~ ProductProbabilityLevel4Scaled + NotificationLotCustomerRequirementMaxPrice + (ProductProbabilityLevel4Scaled * NotificationLotCustomerRequirementMaxPrice), data = purchases_moscow)
+summary(model_rf_disqualifications)
+interplot(model_rf_disqualifications, var1 = "ProductProbabilityLevel4Scaled", var2 = "NotificationLotCustomerRequirementMaxPrice")
+# As you buy more expensive things, more generic goods more assoc with increase in corruption (go after big fish)
 
 
+model_rf_revisions <- lm(TotalRevisions ~ ProductProbabilityLevel4Scaled + NotificationLotCustomerRequirementMaxPrice + (ProductProbabilityLevel4Scaled * NotificationLotCustomerRequirementMaxPrice), data = purchases_moscow)
+summary(model_rf_revisions)
+interplot(model_rf_revisions, var1 = "ProductProbabilityLevel4Scaled", var2 = "NotificationLotCustomerRequirementMaxPrice")
+# Same goes for revisions
 
+model_rf_bunching <- lm(ProximityRuleThreshold ~ ProductProbabilityLevel4Scaled + NotificationLotCustomerRequirementMaxPrice + (ProductProbabilityLevel4Scaled * NotificationLotCustomerRequirementMaxPrice), data = purchases_moscow)
+summary(model_rf_bunching)
+interplot(model_rf_bunching, var1 = "ProductProbabilityLevel4Scaled", var2 = "NotificationLotCustomerRequirementMaxPrice")
+# Market logic dominates more (OK as this is hokey proximity measure)
+# At very least, the more expensive
 
 ### ALL REGIONS
 

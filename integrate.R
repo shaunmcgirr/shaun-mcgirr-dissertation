@@ -28,6 +28,7 @@ library(ggplot2)      # install.packages('ggplot2')
 library(interplot)    # install.packages('interplot')
 library(scales)       # install.packages('scales')
 library(ggthemes)     # install.packages('ggthemes')
+library(stargazer)    # install.packages('stargazer')
 # Always load dplyr last!  
 library(dplyr)        # install.packages('dplyr')
 
