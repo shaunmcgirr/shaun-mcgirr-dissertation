@@ -5,7 +5,6 @@
 # Relies on running build-purchase-level-data first
 
 ### MOSCOW ONLY
-
 # Load Moscow regional file
 load("~/data/zakupki/2015-06-13/zakupki-2015-06-13-purchases-data/94fz/regions/Moskva_purchases_2015-06-13.rda")
 purchases_moscow <- purchases; rm(purchases);
@@ -13,6 +12,25 @@ purchases_moscow <- purchases; rm(purchases);
 # purchases_petersburg <- purchases; rm(purchases)
 # load("~/data/zakupki/2015-06-13/zakupki-2015-06-13-purchases-data/94fz/regions/Leningradskaja_obl_purchases_2015-06-13.rda")
 # purchases_leningrad <- purchases; rm(purchases)
+
+# Generate pretty-looking variables for modelling
+purchases_moscow <- purchases_moscow %>%
+  mutate(Disqualification = ProportionDisqualified,
+         Revisions = TotalRevisions,
+         Bunching = log(ProximityRuleThreshold+1),
+         PurchaseSpecificity = ProductProbabilityLevel4Scaled,
+         MaximumPriceLog = log10(NotificationLotCustomerRequirementMaxPrice+1))
+
+### ALL REGIONS
+load("~/data/zakupki/2015-06-13/zakupki-2015-06-13-purchases-data/all_purchases_2015-06-13_compress.rda")
+# Generate pretty-looking variables for modelling
+purchases_all <- purchases_all %>%
+  mutate(Disqualification = ProportionDisqualified,
+         Revisions = TotalRevisions,
+         Bunching = ProximityRuleThreshold,
+         PurchaseSpecificity = ProductProbabilityLevel4Scaled,
+         MaximumPriceLog = log10(NotificationLotCustomerRequirementMaxPrice+1))
+
 
 ########
 ## 4.1 #
@@ -95,6 +113,17 @@ print(disqualifications_graph)
 ggsave(disqualifications_graph, file = "./6-Present/chapter-four/disqualifications_graph_moscow.pdf")
 
 
+# 4.1.7
+# Histogram of purchase specificity if needed
+# purchase_specificity_graph_moscow <- purchases_moscow %>%
+#   filter(!is.na(ProductProbabilityLevel4Scaled) & ProductProbabilityLevel4Scaled > 0) %>%
+#   ggplot(aes(x = (ProductProbabilityLevel4Scaled))) +
+#   geom_histogram(binwidth = 0.1, na.rm = T) +
+#   scale_y_log10(labels = comma) +
+#   scale_x_log10()
+# print(purchase_specificity_graph_moscow)
+
+
 # 4.1.X
 # Repeat winners, code now in build-purchase-level-data.R; Model this as a red flag
 model_favoritism_simple <- lm(PriceChangePercentageNegativeOnly ~ NotificationLotCustomerRequirementMaxPrice + ProductProbabilityLevel4Scaled + FavoritismSimpleLog + (ProductProbabilityLevel4Scaled * FavoritismSimpleLog), data = purchases_moscow)
@@ -120,39 +149,41 @@ summary(model_procedure_bunching)
 stargazer(model_procedure_bunching, model_procedure_revisions, model_procedure_disqualifications, title = "Average propensity for corruption by procedure type", style = "apsr", dep.var.labels = c("Bunching", "Revisions", "Disqualifications"), covariate.labels = c("Open electronic auction", "Open tender", "Request for quotes", "Olympic construction", "Preliminary selection"), df = F, omit.stat = c("adj.rsq", "f"), notes = "Note: Some procedures use no initial price, so `bunching' is ruled out", out = "../dissertation-text/tables/corruption_propensity_by_procedure.tex", label = "corruption-propensity-by-procedure")
 # Olympic construction most highly correlated, as expected, then the rest are pretty close really
 
-model_rf_disqualifications <- lm(ProportionDisqualified ~ ProductProbabilityLevel4Scaled + NotificationLotCustomerRequirementMaxPrice + (ProductProbabilityLevel4Scaled * NotificationLotCustomerRequirementMaxPrice), data = purchases_moscow)
+# Models predicting corruption
+model_rf_disqualifications <- lm(Disqualification ~ TenderProcedureGroup + PurchaseSpecificity + MaximumPriceLog + (PurchaseSpecificity * MaximumPriceLog), data = purchases_moscow)
 summary(model_rf_disqualifications)
-interplot(model_rf_disqualifications, var1 = "ProductProbabilityLevel4Scaled", var2 = "NotificationLotCustomerRequirementMaxPrice")
+interplot(model_rf_disqualifications, var1 = "PurchaseSpecificity", var2 = "MaximumPriceLog")
 # As you buy more expensive things, more generic goods more assoc with increase in corruption (go after big fish)
-
 # Also holds with regional fe
-# model_rf_disqualifications_fe <- lm(ProportionDisqualified ~ ProductProbabilityLevel4Scaled + NotificationLotCustomerRequirementMaxPrice + (ProductProbabilityLevel4Scaled * NotificationLotCustomerRequirementMaxPrice) + factor(TenderPostingRegion) - 1, data = purchases_all)
-# summary(model_rf_disqualifications_fe)
-interplot(model_rf_disqualifications_fe, var1 = "ProductProbabilityLevel4Scaled", var2 = "NotificationLotCustomerRequirementMaxPrice", sims = 20)
+model_rf_disqualifications_fe <- lm(Disqualification ~ TenderProcedureGroup + PurchaseSpecificity + MaximumPriceLog + (PurchaseSpecificity * MaximumPriceLog) + factor(TenderPostingRegion) - 1, data = purchases_all)
+summary(model_rf_disqualifications_fe)
+interplot(model_rf_disqualifications_fe, var1 = "PurchaseSpecificity", var2 = "MaximumPriceLog", sims = 20)
 
-model_rf_revisions <- lm(TotalRevisions ~ ProductProbabilityLevel4Scaled + NotificationLotCustomerRequirementMaxPrice + (ProductProbabilityLevel4Scaled * NotificationLotCustomerRequirementMaxPrice), data = purchases_moscow)
+model_rf_revisions <- lm(Revisions ~ TenderProcedureGroup + PurchaseSpecificity + MaximumPriceLog + (PurchaseSpecificity * MaximumPriceLog), data = purchases_moscow)
 summary(model_rf_revisions)
-interplot(model_rf_revisions, var1 = "ProductProbabilityLevel4Scaled", var2 = "NotificationLotCustomerRequirementMaxPrice")
+interplot(model_rf_revisions, var1 = "PurchaseSpecificity", var2 = "MaximumPriceLog")
 # Same goes for revisions
-# model_rf_revisions_fe <- lm(TotalRevisions ~ ProductProbabilityLevel4Scaled + NotificationLotCustomerRequirementMaxPrice + (ProductProbabilityLevel4Scaled * NotificationLotCustomerRequirementMaxPrice) + factor(TenderPostingRegion) - 1, data = purchases_all)
-# summary(model_rf_revisions_fe)
-interplot(model_rf_revisions_fe, var1 = "ProductProbabilityLevel4Scaled", var2 = "NotificationLotCustomerRequirementMaxPrice", sims = 20)
-# Holds with regional f.e.?
+model_rf_revisions_fe <- lm(Revisions ~ TenderProcedureGroup + PurchaseSpecificity + MaximumPriceLog + (PurchaseSpecificity * MaximumPriceLog) + factor(TenderPostingRegion) - 1, data = purchases_all)
+summary(model_rf_revisions_fe)
+interplot(model_rf_revisions_fe, var1 = "PurchaseSpecificity", var2 = "MaximumPriceLog", sims = 20)
+# Holds with regional f.e. YES
 
-model_rf_bunching <- lm(ProximityRuleThreshold ~ ProductProbabilityLevel4Scaled + NotificationLotCustomerRequirementMaxPrice + (ProductProbabilityLevel4Scaled * NotificationLotCustomerRequirementMaxPrice), data = purchases_moscow)
+model_rf_bunching <- lm(Bunching ~ TenderProcedureGroup + PurchaseSpecificity + MaximumPriceLog + (PurchaseSpecificity * MaximumPriceLog), data = purchases_moscow)
 summary(model_rf_bunching)
-interplot(model_rf_bunching, var1 = "ProductProbabilityLevel4Scaled", var2 = "NotificationLotCustomerRequirementMaxPrice")
+interplot(model_rf_bunching, var1 = "PurchaseSpecificity", var2 = "MaximumPriceLog")
 # Market logic dominates more (OK as this is hokey proximity measure)
 # At very least, the more expensive
-model_rf_bunching_fe <- lm(ProximityRuleThreshold ~ ProductProbabilityLevel4Scaled + NotificationLotCustomerRequirementMaxPrice + (ProductProbabilityLevel4Scaled * NotificationLotCustomerRequirementMaxPrice) + factor(TenderPostingRegion) - 1, data = purchases_all)
+model_rf_bunching_fe <- lm(Bunching ~ TenderProcedureGroup + PurchaseSpecificity + MaximumPriceLog + (PurchaseSpecificity * MaximumPriceLog) + factor(TenderPostingRegion) - 1, data = purchases_all)
 summary(model_rf_bunching_fe)
-interplot(model_rf_bunching_fe, var1 = "ProductProbabilityLevel4Scaled", var2 = "NotificationLotCustomerRequirementMaxPrice", sims = 20)
+interplot(model_rf_bunching_fe, var1 = "PurchaseSpecificity", var2 = "MaximumPriceLog", sims = 20)
 # Opposite story for this measure, but it's too correlated with max price
 cor(purchases_all$ProximityRuleThreshold, purchases_all$NotificationLotCustomerRequirementMaxPrice, use = "complete")
 
-### ALL REGIONS
 
-# load("~/data/zakupki/2015-06-13/zakupki-2015-06-13-purchases-data/all_purchases_2015-06-13_compress.rda")
+
+#######
+## Tests not used
+#######
 
 # Single-supplier
 single_supplier_usage <- purchases_all %>%
