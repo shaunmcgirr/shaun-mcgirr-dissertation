@@ -1,5 +1,7 @@
 # Final versions of tests for chapter 4
 
+# Metadata
+source(file="3-Unpack/load-classifications.R")
 
 ## Set up data
 # Relies on running build-purchase-level-data first
@@ -18,7 +20,7 @@ purchases_moscow <- purchases_moscow %>%
   mutate(Disqualifications = ProportionDisqualified,
          Revisions = TotalRevisions,
          Bunching = log(ProximityRuleThreshold+1),
-         PurchaseSpecificity = ProductProbabilityLevel4Scaled,
+         ProductCommonness = ProductProbabilityLevel4Scaled,
          MaximumPriceLog = log10(NotificationLotCustomerRequirementMaxPrice+1))
 
 ### ALL REGIONS
@@ -28,7 +30,7 @@ purchases_all <- purchases_all %>%
   mutate(Disqualifications = ProportionDisqualified,
          Revisions = TotalRevisions,
          Bunching = ProximityRuleThreshold,
-         PurchaseSpecificity = ProductProbabilityLevel4Scaled,
+         ProductCommonness = ProductProbabilityLevel4Scaled,
          MaximumPriceLog = log10(NotificationLotCustomerRequirementMaxPrice+1))
 
 
@@ -43,9 +45,9 @@ summary(test_model_6)
 bunched_different <- interplot(test_model_6, var1 = "ProductProbabilityLevel4Scaled", var2 = "AnyBunching", esize = 0.5) +
                       theme_bw() +
                       scale_fill_tableau() +
-                      labs(title = "Effect of 'bunching' red flag on association between purchase\nspecificity and auction efficiency, Moscow agencies\n",
+                      labs(title = "Effect of 'bunching' red flag on association between product\ncommonness and auction efficiency, Moscow agencies\n",
                            x = "\n0 = Not listed within 5% of threshold; 1 = Listed within 5% of threshold",
-                           y = "Expected change in price decrease over course of auction\nwhen moving from most specific to most generic good\n")
+                           y = "Expected change in price decrease over course of auction,\n moving from least common to most common good\n")
 print(bunched_different)
 ggsave(bunched_different, file = "./6-Present/chapter-four/bunched_different_moscow.pdf")
 
@@ -64,11 +66,11 @@ suppliers_per_product_graph <- ggplot(suppliers_per_product, aes(x = ProductProb
   scale_y_log10() +
   theme_bw() +
   stat_smooth(se = F, col = "orange") +
-  labs(title = "Relationship between purchase specificity and\nnumber of unique suppliers, Moscow agencies\n",
-       x = "\nProbability a purchase is of a given product\n(higher value = more generic product)",
+  labs(title = "Relationship between product commoness and\nnumber of unique suppliers, Moscow agencies\n",
+       x = "\nProbability a purchase is of a given product\n(higher value = more common/generic product)",
        y = "Number of (unique) suppliers")
 print(suppliers_per_product_graph)
-ggsave(suppliers_per_product_graph, file = "./6-Present/chapter-four/suppliers_per_product_moscow.pdf", width = 5, height = 6)
+ggsave(suppliers_per_product_graph, file = "./6-Present/chapter-four/suppliers_per_product_moscow.pdf", width = 6, height = 7)
 
 # Does it hold across regions? Yes
 # load("~/data/zakupki/2015-06-13/zakupki-2015-06-13-purchases-data/all_purchases_2015-06-13_compress.rda")
@@ -86,9 +88,9 @@ summary(model_revisions)
 total_revisions_graph <- interplot(model_revisions, var1 = "ProductProbabilityLevel4Scaled", var2 = "TotalRevisions", esize = 0.5, point = T) +
   theme_bw() +
   scale_fill_tableau() +
-  labs(title = "Effect of 'mid-procedure revisions' red flag on association between\npurchase specificity and auction efficiency, Moscow agencies\n",
+  labs(title = "Effect of 'mid-procedure revisions' red flag on association between\nproduct commonness and auction efficiency, Moscow agencies\n",
        x = "\nTotal number of revisions to purchase",
-       y = "Expected change in price decrease over course of auction\nwhen moving from most specific to most generic good\n")
+       y = "Expected change in price decrease over course of auction,\n moving from least common to most common good\n")
 print(total_revisions_graph)
 ggsave(total_revisions_graph, file = "./6-Present/chapter-four/total_revisions_graph_moscow.pdf")
 
@@ -105,9 +107,9 @@ summary(model_disqualifications)
 disqualifications_graph <- interplot(model_disqualifications, var1 = "ProductProbabilityLevel4Scaled", var2 = "ProportionDisqualified", esize = 0.5, point = F) +
   theme_bw() +
   scale_fill_tableau() +
-  labs(title = "Effect of 'disqualifications' red flag on association between\npurchase specificity and auction efficiency, Moscow agencies\n",
+  labs(title = "Effect of 'disqualifications' red flag on association between\nproduct commonness and auction efficiency, Moscow agencies\n",
        x = "\nProportion of bidders disqualified from auction",
-       y = "Expected change in price decrease over course of auction\nwhen moving from most specific to most generic good\n") +
+       y = "Expected change in price decrease over course of auction,\n moving from least common to most common good\n") +
   scale_y_continuous(breaks = c(-2, 0, 2, 4, 6, 8, 10))
 print(disqualifications_graph)
 ggsave(disqualifications_graph, file = "./6-Present/chapter-four/disqualifications_graph_moscow.pdf")
@@ -124,21 +126,6 @@ ggsave(disqualifications_graph, file = "./6-Present/chapter-four/disqualificatio
 # print(purchase_specificity_graph_moscow)
 
 
-# 4.1.X
-# Repeat winners, code now in build-purchase-level-data.R; Model this as a red flag
-model_favoritism_simple <- lm(PriceChangePercentageNegativeOnly ~ NotificationLotCustomerRequirementMaxPrice + ProductProbabilityLevel4Scaled + FavoritismSimpleLog + (ProductProbabilityLevel4Scaled * FavoritismSimpleLog), data = purchases_moscow)
-summary(model_favoritism_simple)
-interplot(model_favoritism_simple, var1 = "ProductProbabilityLevel4Scaled", var2 = "FavoritismSimpleLog", esize = 0.5, point = F)
-# Shows that market logic wears off with increasing favoritism
-# At purchase level, isn't favoritism just increasing in number of other potential suppliers?
-# Not quite, because even random allocation would yield that
-# Leave out of 4.1, probably better to deploy interacted with specificity later on
-
-
-########
-## 4.2 #
-########
-
 # Are procedures differently susceptible to corruption?
 model_procedure_disqualifications <- lm(Disqualifications ~ TenderProcedureGroup - 1, data = purchases_moscow)
 summary(model_procedure_disqualifications)
@@ -150,32 +137,32 @@ stargazer(model_procedure_disqualifications, model_procedure_revisions, model_pr
 # Olympic construction most highly correlated, as expected, then the rest are pretty close really
 
 # Models predicting corruption
-model_rf_disqualifications <- lm(Disqualifications ~ TenderProcedureGroup + PurchaseSpecificity + MaximumPriceLog + (PurchaseSpecificity * MaximumPriceLog), data = purchases_moscow)
+model_rf_disqualifications <- lm(Disqualifications ~ TenderProcedureGroup + ProductCommonness + MaximumPriceLog + (ProductCommonness * MaximumPriceLog), data = purchases_moscow)
 summary(model_rf_disqualifications)
-interplot(model_rf_disqualifications, var1 = "PurchaseSpecificity", var2 = "MaximumPriceLog")
+interplot(model_rf_disqualifications, var1 = "ProductCommonness", var2 = "MaximumPriceLog")
 # As you buy more expensive things, more generic goods more assoc with increase in corruption (go after big fish)
 # Also holds with regional fe
-model_rf_disqualifications_fe <- lm(Disqualifications ~ TenderProcedureGroup + PurchaseSpecificity + MaximumPriceLog + (PurchaseSpecificity * MaximumPriceLog) + factor(TenderPostingRegion) - 1, data = purchases_all)
+model_rf_disqualifications_fe <- lm(Disqualifications ~ TenderProcedureGroup + ProductCommonness + MaximumPriceLog + (ProductCommonness * MaximumPriceLog) + factor(TenderPostingRegion) - 1, data = purchases_all)
 summary(model_rf_disqualifications_fe)
-interplot(model_rf_disqualifications_fe, var1 = "PurchaseSpecificity", var2 = "MaximumPriceLog", sims = 20)
+interplot(model_rf_disqualifications_fe, var1 = "ProductCommonness", var2 = "MaximumPriceLog", sims = 20)
 
-model_rf_revisions <- lm(Revisions ~ TenderProcedureGroup + PurchaseSpecificity + MaximumPriceLog + (PurchaseSpecificity * MaximumPriceLog), data = purchases_moscow)
+model_rf_revisions <- lm(Revisions ~ TenderProcedureGroup + ProductCommonness + MaximumPriceLog + (ProductCommonness * MaximumPriceLog), data = purchases_moscow)
 summary(model_rf_revisions)
-interplot(model_rf_revisions, var1 = "PurchaseSpecificity", var2 = "MaximumPriceLog")
+interplot(model_rf_revisions, var1 = "ProductCommonness", var2 = "MaximumPriceLog")
 # Same goes for revisions
-model_rf_revisions_fe <- lm(Revisions ~ TenderProcedureGroup + PurchaseSpecificity + MaximumPriceLog + (PurchaseSpecificity * MaximumPriceLog) + factor(TenderPostingRegion) - 1, data = purchases_all)
+model_rf_revisions_fe <- lm(Revisions ~ TenderProcedureGroup + ProductCommonness + MaximumPriceLog + (ProductCommonness * MaximumPriceLog) + factor(TenderPostingRegion) - 1, data = purchases_all)
 summary(model_rf_revisions_fe)
-interplot(model_rf_revisions_fe, var1 = "PurchaseSpecificity", var2 = "MaximumPriceLog", sims = 20)
+interplot(model_rf_revisions_fe, var1 = "ProductCommonness", var2 = "MaximumPriceLog", sims = 20)
 # Holds with regional f.e. YES
 
-model_rf_bunching <- lm(Bunching ~ TenderProcedureGroup + PurchaseSpecificity + MaximumPriceLog + (PurchaseSpecificity * MaximumPriceLog), data = purchases_moscow)
+model_rf_bunching <- lm(Bunching ~ TenderProcedureGroup + ProductCommonness + MaximumPriceLog + (ProductCommonness * MaximumPriceLog), data = purchases_moscow)
 summary(model_rf_bunching)
-interplot(model_rf_bunching, var1 = "PurchaseSpecificity", var2 = "MaximumPriceLog")
+interplot(model_rf_bunching, var1 = "ProductCommonness", var2 = "MaximumPriceLog")
 # Market logic dominates more (OK as this is hokey proximity measure)
 # At very least, the more expensive
-model_rf_bunching_fe <- lm(Bunching ~ TenderProcedureGroup + PurchaseSpecificity + MaximumPriceLog + (PurchaseSpecificity * MaximumPriceLog) + factor(TenderPostingRegion) - 1, data = purchases_all)
+model_rf_bunching_fe <- lm(Bunching ~ TenderProcedureGroup + ProductCommonness + MaximumPriceLog + (ProductCommonness * MaximumPriceLog) + factor(TenderPostingRegion) - 1, data = purchases_all)
 summary(model_rf_bunching_fe)
-interplot(model_rf_bunching_fe, var1 = "PurchaseSpecificity", var2 = "MaximumPriceLog", sims = 20)
+interplot(model_rf_bunching_fe, var1 = "ProductCommonness", var2 = "MaximumPriceLog", sims = 20)
 # Opposite story for this measure, but it's too correlated with max price
 cor(purchases_all$ProximityRuleThreshold, purchases_all$NotificationLotCustomerRequirementMaxPrice, use = "complete")
 
@@ -187,7 +174,7 @@ stargazer(model_rf_disqualifications, model_rf_disqualifications_fe, model_rf_re
           omit.labels = "Region fixed effects",
           # dep.var.labels = c("Bunching", "Revisions", "Disqualifications"),
           # order = c(5, 6, 7, 1, 2, 3),
-          covariate.labels = c("Open electronic auction", "Open tender", "Request for quotes", "Olympic construction", "\\textbf{Purchase specificity}", "\\textbf{Maximum price (log)}", "\\textbf{Specificity x Max price}"),
+          covariate.labels = c("Open electronic auction", "Open tender", "Request for quotes", "Olympic construction", "\\textbf{Product commonness}", "\\textbf{Maximum price (log)}", "\\textbf{Commonness x Max price}"),
           # df = F,
           omit.stat = c("adj.rsq", "f", "ll", "ser"), # "aic"; 
           # notes = "Note: Some procedures use no initial price, so `bunching' is ruled out",
@@ -196,10 +183,53 @@ stargazer(model_rf_disqualifications, model_rf_disqualifications_fe, model_rf_re
           style = "apsr",
           float.env = "sidewaystable")
 
+# Output graph of disqualifications marginal effects (fe version)
+disqualifications_model_purchases_fe_graph <- interplot(model_rf_disqualifications_fe, var1 = "ProductCommonness", var2 = "MaximumPriceLog", sims = 1000) +
+  theme_bw() +
+  scale_fill_tableau() +
+  # scale_y_continuous(breaks = c(-2, 0, 2, 4, 6, 8, 10)) +
+  labs(title = "Effect of product commonness on 'disqualifications' corruption proxy\nfor different purchase values, all regions (model 2, region fixed effects)\n",
+       x = "\nStarting price of reverse auction (a.k.a. initial/maximum price) chosen by agency, log base 10",
+       y = "Expected change in purchase-level corruption proxy\nmoving from least common to most common good\n")+
+  geom_hline(yintercept = 0, linetype = "dotted")
+print(disqualifications_model_purchases_fe_graph)
+ggsave(disqualifications_model_purchases_fe_graph, file = "./6-Present/chapter-four/disqualifications_model_purchases_fe_graph.pdf")
+
+# Calculate threshold where it crosses zero
+threshold <- interplot(model_rf_disqualifications_fe, var1 = "PurchaseSpecificity", var2 = "MaximumPriceLog", sims = 1000)
+threshold_data <- threshold$data
+threshold <- threshold_data %>% filter(coef1 == min(abs(coef1))) %>% select(fake)
+print(paste0("Estimated coefficient crosses zero at approximately ", 10^threshold, " rubles"))
+
+
+
+
+
+########
+## 4.2 #
+########
+
+
+
 
 #######
 ## Tests not used
 #######
+
+
+
+
+# 4.1.X
+# Repeat winners, code now in build-purchase-level-data.R; Model this as a red flag
+model_favoritism_simple <- lm(PriceChangePercentageNegativeOnly ~ NotificationLotCustomerRequirementMaxPrice + ProductProbabilityLevel4Scaled + FavoritismSimpleLog + (ProductProbabilityLevel4Scaled * FavoritismSimpleLog), data = purchases_moscow)
+summary(model_favoritism_simple)
+interplot(model_favoritism_simple, var1 = "ProductProbabilityLevel4Scaled", var2 = "FavoritismSimpleLog", esize = 0.5, point = F)
+# Shows that market logic wears off with increasing favoritism
+# At purchase level, isn't favoritism just increasing in number of other potential suppliers?
+# Not quite, because even random allocation would yield that
+# Leave out of 4.1, probably better to deploy interacted with specificity later on
+
+
 
 # Single-supplier
 single_supplier_usage <- purchases_all %>%
