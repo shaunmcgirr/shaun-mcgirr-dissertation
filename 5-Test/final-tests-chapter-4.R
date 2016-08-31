@@ -15,7 +15,7 @@ purchases_moscow <- purchases; rm(purchases);
 
 # Generate pretty-looking variables for modelling
 purchases_moscow <- purchases_moscow %>%
-  mutate(Disqualification = ProportionDisqualified,
+  mutate(Disqualifications = ProportionDisqualified,
          Revisions = TotalRevisions,
          Bunching = log(ProximityRuleThreshold+1),
          PurchaseSpecificity = ProductProbabilityLevel4Scaled,
@@ -25,7 +25,7 @@ purchases_moscow <- purchases_moscow %>%
 load("~/data/zakupki/2015-06-13/zakupki-2015-06-13-purchases-data/all_purchases_2015-06-13_compress.rda")
 # Generate pretty-looking variables for modelling
 purchases_all <- purchases_all %>%
-  mutate(Disqualification = ProportionDisqualified,
+  mutate(Disqualifications = ProportionDisqualified,
          Revisions = TotalRevisions,
          Bunching = ProximityRuleThreshold,
          PurchaseSpecificity = ProductProbabilityLevel4Scaled,
@@ -140,22 +140,22 @@ interplot(model_favoritism_simple, var1 = "ProductProbabilityLevel4Scaled", var2
 ########
 
 # Are procedures differently susceptible to corruption?
-model_procedure_disqualifications <- lm(ProportionDisqualified ~ TenderProcedureGroup - 1, data = purchases_moscow)
+model_procedure_disqualifications <- lm(Disqualifications ~ TenderProcedureGroup - 1, data = purchases_moscow)
 summary(model_procedure_disqualifications)
-model_procedure_revisions <- lm(TotalRevisions ~ TenderProcedureGroup - 1, data = purchases_moscow)
+model_procedure_revisions <- lm(Revisions ~ TenderProcedureGroup - 1, data = purchases_moscow)
 summary(model_procedure_revisions)
-model_procedure_bunching <- lm(ProximityRuleThreshold ~ TenderProcedureGroup - 1, data = purchases_moscow)
+model_procedure_bunching <- lm(Bunching ~ TenderProcedureGroup - 1, data = purchases_moscow)
 summary(model_procedure_bunching)
-stargazer(model_procedure_bunching, model_procedure_revisions, model_procedure_disqualifications, title = "Average propensity for corruption by procedure type", style = "apsr", dep.var.labels = c("Bunching", "Revisions", "Disqualifications"), covariate.labels = c("Open electronic auction", "Open tender", "Request for quotes", "Olympic construction", "Preliminary selection"), df = F, omit.stat = c("adj.rsq", "f"), notes = "Note: Some procedures use no initial price, so `bunching' is ruled out", out = "../dissertation-text/tables/corruption_propensity_by_procedure.tex", label = "corruption-propensity-by-procedure")
+stargazer(model_procedure_disqualifications, model_procedure_revisions, model_procedure_bunching, title = "Differences in corruption propensity by procedure type, Moscow", style = "apsr", covariate.labels = c("Open electronic auction", "Open tender", "Request for quotes", "Olympic construction", "Preliminary selection"), df = F, omit.stat = c("adj.rsq", "f"), notes = "Note: Some procedures use no initial price, so `bunching' is ruled out", out = "../dissertation-text/tables/corruption_propensity_by_procedure.tex", label = "corruption-propensity-by-procedure")
 # Olympic construction most highly correlated, as expected, then the rest are pretty close really
 
 # Models predicting corruption
-model_rf_disqualifications <- lm(Disqualification ~ TenderProcedureGroup + PurchaseSpecificity + MaximumPriceLog + (PurchaseSpecificity * MaximumPriceLog), data = purchases_moscow)
+model_rf_disqualifications <- lm(Disqualifications ~ TenderProcedureGroup + PurchaseSpecificity + MaximumPriceLog + (PurchaseSpecificity * MaximumPriceLog), data = purchases_moscow)
 summary(model_rf_disqualifications)
 interplot(model_rf_disqualifications, var1 = "PurchaseSpecificity", var2 = "MaximumPriceLog")
 # As you buy more expensive things, more generic goods more assoc with increase in corruption (go after big fish)
 # Also holds with regional fe
-model_rf_disqualifications_fe <- lm(Disqualification ~ TenderProcedureGroup + PurchaseSpecificity + MaximumPriceLog + (PurchaseSpecificity * MaximumPriceLog) + factor(TenderPostingRegion) - 1, data = purchases_all)
+model_rf_disqualifications_fe <- lm(Disqualifications ~ TenderProcedureGroup + PurchaseSpecificity + MaximumPriceLog + (PurchaseSpecificity * MaximumPriceLog) + factor(TenderPostingRegion) - 1, data = purchases_all)
 summary(model_rf_disqualifications_fe)
 interplot(model_rf_disqualifications_fe, var1 = "PurchaseSpecificity", var2 = "MaximumPriceLog", sims = 20)
 
@@ -179,6 +179,22 @@ interplot(model_rf_bunching_fe, var1 = "PurchaseSpecificity", var2 = "MaximumPri
 # Opposite story for this measure, but it's too correlated with max price
 cor(purchases_all$ProximityRuleThreshold, purchases_all$NotificationLotCustomerRequirementMaxPrice, use = "complete")
 
+# Output table of results
+# Why can't I get the order correct?
+stargazer(model_rf_disqualifications, model_rf_disqualifications_fe, model_rf_revisions, model_rf_revisions_fe, model_rf_bunching, model_rf_bunching_fe,
+          title = "Determinants of purchase-level corruption, Moscow (odds) and all regions (evens)",
+          omit = "factor",
+          omit.labels = "Region fixed effects",
+          # dep.var.labels = c("Bunching", "Revisions", "Disqualifications"),
+          # order = c(5, 6, 7, 1, 2, 3),
+          covariate.labels = c("Open electronic auction", "Open tender", "Request for quotes", "Olympic construction", "\\textbf{Purchase specificity}", "\\textbf{Maximum price (log)}", "\\textbf{Specificity x Max price}"),
+          # df = F,
+          omit.stat = c("adj.rsq", "f", "ll", "ser"), # "aic"; 
+          # notes = "Note: Some procedures use no initial price, so `bunching' is ruled out",
+          out = "../dissertation-text/tables/purchase_corruption_models.tex",
+          label = "purchase-corruption-models",
+          style = "apsr",
+          float.env = "sidewaystable")
 
 
 #######
