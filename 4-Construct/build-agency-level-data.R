@@ -13,6 +13,10 @@
 source(file="3-Unpack/parse-files-functions.R")
 source(file="4-Construct/construct-measures-functions.R")
 
+# Helpers for aggregation
+mean_na <- function(x){mean(x, na.rm = T)}
+median_na <- function(x){median(x, na.rm = T)}
+
 # Load classifications
 source(file="3-Unpack/load-classifications.R")
 
@@ -57,31 +61,104 @@ for(r in 1:regions_number){
   ## RECODE VARIABLES
   
     # Region-specific metadata
-    source("4-Construct/measures/identify-agencies.R")
+    # source("4-Construct/measures/identify-agencies.R")
     
     
     ## DV
-    # Bunching, Revisions, Disqualifications
-    # Single-supplier
-    # Favoritism
+    # Bunching, Revisions, Disqualifications DONE
+    # Favoritism DONE
     # Price increase/dramatic drop (but maybe not enough coverage?)
-    # Less auditible quantities?
+    # Less auditible quantities? SCRATCH
     # Proportion of spending in last month of financial (calendar) year
+    # Single-supplier DONE
     
     ## IV from theory
-    # Commonness aggregated several ways (and weighted by spending?)
-    # MaxPrice (Mean/Median of transformed variable), or total agency spend?
-    # Role of auction efficiency or moot here?
-    # Price change/auction efficiency
+    # Commonness aggregated several ways (and weighted by spending?) DONE (easy ones)
+    # MaxPrice (Mean/Median of non-transformed variable), or total agency spend? DONE
+    # Price change/auction efficiency DONE
   
     ## Controls from elsewhere
     # What to do about procedure group? Add as a multi-factor interaction, or simply use "dominant procedure" dummies?
-    # Misc: listing duration; bidders per notification; single bidder
+    # Misc: listing duration; bidders per notification; single bidder DONE
     # Capacity: round number listing prices?
+    # Dummy for listed commodity good?
+    # Dominant procedure
     
     
-      
-  
+    ## Check distributions of DVs and key IVs
+    hist(as.numeric.factor(purchases$AnyBunching))
+    hist(purchases$ProximityRuleThreshold)
+    hist(purchases$TotalRevisions)
+    hist(purchases$ProportionDisqualified)
+    hist(purchases$ProductProbabilityLevel1/max(purchases$ProductProbabilityLevel1, na.rm = T))
+    hist(purchases$ProductProbabilityLevel4Scaled)
+    
+    # Start with the easily summarized
+    agencies <- purchases %>%
+      group_by(TenderPostingRegion, AgencyID) %>%
+      summarize(MeanBinaryBunching = mean_na(as.numeric.factor(AnyBunching)),
+                MeanContinuousBunching = mean_na(ProximityRuleThreshold),
+                MedianContinuousBunching = median_na(ProximityRuleThreshold),
+                MeanRevisions = mean_na(TotalRevisions),
+                MedianRevisions = median_na(TotalRevisions),
+                MeanDisqualifications = mean_na(ProportionDisqualified),
+                MedianDisqualifications = median_na(ProportionDisqualified),
+                MeanSupplierFavoritism = mean_na(FavoritismSimpleLog),
+                MedianSupplierFavoritism = median_na(FavoritismSimpleLog),
+                MeanProductCommonnessLevel4 = mean_na(ProductProbabilityLevel4Scaled),
+                MedianProductCommonnessLevel4 = median_na(ProductProbabilityLevel4Scaled),
+                MeanMaximumPrice = mean_na(NotificationLotCustomerRequirementMaxPrice),
+                MedianMaximumPrice = median_na(NotificationLotCustomerRequirementMaxPrice),
+                TotalAgencySpendInitial = sum(NotificationLotCustomerRequirementMaxPrice, na.rm = T),
+                # TotalAgencySpendFinal = sum(Price, na.rm = T),
+                MeanAuctionEfficiency = mean_na(PriceChangePercentageNoOutliers),
+                MedianAuctionEfficiency = median_na(PriceChangePercentageNoOutliers),
+                MeanListingDuration = mean_na(ProcedureDuration),
+                MedianListingDuration = median_na(ProcedureDuration),
+                MeanBiddersApplied = mean_na(NumberOfApplicants),
+                MedianBiddersApplied = median_na(NumberOfApplicants),
+                MeanBiddersAdmitted = mean_na(NumberOfAdmittedApplicants),
+                MedianBiddersApplied = median_na(NumberOfAdmittedApplicants))
+    
+    # Check DVs and key IVs after aggregation
+    hist(agencies$MeanBinaryBunching) # Heavily skewed as expected (Moscow ok)
+    hist(agencies$MeanContinuousBunching) # Good
+    hist(agencies$MedianContinuousBunching) # Good
+    hist(agencies$MeanRevisions) # Power law
+    hist(agencies$MedianRevisions) # Too sparse
+    hist(agencies$MeanDisqualifications) # Power law
+    hist(agencies$MedianDisqualifications) # Very skewed/sparse (b/c count variable underneath)
+    hist(agencies$MeanSupplierFavoritism) # Power law
+    hist(agencies$MedianSupplierFavoritism) # Very skewed
+    
+    quick_model_1 <- lm(MedianSupplierFavoritism ~ MeanProductCommonnessLevel4 + MeanMaximumPrice, data = agencies)
+    summary(quick_model_1)
+    # Seems to be robust positive association between median commonnes and each DV, except MeanBinaryBunching
+    
+    # Now the tricky ones that need additional calculation at purchase level
+    # Price increase/dramatic drop (but maybe not enough coverage?)
+    # Good to separately calculate an agency-level purchase spec/product comm measure and compare to mean/median purchase level?
+    # MeanProductCommonnessLevel1 = mean_na(ProductProbabilityLevel1/max(purchases$ProductProbabilityLevel1)),
+    # MedianProductCommonnessLevel1 = median_na(ProductProbabilityLevel1/max(purchases$ProductProbabilityLevel1)),
+
+    
+    # Now the tricky ones that need their own sub-table
+    # Dominant procedure
+    # Proportion of spending in last month of financial (calendar) year
+    # Proportion single-bidder up-front vs single bidder after disqual
+    # Capacity: round number listing prices?
+    # Dummy for listed commodity good?
+    # ProportionSingleSupplier = length(purchases$Match[purchases$Match == "Contract without notification" & !is.na(purchases$Match)])/length(purchases$Match),
+    # ProportionComplexPurchases = length(NotificationMissingReason) etc
+    
+    
+    Check every variable for NA, NaN, -Inf, Inf
+    Check every variable for NA, NaN, -Inf, Inf
+    Check every variable for NA, NaN, -Inf, Inf
+    
+    
+    ## WHAT TO DO ABOUT TIME?
+    # Try to graph some agency-level product commonness over time? Might be crazy, might work for larger agencies, eg ministry-level?
 
   
   ######################################################
