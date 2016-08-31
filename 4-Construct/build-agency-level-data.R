@@ -61,7 +61,7 @@ for(r in 1:regions_number){
   ## RECODE VARIABLES
   
     # Region-specific metadata
-    # source("4-Construct/measures/identify-agencies.R")
+    source("4-Construct/measures/identify-agencies-purchases.R")
     
     
     ## DV
@@ -95,8 +95,11 @@ for(r in 1:regions_number){
     
     # Start with the easily summarized
     agencies <- purchases %>%
-      group_by(TenderPostingRegion, AgencyID) %>%
-      summarize(MeanBinaryBunching = mean_na(as.numeric.factor(AnyBunching)),
+      filter(!is.na(AgencyID)) %>%
+      left_join(agency_metadata) %>%
+      group_by(TenderPostingRegion, AgencyID, AgencyName, AgencyRegion, AgencyRegionEnglish) %>%
+      summarize(NumberOfPurchases = n(),
+                MeanBinaryBunching = mean_na(as.numeric.factor(AnyBunching)),
                 MeanContinuousBunching = mean_na(ProximityRuleThreshold),
                 MedianContinuousBunching = median_na(ProximityRuleThreshold),
                 MeanRevisions = mean_na(TotalRevisions),
@@ -118,7 +121,27 @@ for(r in 1:regions_number){
                 MeanBiddersApplied = mean_na(NumberOfApplicants),
                 MedianBiddersApplied = median_na(NumberOfApplicants),
                 MeanBiddersAdmitted = mean_na(NumberOfAdmittedApplicants),
-                MedianBiddersApplied = median_na(NumberOfAdmittedApplicants))
+                MedianBiddersAdmitted = median_na(NumberOfAdmittedApplicants)) %>% ungroup() %>%
+                filter(AgencyID != "03731000866") %>% # Social investment fund, very unusual, huge leverage in models
+                filter(NumberOfPurchases > 0)
+    
+                # Check matching between incoming regions and identified regions
+                agencies$RegionMatch = ifelse(agencies$TenderPostingRegion == agencies$AgencyRegion, "Y", "N")
+                stopifnot(length(agencies$RegionMatch) == length(agencies$RegionMatch[agencies$RegionMatch == "Y"]))
+    
+                
+    # Single-supplier (only 10\% of Moscow agencies use it at least once, the worst offenders are really bad)
+    single_supplier_usage <- purchases %>%
+      group_by(AgencyID, Match) %>%
+      count(Match) %>%
+      mutate(MatchProportion = prop.table(n)) %>% ungroup() %>%
+      filter(Match == "Contract without notification") %>%
+      transmute(AgencyID, ProportionSingleSupplier = MatchProportion)
+    # hist(single_supplier_usage$MatchProportion, breaks = 20)
+    # plot(density(single_supplier_usage$MatchProportion))
+    agencies <- agencies %>%
+      left_join(single_supplier_usage)
+    
     
     # Check DVs and key IVs after aggregation
     hist(agencies$MeanBinaryBunching) # Heavily skewed as expected (Moscow ok)
@@ -126,14 +149,36 @@ for(r in 1:regions_number){
     hist(agencies$MedianContinuousBunching) # Good
     hist(agencies$MeanRevisions) # Power law
     hist(agencies$MedianRevisions) # Too sparse
-    hist(agencies$MeanDisqualifications) # Power law
+    hist((agencies$MeanDisqualifications)) # Power law
     hist(agencies$MedianDisqualifications) # Very skewed/sparse (b/c count variable underneath)
     hist(agencies$MeanSupplierFavoritism) # Power law
     hist(agencies$MedianSupplierFavoritism) # Very skewed
+    hist(agencies$MeanProductCommonnessLevel4) # Power law
+    hist(agencies$MedianProductCommonnessLevel4) # More skewed/sparse than mean
     
-    quick_model_1 <- lm(MedianSupplierFavoritism ~ MeanProductCommonnessLevel4 + MeanMaximumPrice, data = agencies)
+    quick_model_1 <- lm(MedianSupplierFavoritism ~ MeanProductCommonnessLevel4 + MedianMaximumPrice, data = agencies)
     summary(quick_model_1)
-    # Seems to be robust positive association between median commonnes and each DV, except MeanBinaryBunching
+    # Seems to be robust positive unconditional association between median commonnes and each DV, except MeanBinaryBunching
+    
+    quick_model_2 <- lm(log10(MeanDisqualifications+1) ~ log10(TotalAgencySpendInitial) + MeanListingDuration + MeanBiddersApplied + MeanSupplierFavoritism + MedianProductCommonnessLevel4 + MedianAuctionEfficiency + (MedianProductCommonnessLevel4 * MedianAuctionEfficiency), data = agencies)
+    summary(quick_model_2)
+    interplot(quick_model_2, var1 = "MedianProductCommonnessLevel4", var2 = "MedianAuctionEfficiency")
+    # Variables with most reasonable distributions and conceptual fit
+    # Spending: log10(TotalAgencySpendInitial)
+    # Commonness: MedianProductCommonnessLevel4 (pattern holds but makes little sense to log a median!)
+    # DV: revisions and disqualifications both work, bunching correlated with auction efficiency
+    # Bidders applied vs admitted: MeanBiddersAdmitted less peaky
+    
+    # Formula corruption = (agency size) + More common goods + Less efficient auctions seems to hold
+    # Robust to alternative summary measures for each parameter
+    
+    # Problem here is still throwing away all that amazing purchase-level variation! Means/medians of these things not very meaningful.
+    # Is there a residuals approach based on purchase-level variation?
+    # Or residuals from this model?
+    
+    
+    
+    
     
     # Now the tricky ones that need additional calculation at purchase level
     # Price increase/dramatic drop (but maybe not enough coverage?)
@@ -141,7 +186,6 @@ for(r in 1:regions_number){
     # MeanProductCommonnessLevel1 = mean_na(ProductProbabilityLevel1/max(purchases$ProductProbabilityLevel1)),
     # MedianProductCommonnessLevel1 = median_na(ProductProbabilityLevel1/max(purchases$ProductProbabilityLevel1)),
 
-    
     # Now the tricky ones that need their own sub-table
     # Dominant procedure
     # Proportion of spending in last month of financial (calendar) year
@@ -150,6 +194,7 @@ for(r in 1:regions_number){
     # Dummy for listed commodity good?
     # ProportionSingleSupplier = length(purchases$Match[purchases$Match == "Contract without notification" & !is.na(purchases$Match)])/length(purchases$Match),
     # ProportionComplexPurchases = length(NotificationMissingReason) etc
+    
     
     
     Check every variable for NA, NaN, -Inf, Inf
