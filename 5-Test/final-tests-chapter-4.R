@@ -4,7 +4,7 @@
 source(file="3-Unpack/load-classifications.R")
 
 ## Set up data
-# Relies on running build-purchase-level-data first
+# Relies on running build-purchase-level-data.R and build-agency-level-data.R first
 
 ### MOSCOW ONLY
 # Load Moscow regional file
@@ -203,18 +203,176 @@ print(paste0("Estimated coefficient crosses zero at approximately ", 10^threshol
 
 
 
-
-
 ########
 ## 4.2 #
 ########
 
+# Load agency-level data for Moscow
+load("~/data/zakupki/2015-06-13/zakupki-2015-06-13-agencies-data/94fz/regions/Moskva_agencies_2015-06-13.rda")
+agencies_moscow <- agencies; rm(agencies);
+
+# Also load all agencies all regions
+load("~/data/zakupki/2015-06-13/zakupki-2015-06-13-agencies-data/all_agencies_2015-06-13_compress.rda")
+
+# Generate table of Moscow-based ministries across the three measures
+moscow_ministry_names <- read.csv(file = "./6-Present/moscow_ministry_names.csv", stringsAsFactors = F, colClasses = "character")
+moscow_ministries <- agencies_moscow %>%
+  filter(grepl("Министерство", AgencyName)) %>%
+  inner_join(moscow_ministry_names, by = c("AgencyID")) %>%
+  transmute(AgencyID = AgencyID,
+            `Ministry name` = AgencyNameEnglish,
+            `Disqualifications` = dense_rank(-MeanDisqualifications), 
+            `Revisions` = dense_rank(-MeanRevisions),
+            `Bunching` = dense_rank(-MeanContinuousBunching)) %>%
+  rowwise %>%
+    mutate(`Average rank` = mean(c(Disqualifications,
+                                   Revisions,
+                                   Bunching))) %>%
+  arrange(`Average rank`) %>%
+  select(-`Average rank`, -AgencyID)
+
+# Output for Latex
+moscow_ministries_output <- xtable(moscow_ministries, caption = "Rankings of federal ministries by various corruption measures")
+print(moscow_ministries_output, include.rownames = F, latex.environments = "center")
+
+# Check DVs and key IVs after aggregation
+# hist(agencies$MeanBinaryBunching) # Heavily skewed as expected (Moscow ok)
+# hist(agencies$MeanContinuousBunching) # Good
+# hist(agencies$MedianContinuousBunching) # Good
+# hist(agencies$MeanRevisions) # Power law
+# hist(agencies$MedianRevisions) # Too sparse
+# hist((agencies$MeanDisqualifications)) # Power law
+# hist(agencies$MedianDisqualifications) # Very skewed/sparse (b/c count variable underneath)
+# hist(agencies$MeanSupplierFavoritism) # Power law
+# hist(agencies$MedianSupplierFavoritism) # Very skewed
+# hist(agencies$MeanProductCommonnessLevel4) # Power law
+# hist(agencies$MedianProductCommonnessLevel4) # More skewed/sparse than mean
+
+## 4.2.1
+# Moscow first quick models
+quick_model_1 <- lm(MeanDisqualifications ~ log10(TotalAgencySpendInitial) + MedianProductCommonnessLevel4, data = agencies_moscow)
+summary(quick_model_1)
+# Seems to be robust positive unconditional association between median commonnes and each DV, except MeanBinaryBunching
+
+quick_model_2 <- lm(MeanDisqualifications ~ log10(TotalAgencySpendInitial) + MedianProductCommonnessLevel4 + MedianAuctionEfficiency + (MedianProductCommonnessLevel4 * MedianAuctionEfficiency), data = agencies_moscow)
+summary(quick_model_2)
+interplot(quick_model_2, var1 = "MedianProductCommonnessLevel4", var2 = "MedianAuctionEfficiency")
+
+quick_model_3 <- lm(MeanDisqualifications ~ log10(TotalAgencySpendInitial) + MeanListingDuration + MeanBiddersApplied + MeanSupplierFavoritism + MedianProductCommonnessLevel4 + MedianAuctionEfficiency + (MedianProductCommonnessLevel4 * MedianAuctionEfficiency), data = agencies_moscow)
+summary(quick_model_3)
+interplot(quick_model_3, var1 = "MedianProductCommonnessLevel4", var2 = "MedianAuctionEfficiency")
+# Variables with most reasonable distributions and conceptual fit
+# Spending: log10(TotalAgencySpendInitial)
+# Commonness: MedianProductCommonnessLevel4 (pattern holds but makes little sense to log a median!)
+# DV: revisions and disqualifications both work, bunching correlated with auction efficiency
+# Bidders applied vs admitted: MeanBiddersAdmitted less peaky
+quick_model_3_no_int <- lm(MeanDisqualifications ~ log10(TotalAgencySpendInitial) + MeanListingDuration + MeanBiddersApplied + MeanSupplierFavoritism + MedianProductCommonnessLevel4 + MedianAuctionEfficiency + (MedianProductCommonnessLevel4 * MedianAuctionEfficiency) - 1, data = agencies_moscow)
+summary(quick_model_3_no_int)
+interplot(quick_model_3_no_int, var1 = "MedianProductCommonnessLevel4", var2 = "MedianAuctionEfficiency")
+
+# Check correlations
+cor(agencies_moscow$MeanListingDuration, agencies_moscow$MeanBiddersApplied, use = "complete")
+cor(agencies_moscow$MeanDisqualifications, agencies_moscow$MeanBiddersApplied, use = "complete")
+cor(agencies_moscow$MeanSupplierFavoritism, agencies_moscow$MedianAuctionEfficiency, use = "complete")
+cor(agencies_moscow$MeanSupplierFavoritism, agencies_moscow$TotalAgencySpendInitial, use = "complete")
+
+# Draw marginal effects graph for Moscow
+agency_corruption_simple_graph_moscow <- interplot(quick_model_3_no_int, var1 = "MedianProductCommonnessLevel4", var2 = "MedianAuctionEfficiency") +
+  theme_bw() +
+  scale_fill_tableau() +
+  # scale_y_continuous(breaks = c(-2, 0, 2, 4, 6, 8, 10)) +
+  labs(title = "Effect of agency-level product commonness on 'disqualifications' corruption proxy\nfor different levels of corruption opportunity, Moscow (model 4)\n",
+       x = "\nAverage corruption opportunities\n(change in price over course of auction; more negative = less opportunity)",
+       y = "Expected change in agency-level corruption proxy\nmoving from least common to most common good\n")+
+  geom_hline(yintercept = 0, linetype = "dotted")
+print(agency_corruption_simple_graph_moscow)
+ggsave(agency_corruption_simple_graph_moscow, file = "./6-Present/chapter-four/agency_corruption_simple_graph_moscow.pdf", width = 8, height = 8)
 
 
 
-#######
-## Tests not used
-#######
+# Formula corruption = (agency size) + More common goods + Less efficient auctions seems to hold
+# Robust to alternative summary measures for each parameter, output
+stargazer(quick_model_1, quick_model_2, quick_model_3, quick_model_3_no_int,
+          title = "Determinants of agency-level corruption, Moscow",
+          omit = "factor",
+          # omit.labels = "Region fixed effects",
+          dep.var.labels = c("Mean Disqualifications"),
+          multicolumn = TRUE,
+          # order = c(5, 6, 7, 1, 2, 3),
+          covariate.labels = c("Agency spend (log base 10)", "Mean listing duration", "Mean bidders applied", "Mean supplier favoritism", "\\textbf{Median product commonness}", "\\textbf{Median auction efficiency}", "\\textbf{Commonness x Efficiency}"),
+          # df = F,
+          omit.stat = c("adj.rsq", "f", "ll", "ser"), # "aic"; 
+          # notes = "Note: Some procedures use no initial price, so `bunching' is ruled out",
+          out = "../dissertation-text/tables/agency_corruption_simple_models.tex",
+          label = "agency-corruption-simple-models",
+          # float.env = "sidewaystable",
+          style = "apsr")
+
+# Check correlation of bunching RF with pricechange, not high
+# cor(agencies_moscow$MeanContinuousBunching, agencies_moscow$MedianAuctionEfficiency, use = "complete")
+
+
+
+########
+## 4.3 #
+########
+
+# Start by replicating the models in 4.2 with regional fixed effects
+
+# Check distributions of key variables in agencies_all
+# hist(agencies_all$MeanBinaryBunching) # Heavily skewed as expected (Moscow ok)
+# hist(agencies_all$MeanContinuousBunching) # Good
+# hist(agencies_all$MedianContinuousBunching) # Good
+# hist(agencies_all$MeanRevisions) # Power law (all agencies very skewed)
+# hist(agencies_all$MedianRevisions) # Too sparse (all agencies very skewed)
+# hist((agencies_all$MeanDisqualifications)) # Power law
+# hist(agencies_all$MedianDisqualifications) # Very skewed/sparse (b/c count variable underneath), same for all agencies
+# hist(agencies_all$MeanSupplierFavoritism) # Power law
+# hist(agencies_all$MedianSupplierFavoritism) # Very skewed
+# hist(agencies_all$MeanProductCommonnessLevel4) # Power law (all agencies beautiful)
+# hist(agencies_all$MedianProductCommonnessLevel4) # More skewed/sparse than mean
+
+summary(agencies_all$MeanDisqualifications)
+summary(agencies_all$TotalAgencySpendInitial) # Need to add one ruble to all agency budgets back in build!
+summary(agencies_all$MedianProductCommonnessLevel4)
+
+agencies_all_more_than_one_purchase <- agencies_all %>%
+  filter(MedianAuctionEfficiency <= 1)
+  # filter(NumberOfPurchases > 1)
+
+# All agencies, with region fixed effects
+quick_model_1_fe <- lm(MeanDisqualifications ~ log10(TotalAgencySpendInitial) + MedianProductCommonnessLevel4 + factor(AgencyRegion) - 1, data = agencies_all_more_than_one_purchase)
+summary(quick_model_1_fe)
+# Seems to be robust positive unconditional association between median commonnes and each DV, except MeanBinaryBunching
+
+quick_model_2_fe <- lm(MeanDisqualifications ~ log10(TotalAgencySpendInitial) + MedianProductCommonnessLevel4 + MedianAuctionEfficiency + (MedianProductCommonnessLevel4 * MedianAuctionEfficiency) + factor(AgencyRegion) - 1, data = agencies_all_more_than_one_purchase)
+summary(quick_model_2_fe)
+interplot(quick_model_2_fe, var1 = "MedianProductCommonnessLevel4", var2 = "MedianAuctionEfficiency", sims = 2000)
+# Very poorly estimated, quite kooky
+
+quick_model_3_fe <- lm(MeanDisqualifications ~ log10(TotalAgencySpendInitial) + MeanListingDuration + MeanBiddersApplied + MeanSupplierFavoritism + MedianProductCommonnessLevel4 + MedianAuctionEfficiency + (MedianProductCommonnessLevel4 * MedianAuctionEfficiency) + factor(AgencyRegion) - 1, data = agencies_all_more_than_one_purchase)
+summary(quick_model_3_fe)
+interplot(quick_model_3_fe, var1 = "MedianProductCommonnessLevel4", var2 = "MedianAuctionEfficiency", sims = 200)
+# Do region intercepts from this work?
+
+# Draw marginal effects graph for all regions
+agency_corruption_simple_graph_all <- interplot(quick_model_3_fe, var1 = "MedianProductCommonnessLevel4", var2 = "MedianAuctionEfficiency", sims = 2000) +
+  theme_bw() +
+  scale_fill_tableau() +
+  # scale_y_continuous(breaks = c(-2, 0, 2, 4, 6, 8, 10)) +
+  labs(title = "Effect of agency-level product commonness on 'disqualifications' corruption proxy\nfor different levels of corruption opportunity, all regions (region fixed effects)\n",
+       x = "\nAverage corruption opportunities\n(change in price over course of auction; more negative = less opportunity)",
+       y = "Expected change in agency-level corruption proxy\nmoving from least common to most common good\n")+
+  geom_hline(yintercept = 0, linetype = "dotted")
+print(agency_corruption_simple_graph_all)
+ggsave(agency_corruption_simple_graph_all, file = "./6-Present/chapter-four/agency_corruption_simple_graph_all.pdf", width = 8.5, height = 8)
+
+
+
+# Problem here is still throwing away all that amazing purchase-level variation! Means/medians of these things not very meaningful.
+# Is there a residuals approach based on purchase-level variation?
+# Or residuals from this model?
+
 
 
 
@@ -231,19 +389,11 @@ interplot(model_favoritism_simple, var1 = "ProductProbabilityLevel4Scaled", var2
 
 
 
-# Single-supplier
-single_supplier_usage <- purchases_all %>%
-  group_by(AgencyID, Match) %>%
-  count(Match) %>%
-  mutate(MatchProportion = prop.table(n)) %>% ungroup() %>%
-  filter(Match == "Contract without notification")
-hist(single_supplier_usage$MatchProportion, breaks = 20)
-plot(density(single_supplier_usage$MatchProportion))
-worst_offenders <- single_supplier_usage %>% filter(MatchProportion >= 0.8)
 
 
-# What is the story behind this? Do I need it any longer?
-test_model_14_corr <- lm(ProximityRuleThreshold ~ NotificationLotCustomerRequirementMaxPrice + ProductProbabilityLevel4Scaled + PriceChangePercentageNegativeOnly + (ProductProbabilityLevel4Scaled * PriceChangePercentageNegativeOnly), data = purchases_all)
-summary(test_model_14_corr)
-interplot(test_model_14_corr, var1 = "ProductProbabilityLevel4Scaled", var2 = "PriceChangePercentageNegativeOnly")
+
+
+#######
+## Tests not used
+#######
 

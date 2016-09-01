@@ -24,3 +24,5 @@ install.packages('scales')
 install.packages('ggthemes')
 # Always load dplyr last!  
 install.packages('dplyr')
+install.packages('xtable')
+install.packages('stargazer')
