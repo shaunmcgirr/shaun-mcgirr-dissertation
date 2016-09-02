@@ -373,8 +373,42 @@ ggsave(agency_corruption_simple_graph_all, file = "./6-Present/chapter-four/agen
 # Is there a residuals approach based on purchase-level variation?
 # Or residuals from this model?
 
+## 4.2.2
+# Load other data to get regions
+source("./3-Unpack/load-other-data.R")
 
-
+# Ideas for regional measures - job is to reproduce typical national-level tests
+- Change in number of MPs 2007-2011 from Levels of...csv "setting the stage"
+- Regional budgets (perhaps room for a panel here?) from clearspending
+- UR vote share, great variation! https://en.wikipedia.org/wiki/Russian_legislative_election,_2011
+- Turnout interacted with UR vote to get at "mobilisation"?
+- ICSID:
+  - Distance to Moscow (reg_disttomoscow)
+  - Economy and public administration: Efficiency of public spending (econmanspending)
+  - Citizen satisfaction with executive authorities' transparency and disclosure (reg_media)
+  - State employees (reg_psexec; reg_psexec_fed)
+  - Average wage (reg_avwage_pa)
+  - Newspaper coverage (reg_newspaper)
+  - UR national election vote share 2003/07/11 (reg_ur2011)
+  - President vote share 2000/04/08/12 (reg_winner_pres)
+  - UR regional election vote share (reg_urvote)
+  - Percentage of population with income below cost of living, % (reg_belowcost)
+  - Average annual number of employees in public sector (Education and Health/Social) (reg_nemp_m; reg_nemp_n)
+  - Residential population (reg_pop)
+  - Expected lifespan at birth (reg_lifeexp)
+  - Number of economic crimes (reg_econcrime)
+  - Public expenditure index (reg_ibr)
+  - Tax capacity index (reg_inp)
+  - Gross regional product (reg_grp)
+  - GRP volume index (reg_indgrp)
+  - % GRP created by Public admin and defense, education, health, social (reg_grp_l:reg_grp_n)
+  - Share of fuel and energy minerals in the volume of shipped goods (toplextr_structure)
+  - Number of small enterprises in a region (reg_nfirmssmall_rosstat) / Total number of enterprises at the end of the year (reg_nfirmstotal_rosstat)
+  - Total number of enterprises at the end of the year vs established vs liquidated (reg_nfirmstotal_egrul, reg_firmscreated, reg_firmsliqtd)
+  - Consumer prices index (reg_cpi)
+  - Desnity of public roads (reg_autoroadden)
+  - Region rating by the quality of the legislative framework on anti-corruption
+  - 
 
 
 # 4.1.X
