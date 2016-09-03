@@ -55,48 +55,73 @@ region_classification <- read.csv(file = "2-Obtain/data_other/classifications/re
 
 zakupki_regions <- region_classification %>% filter(!is.na(reg_database)) %>% select(reg_translit, reg_database) %>% as.vector()
 icsid_year <- 2011
+icsid_raw$reg_grp[icsid_raw$reg_translit == "Perm krai"] <- 741729.7575 # Transcription error in original data, this linear interpolation
+
 icsid_filtered <- icsid_raw %>%
-  filter(reg_year == icsid_year) %>%
   inner_join(zakupki_regions) %>%
-  transmute(ISO_id, reg_id,
+  arrange(reg_id, reg_year) %>%
+  transmute(ISO_id = ISO_id,
+            reg_id = as.character(reg_id),
             RegionNameEnglish = reg_translit,
             RegionNameRussian = reg_name,
             RegionNameDB = reg_database,
-            )
+            Year = reg_year,
+            Population = reg_pop,
+            PopulationLog = log10(reg_pop),
+            LifeExpectancy = as.numeric(reg_lifeexp),
+            DistanceFromMoscow = reg_disttomoscow,
+            DistanceFromMoscowLog = log10(reg_disttomoscow+1),
+            EfficiencyPublicSpendingIndex = lag(econmanspending),
+            NewspaperCoveragePer1000 = reg_newspaper,
+            URNationalVoteShare2011 = reg_ur2011,
+            URNationalVoteShare2007 = reg_ur2007,
+            ChangeURVoteShare2007_2011 = (reg_ur2011 - reg_ur2007),
+            PutinVoteShare2012 = lead(reg_winner_pres),
+            # URRegionalVoteShare2011 = reg_urvote, # Elections take place in all different years
+            PopulationBelowCostOfLiving = reg_belowcost, # Already a %
+            AverageWageAll = as.numeric(reg_avwage),
+            AverageWageBureaucrats = as.numeric(reg_avwage_pa), # Useful to have ratio of bur/all wages as "outside option",
+            BureaucratWagePremium = AverageWageBureaucrats/AverageWageAll, # Above 1 their outside options are worse
+            NumberEconomicCrimes = reg_econcrime,
+            ShareOfEconomicCrimes = reg_econcrime/reg_crime,
+            CostOfPublicServicesIndex = reg_ibr, # MinFin uses this to weight transfers, not available for three small regions after 2005
+            TaxCapacityIndex = reg_inp, # to adjust for objective regional differences in their own revenue base, ditto for above
+            GrossRegionalProduct = as.numeric(reg_grp),
+            GRPPerCapita = as.numeric(reg_grp)/as.numeric(reg_pop),
+            # GRPPerCapitaLog = log(GRPPerCapita), # Not terribly meaningful, already scaled!
+            GRPVolumeIndex = reg_indgrp,
+            GRPFromPublicAdmin = (reg_grp_l + reg_grp_m + reg_grp_n),
+            GRPFromMining = reg_grp_c, # Already share, no need to log
+            # OilProduction = oil_extraction, # Not enough regions with this
+            # GasProduction = gas_extraction, # Not enough regions with this
+            DensityPublicRoads = reg_autoroadden,
+            DensityPublicRoadsLog = log(reg_autoroadden+1),
+            ExecutiveEmployees = (as.numeric(reg_psexec) + as.numeric(reg_psexec_fed)), # Not state, govt/exec
+            ExecutiveEmployeesPercentage = ExecutiveEmployees/Population*100) %>%
+  filter(!is.na(Population) & Year == icsid_year)
+
+# One-off fixes for missing data
+icsid_filtered$LifeExpectancy[icsid_filtered$RegionNameEnglish == "Saratov oblast"] <- 68.9 # 2010 value
+icsid_filtered$PopulationBelowCostOfLiving[icsid_filtered$RegionNameEnglish == "Chechen Republic"] <- 21.7 # 2012 value
+
+# Check
+str(icsid_filtered)
+na_count(icsid_filtered)
+# Three regions missing Public services/Tax index don't have it after 2005, leave as NA
+summary(icsid_filtered)
+
+
+
   
-# Ideas for regional measures - job is to reproduce typical national-level tests
-- Change in number of MPs 2007-2011, proportion of "native" UR MPs (ie penetration), from Levels of...csv "setting the stage"
-- Regional budgets (perhaps room for a panel here?) from clearspending
-- UR vote share, great variation! https://en.wikipedia.org/wiki/Russian_legislative_election,_2011
-- Turnout interacted with UR vote to get at "mobilisation"?
-- Corruption cases for bribes by region (careful, also street); from http://crimestat.ru/23 and wrangled in to file "Criminal offenses relating to bribes"
-- ICSID:
-  - Distance to Moscow (reg_disttomoscow)
-- Economy and public administration: Efficiency of public spending (econmanspending)
-- Citizen satisfaction with executive authorities' transparency and disclosure (reg_media)
-- State employees (reg_psexec; reg_psexec_fed)
-- Average wage (reg_avwage_pa)
-- Newspaper coverage (reg_newspaper)
-- UR national election vote share 2003/07/11 (reg_ur2011)
-- President vote share 2000/04/08/12 (reg_winner_pres)
-- UR regional election vote share (reg_urvote)
-- Percentage of population with income below cost of living, % (reg_belowcost)
-- Average annual number of employees in public sector (Education and Health/Social) (reg_nemp_m; reg_nemp_n)
-- Residential population (reg_pop)
-- Expected lifespan at birth (reg_lifeexp)
-- Number of economic crimes (reg_econcrime)
-- Public expenditure index (reg_ibr)
-- Tax capacity index (reg_inp)
-- Gross regional product (reg_grp)
-- GRP volume index (reg_indgrp)
-- % GRP created by Public admin and defense, education, health, social (reg_grp_l:reg_grp_n)
-- Share of fuel and energy minerals in the volume of shipped goods (toplextr_structure)
-- Number of small enterprises in a region (reg_nfirmssmall_rosstat) / Total number of enterprises at the end of the year (reg_nfirmstotal_rosstat)
-- Total number of enterprises at the end of the year vs established vs liquidated (reg_nfirmstotal_egrul, reg_firmscreated, reg_firmsliqtd)
-- Consumer prices index (reg_cpi)
-- Desnity of public roads (reg_autoroadden)
-- Region rating by the quality of the legislative framework on anti-corruption
-- 
+## Other ideas for regional measures - job is to reproduce typical national-level tests
+# - Turnout interacted with UR vote to get at "mobilisation"?
+# - Corruption cases for bribes by region (careful, also street); from http://crimestat.ru/23 and wrangled in to file "Criminal offenses relating to bribes"
+# - ICSID:
+#   - Citizen satisfaction with executive authorities' transparency and disclosure (reg_media)
+#   - Average annual number of employees in public sector (Education and Health/Social) (reg_nemp_m; reg_nemp_n)
+#   - Number of small enterprises in a region (reg_nfirmssmall_rosstat) / Total number of enterprises at the end of the year (reg_nfirmstotal_rosstat)
+#   - Total number of enterprises at the end of the year vs established vs liquidated (reg_nfirmstotal_egrul, reg_firmscreated, reg_firmsliqtd)
+#   - Consumer prices index (reg_cpi)
 
 
   ###########################################################
