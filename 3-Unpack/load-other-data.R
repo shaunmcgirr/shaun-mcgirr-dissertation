@@ -88,8 +88,14 @@ nrpz_data_cleaned <- nrpz_data_raw %>%
   filter(NRPZscore != "Балл" & AgencyName != "Государственные заказчики федерального уровня") %>%
   mutate(NRPZscore = as.numeric(gsub(" ", "", NRPZscore)))
 
+#########################
+# 6. Load ICSID data #
+#########################
 
-# DPI data
+icsid_raw <- read.xlsx("2-Obtain/data_other/regions/ICSID/ICSID economic database v1.2.1.xlsx", sheet = 1)
+region_classification_raw <- icsid_raw %>% select(ISO_id, reg_translit, reg_name) %>% distinct() %>% as.tbl()
+  # region_classification_raw$reg_translit_short <- sub(" .*", "", region_classification_raw$reg_translit)
+# write.csv(region_classification_raw, file = "2-Obtain/data_other/classifications/regions_in_classification_raw.csv", row.names = F)
 
 
 # ENDS
