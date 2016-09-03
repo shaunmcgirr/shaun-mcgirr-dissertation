@@ -32,6 +32,7 @@ purchases_all <- purchases_all %>%
          Bunching = ProximityRuleThreshold,
          ProductCommonness = ProductProbabilityLevel4Scaled,
          MaximumPriceLog = log10(NotificationLotCustomerRequirementMaxPrice+1))
+purchases_all$DatasetID = row.names(purchases_all)
 
 
 ########
@@ -210,6 +211,7 @@ print(paste0("Estimated coefficient crosses zero at approximately ", 10^threshol
 # Load agency-level data for Moscow
 load("~/data/zakupki/2015-06-13/zakupki-2015-06-13-agencies-data/94fz/regions/Moskva_agencies_2015-06-13.rda")
 agencies_moscow <- agencies; rm(agencies);
+agencies_moscow$DatasetID <- row.names(agencies_moscow)
 
 # Also load all agencies all regions
 load("~/data/zakupki/2015-06-13/zakupki-2015-06-13-agencies-data/all_agencies_2015-06-13_compress.rda")
@@ -289,7 +291,6 @@ print(agency_corruption_simple_graph_moscow)
 ggsave(agency_corruption_simple_graph_moscow, file = "./6-Present/chapter-four/agency_corruption_simple_graph_moscow.pdf", width = 8, height = 8)
 
 
-
 # Formula corruption = (agency size) + More common goods + Less efficient auctions seems to hold
 # Robust to alternative summary measures for each parameter, output
 stargazer(quick_model_1, quick_model_2, quick_model_3, quick_model_3_no_int,
@@ -311,7 +312,63 @@ stargazer(quick_model_1, quick_model_2, quick_model_3, quick_model_3_no_int,
 # Check correlation of bunching RF with pricechange, not high
 # cor(agencies_moscow$MeanContinuousBunching, agencies_moscow$MedianAuctionEfficiency, use = "complete")
 
+## 4.2.3 
+# Residuals from a market model: use the red flags to predict 
+# model_disqualifications <- lm(PriceChangePercentageNegativeOnly ~ NotificationLotCustomerRequirementMaxPrice + ProductProbabilityLevel4Scaled + ProportionDisqualified + (ProductProbabilityLevel4Scaled * ProportionDisqualified), data = purchases_moscow)
+# quick_model_3_no_int <- lm(MeanDisqualifications ~ log10(TotalAgencySpendInitial) + MeanListingDuration + MeanBiddersApplied + MeanSupplierFavoritism + MedianProductCommonnessLevel4 + MedianAuctionEfficiency + (MedianProductCommonnessLevel4 * MedianAuctionEfficiency) - 1, data = agencies_moscow)
 
+# Naive model, what if no corruption and no agencies?
+market_model_1 <- lm(MedianAuctionEfficiency ~ log10(TotalAgencySpendInitial) + MedianProductCommonnessLevel4 + MeanListingDuration + MeanBiddersApplied, data = agencies_moscow)
+summary(market_model_1)
+
+# Add number of purchases
+market_model_2 <- lm(MedianAuctionEfficiency ~ NumberOfPurchases + log10(TotalAgencySpendInitial) + MeanListingDuration + MeanBiddersApplied, data = agencies_moscow)
+summary(market_model_2)
+
+# Do it for all regions
+market_model_3 <- lm(MedianAuctionEfficiency ~ NumberOfPurchases + log10(TotalAgencySpendInitial) + MeanListingDuration + MeanBiddersApplied + factor(AgencyRegion), data = agencies_all)
+summary(market_model_3)
+
+agency_residuals <- data.frame(market_model_2$residuals)
+agency_residuals <- data.frame(DatasetID = row.names(agency_residuals),
+                               AgencyResidual = market_model_2$residuals,
+                               stringsAsFactors = F)
+
+agencies_moscow_residuals <- agencies_moscow %>%
+  inner_join(agency_residuals) %>%
+  filter(AgencyResidual > 0)
+
+# What are correlations between measures and absolute values of residuals?
+cor(agencies_moscow_residuals$MeanDisqualifications, abs(agencies_moscow_residuals$AgencyResidual))
+cor(agencies_moscow_residuals$MeanRevisions, abs(agencies_moscow_residuals$AgencyResidual))
+cor(agencies_moscow_residuals$MeanContinuousBunching, abs(agencies_moscow_residuals$AgencyResidual), use = "complete")
+
+# Can we predict residuals with our red flag measures?
+residuals_model_1 <- lm((AgencyResidual) ~ MeanDisqualifications + MeanRevisions + MeanContinuousBunching - 1, data = agencies_moscow_residuals)
+summary(residuals_model_1)
+
+# Try same thing at purchase level for validation
+# market_model_1 <- lm(MedianAuctionEfficiency ~ log10(TotalAgencySpendInitial) + MedianProductCommonnessLevel4 + MeanListingDuration + MeanBiddersApplied, data = agencies_moscow)
+
+market_model_purchases_1 <- lm(PriceChangePercentageNegativeOnly ~ MaximumPriceLog + ProductProbabilityLevel4Scaled + ProcedureDuration + NumberOfApplicants, data = purchases_all)
+summary(market_model_purchases_1)
+
+# Everything works when the residuals are generated at regional level too!
+# market_model_purchases_1_fe <- lm(PriceChangePercentageNegativeOnly ~ MaximumPriceLog + ProductProbabilityLevel4Scaled + ProcedureDuration + NumberOfApplicants + factor(TenderPostingRegion) - 1, data = purchases_all)
+# summary(market_model_purchases_1_fe)
+
+purchase_residuals <- data.frame(market_model_purchases_1$residuals)
+purchase_residuals <- data.frame(DatasetID = row.names(purchase_residuals),
+                                 PurchaseResidual = market_model_purchases_1$residuals,
+                                 stringsAsFactors = F)
+
+purchases_all_residuals <- purchases_all %>%
+  inner_join(purchase_residuals) %>%
+  filter(PurchaseResidual > 0) %>%
+  select(PurchaseResidual, Disqualifications, Revisions, Bunching)
+
+residuals_model_purchases_1 <- lm(PurchaseResidual ~ Disqualifications + Revisions + Bunching - 1, data = purchases_all_residuals)
+summary(residuals_model_purchases_1)  
 
 ########
 ## 4.3 #
@@ -368,20 +425,38 @@ print(agency_corruption_simple_graph_all)
 ggsave(agency_corruption_simple_graph_all, file = "./6-Present/chapter-four/agency_corruption_simple_graph_all.pdf", width = 8.5, height = 8)
 
 
+# Can I put the fixed effects on a map? Pain in the ass, as always
+# library(rgdal)
+# russia_base_layer <- readOGR(dsn = path.expand("~/Downloads/RUS_adm_shp"), layer = "RUS_adm1")
+# # Crashes as too detailed? test <- plot(russia_base_layer)
+
+# library(maps)
+# russia_base_layer <- map(database = "world", regions = "Russia")
+
+# library(maptools) # install.packages("maptools")
+# library(raster)   # install.packages("raster")
+# ru1 <- getData("GADM", country = "RU", level = )
 
 # Problem here is still throwing away all that amazing purchase-level variation! Means/medians of these things not very meaningful.
-# Is there a residuals approach based on purchase-level variation?
-# Or residuals from this model?
+# What do the intercepts say about regional variations?
+regional_intercepts <- data.frame(Coefficient = names(quick_model_3_fe$coefficients),
+                                  Estimate = quick_model_3_fe$coefficients,
+                                  stringsAsFactors = F) %>%
+  filter(grepl("factor", Coefficient))
+row.names(regional_intercepts) <- NULL
+# Not really worth putting on a map anyway as nothing interesting going on!
+
 
 ## 4.2.2
 # Load other data to get regions
 source("./3-Unpack/load-other-data.R")
 
 # Ideas for regional measures - job is to reproduce typical national-level tests
-- Change in number of MPs 2007-2011 from Levels of...csv "setting the stage"
+- Change in number of MPs 2007-2011, proportion of "native" UR MPs (ie penetration), from Levels of...csv "setting the stage"
 - Regional budgets (perhaps room for a panel here?) from clearspending
 - UR vote share, great variation! https://en.wikipedia.org/wiki/Russian_legislative_election,_2011
 - Turnout interacted with UR vote to get at "mobilisation"?
+- Corruption cases for bribes by region (careful, also street); from http://crimestat.ru/23 and wrangled in to file "Criminal offenses relating to bribes"
 - ICSID:
   - Distance to Moscow (reg_disttomoscow)
   - Economy and public administration: Efficiency of public spending (econmanspending)
@@ -411,15 +486,16 @@ source("./3-Unpack/load-other-data.R")
   - 
 
 
-# 4.1.X
-# Repeat winners, code now in build-purchase-level-data.R; Model this as a red flag
-model_favoritism_simple <- lm(PriceChangePercentageNegativeOnly ~ NotificationLotCustomerRequirementMaxPrice + ProductProbabilityLevel4Scaled + FavoritismSimpleLog + (ProductProbabilityLevel4Scaled * FavoritismSimpleLog), data = purchases_moscow)
-summary(model_favoritism_simple)
-interplot(model_favoritism_simple, var1 = "ProductProbabilityLevel4Scaled", var2 = "FavoritismSimpleLog", esize = 0.5, point = F)
-# Shows that market logic wears off with increasing favoritism
-# At purchase level, isn't favoritism just increasing in number of other potential suppliers?
-# Not quite, because even random allocation would yield that
-# Leave out of 4.1, probably better to deploy interacted with specificity later on
+# Regional tests strategy
+
+# Just do everything based on 2011 or 2012 as "setting the stage", let panel be a committee suggestion (need Alton anyway)
+# Compute region-level average, model as function of cross-regional variables; de facto "cross national replication"
+# Start with dead-simple, add justifiable controls, cut back down to a parsimonious specification
+# Hieararchical model
+#   - Agency-level: Spending, median product commonness, median auction efficiency, interaction
+#   - Region-level: population, distance, and max one variable each for politics/economics/bureaucracy/media/wages/capacity/resources/enterprises/transfers, 
+#   - Be careful to separate the levels, eg may not need regional-level spending/enterprises as agency measures include them
+#     - Also the bureaucracy measures may not make sense if I am saying "agencies are what they buy"
 
 
 
@@ -430,4 +506,15 @@ interplot(model_favoritism_simple, var1 = "ProductProbabilityLevel4Scaled", var2
 #######
 ## Tests not used
 #######
+
+
+# 4.1.X
+# Repeat winners, code now in build-purchase-level-data.R; Model this as a red flag
+model_favoritism_simple <- lm(PriceChangePercentageNegativeOnly ~ NotificationLotCustomerRequirementMaxPrice + ProductProbabilityLevel4Scaled + FavoritismSimpleLog + (ProductProbabilityLevel4Scaled * FavoritismSimpleLog), data = purchases_moscow)
+summary(model_favoritism_simple)
+interplot(model_favoritism_simple, var1 = "ProductProbabilityLevel4Scaled", var2 = "FavoritismSimpleLog", esize = 0.5, point = F)
+# Shows that market logic wears off with increasing favoritism
+# At purchase level, isnt favoritism just increasing in number of other potential suppliers?
+# Not quite, because even random allocation would yield that
+# Leave out of 4.1, probably better to deploy interacted with specificity later on
 
