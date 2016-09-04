@@ -444,31 +444,149 @@ regional_intercepts <- data.frame(Coefficient = names(quick_model_3_fe$coefficie
                                   stringsAsFactors = F) %>%
   filter(grepl("factor", Coefficient))
 row.names(regional_intercepts) <- NULL
+regional_intercepts$Coefficient <- sapply(strsplit(regional_intercepts$Coefficient, split = ")", fixed = T), function(x) (x[2]))
 # Not really worth putting on a map anyway as nothing interesting going on!
 
 
 ## 4.2.2
 # Load other data to get regions
 source("./3-Unpack/load-other-data.R")
+# source("4-Construct/build-regional-level-data.R")
 
+load(file = "~/data/zakupki/2015-06-13/zakupki-2015-06-13-regions-data/94fz/icsid_filtered_2015-06-13.rda")
 
-
-
-# Regional tests strategy
-
+# Does a simple model explain residuals?
+# regional_intercepts_icsid <- regional_intercepts %>%
+#   left_join(icsid_filtered, by = c("Coefficient" = "RegionNameDB")) %>%
+#   filter(!is.na(ISO_id))
+# 
+# explain_residuals_1 <- lm(Estimate ~ PopulationLog + DistanceFromMoscowLog + GRPPerCapita, data = regional_intercepts_icsid)
+#   summary(explain_residuals_1)
+# explain_residuals_2 <- lm(Estimate ~ EfficiencyPublicSpendingIndex + BureaucratWagePremium + ShareOfEconomicCrimes + TaxCapacityIndex, data = regional_intercepts_icsid)
+#   summary(explain_residuals_2)
+# explain_residuals_3 <- lm(Estimate ~ ExecutiveEmployeesPercentage, data = regional_intercepts_icsid)
+#   summary(explain_residuals_3)
+# Not much going on here, skip straight to hierarchical approach
+  
+  
+## Comprehensive regional tests strategy
 # Just do everything based on 2011 or 2012 as "setting the stage", let panel be a committee suggestion (need Alton anyway)
 # Compute region-level average, model as function of cross-regional variables; de facto "cross national replication"
+regions_from_agencies <- agencies_all %>%
+  group_by(TenderPostingRegion) %>%
+  summarize(MeanDisqualifications = mean_na(MeanDisqualifications),
+            MedianDisqualifications = median_na(MedianDisqualifications),
+            MeanRevisions = mean_na(MeanRevisions),
+            MedianRevisions = median_na(MedianRevisions),
+            MeanContinuousBunching = mean_na(MeanContinuousBunching),
+            MedianContinuousBunching = median_na(MedianContinuousBunching),
+            MeanAuctionEfficiency = mean_na(MeanAuctionEfficiency),
+            MedianAuctionEfficiency = median_na(MedianAuctionEfficiency),
+            MeanProductCommonnessLevel4 = mean_na(MeanProductCommonnessLevel4),
+            MedianProductCommonnessLevel4 = median_na(MedianProductCommonnessLevel4),
+            TotalRegionalSpend = sum(TotalAgencySpendInitial, na.rm = T)) %>% ungroup() %>%
+  left_join(icsid_filtered, by = c("TenderPostingRegion" = "RegionNameDB")) %>%
+  filter(!is.na(ISO_id))
+
+simple_regional_model_1 <- lm(MeanDisqualifications ~ MeanAuctionEfficiency, data = regions_from_agencies)
+summary(simple_regional_model_1)
+
+simple_regional_model_2 <- lm(MeanDisqualifications ~ TotalRegionalSpend + MeanProductCommonnessLevel4  + MeanAuctionEfficiency + (MeanProductCommonnessLevel4 * MeanAuctionEfficiency), data = regions_from_agencies)
+summary(simple_regional_model_2)
+interplot(simple_regional_model_2, var1 = "MeanAuctionEfficiency", var2 = "MeanProductCommonnessLevel4")
+# Nothing much informative here, just too much variation has been sucked away by means of means etc
+
+## Hierarchical model
 # Start with dead-simple, add justifiable controls, cut back down to a parsimonious specification
-# Hieararchical model
+# Hieararchical model structure
 #   - Agency-level: Spending, median product commonness, median auction efficiency, interaction
 #   - Region-level: population, distance, and max one variable each for politics/economics/bureaucracy/media/wages/capacity/resources/enterprises/transfers, 
 #   - Be careful to separate the levels, eg may not need regional-level spending/enterprises as agency measures include them
 #     - Also the bureaucracy measures may not make sense if I am saying "agencies are what they buy"
 
+agencies_in_regions <- agencies_all %>%
+  left_join(icsid_filtered, by = c("TenderPostingRegion" = "RegionNameDB")) %>%
+  filter(!is.na(ISO_id)) %>%
+  filter(MeanAuctionEfficiency <= 1 & MedianAuctionEfficiency <= 1) %>%
+  filter(NumberOfPurchases > 1) %>%
+  filter(MeanListingDuration > 0)
+
+## Start with null models as per http://tutorials.iq.harvard.edu/R/Rstatistics/Rstatistics.html#orgheadline36
+null_model_disqualifications <- lmer(MeanDisqualifications ~ 1 + (1 | RegionNameEnglish), data = agencies_in_regions, REML = F)
+summary(null_model_disqualifications)
+0.00029185864540/(0.00029185864540 + 0.00964504595041) * 100
+# 2.9% variance at region level
+
+null_model_revisions <- lmer(MeanRevisions ~ 1 + (1 | RegionNameEnglish), data = agencies_in_regions, REML = F)
+summary(null_model_revisions)
+0.00140397855486/(0.00140397855486 + 0.06252440221057) * 100
+# 2.2% variance at region level
+
+null_model_bunching <- lmer(MeanContinuousBunching ~ 1 + (1|RegionNameEnglish), data = agencies_in_regions, REML = F)
+summary(null_model_bunching)
+0.00439675510765/(0.00439675510765 + 0.04276807374024) * 100
+# 9.3% variance at region level
+
+## Now add agency-level predictors to reproduce FE models from above
+fe_model_disqualifications <- lmer(MeanDisqualifications ~ log10(TotalAgencySpendInitial) + MeanListingDuration + MeanBiddersApplied + MeanSupplierFavoritism + MedianProductCommonnessLevel4 + MedianAuctionEfficiency + (MedianProductCommonnessLevel4 * MedianAuctionEfficiency) + (1|RegionNameEnglish), data = agencies_in_regions, REML = F)
+summary(fe_model_disqualifications)
+# Commonness -; Efficiency + without interaction
+interplot(fe_model_disqualifications, var1 = "MedianProductCommonnessLevel4", var2 = "MedianAuctionEfficiency")
+
+fe_model_revisions <- lmer(MeanRevisions ~ log10(TotalAgencySpendInitial) + MeanListingDuration + MeanBiddersApplied + MeanSupplierFavoritism + MedianProductCommonnessLevel4 + MedianAuctionEfficiency + (MedianProductCommonnessLevel4 * MedianAuctionEfficiency) + (1|RegionNameEnglish), data = agencies_in_regions, REML = F)
+summary(fe_model_revisions)
+# Commonness +; Efficiency + without interactions
+interplot(fe_model_revisions, var1 = "MedianProductCommonnessLevel4", var2 = "MedianAuctionEfficiency")
+
+fe_model_bunching <- lmer(MeanContinuousBunching ~ log10(TotalAgencySpendInitial) + MeanListingDuration + MeanBiddersApplied + MeanSupplierFavoritism + MedianProductCommonnessLevel4 + MedianAuctionEfficiency + (MedianProductCommonnessLevel4 * MedianAuctionEfficiency) + (1|RegionNameEnglish), data = agencies_in_regions, REML = F)
+summary(fe_model_bunching)
+# Commonness -; Efficiency +
+interplot(fe_model_bunching, var1 = "MedianProductCommonnessLevel4", var2 = "MedianAuctionEfficiency")
+
+## Now add some random slopes for the groups (keep it minimal, maybe just one var at a time even)
+re_model_disqualifications <- lmer(MeanDisqualifications ~ log10(TotalAgencySpendInitial) + MeanListingDuration + MeanBiddersApplied + MeanSupplierFavoritism + MedianProductCommonnessLevel4 + MedianAuctionEfficiency + (MedianProductCommonnessLevel4 * MedianAuctionEfficiency) + GRPPerCapita + (1 + GRPPerCapita | RegionNameEnglish), data = agencies_in_regions, REML = F)
+summary(re_model_disqualifications)
+interplot(re_model_disqualifications, var1 = "MedianProductCommonnessLevel4", var2 = "MedianAuctionEfficiency")
+# The within-region story still holds
+# GRP only
+0.000282967547179/(0.000282967547179+0.000527064043992+0.006050828721820) * 100 # 4.1% regional
+0.000527064043992/(0.000282967547179+0.000527064043992+0.006050828721820) * 100 # 7.7% GRP
+0.006050828721820/(0.000282967547179+0.000527064043992+0.006050828721820) * 100 # 88% residual
 
 
+## Try a simpler within-region specification interacted with higher-level variable
+se_model_disqualifications <- lmer(MeanDisqualifications ~ MedianAuctionEfficiency + MedianProductCommonnessLevel4 * URNationalVoteShare2011 + (1 + MedianProductCommonnessLevel4 | RegionNameEnglish), data = agencies_in_regions, REML = F)
+summary(se_model_disqualifications)
+interplot(se_model_disqualifications, var1 = "MedianProductCommonnessLevel4", var2 = "URNationalVoteShare2011")
+# This may show that when UR has it locked up, more common -> less corruption, so locking up politics allows free-for all?
 
+# Take all the way back to basics: do it wrong first (model 1 table 4.3 but with regional variables)
+# Then tidy up the variance with HLM
+# lm_model_disqualifications <- lm(MeanDisqualifications ~ log10(TotalAgencySpendInitial) + MedianProductCommonnessLevel4 * MedianAuctionEfficiency + GRPPerCapita + URNationalVoteShare2011 + EfficiencyPublicSpendingIndex + NewspaperCoveragePer1000 + BureaucratWagePremium + TaxCapacityIndex, data = agencies_in_regions)
+lm_model_disqualifications <- lm(MeanDisqualifications ~ log10(TotalAgencySpendInitial) + MeanListingDuration + MeanBiddersApplied + MeanSupplierFavoritism + MedianProductCommonnessLevel4 * MedianAuctionEfficiency + GRPVolumeIndex + URNationalVoteShare2011 + TaxCapacityIndex + NewspaperCoveragePer1000 + GRPFromMining + BureaucratWagePremium, data = agencies_in_regions)
+summary(lm_model_disqualifications)
+interplot(lm_model_disqualifications, var1 = "MedianProductCommonnessLevel4", var2 = "MedianAuctionEfficiency")
 
+# Compare this to without the agency variables
+lm_model_disqualifications_no_agency <- lm(MeanDisqualifications ~ GRPVolumeIndex + URNationalVoteShare2011 + TaxCapacityIndex + NewspaperCoveragePer1000 + GRPFromMining + BureaucratWagePremium, data = agencies_in_regions)
+summary(lm_model_disqualifications_no_agency)
+# Some of the coefficients go away
+# Looking at them, they're all plausibly correlated with at least one other, so should be in there to avoid OVB
+
+# Now deal with the variance structure issues caused by this wrong pooling
+final_model_disqualifications_base <- lmer(MeanDisqualifications ~ log10(TotalAgencySpendInitial) + MeanListingDuration + MeanBiddersApplied + MeanSupplierFavoritism + MedianProductCommonnessLevel4 * MedianAuctionEfficiency + GRPVolumeIndex + URNationalVoteShare2011 + TaxCapacityIndex + NewspaperCoveragePer1000 + GRPFromMining + BureaucratWagePremium + (1|RegionNameEnglish), data = agencies_in_regions)
+summary(final_model_disqualifications_base)
+interplot(final_model_disqualifications_base, var1 = "MedianProductCommonnessLevel4", var2 = "MedianAuctionEfficiency")
+# When this is just region fixed, effects, get what we expect
+# UR vote share goes away, interestingly, as does media!
+
+# Now, for what variables does the effect of them on corruption vary by region? Move in to random component
+# All the agency-level variables are already scaled to their own context, so only need to worry about regionals
+# Looking in particular for things not already scaled to their region, and measuring broader/vaguer concepts
+# GRP, competition make natural sense, maybe TaxCapacityIndex? 
+final_model_disqualifications_full <- lmer(MeanDisqualifications ~ log10(TotalAgencySpendInitial) + MeanListingDuration + MeanBiddersApplied + MeanSupplierFavoritism + MedianProductCommonnessLevel4 * MedianAuctionEfficiency + GRPVolumeIndex + URNationalVoteShare2011 + TaxCapacityIndex + NewspaperCoveragePer1000 + GRPFromMining + BureaucratWagePremium + (1 + GRPVolumeIndex + URNationalVoteShare2011 + MeanBiddersApplied|RegionNameEnglish), data = agencies_in_regions)
+lmerTest::summary(final_model_disqualifications_full)
+interplot(final_model_disqualifications_full, var1 = "MedianProductCommonnessLevel4", var2 = "MedianAuctionEfficiency")
 
 
 #######

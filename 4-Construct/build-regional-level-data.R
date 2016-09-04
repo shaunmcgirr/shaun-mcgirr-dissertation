@@ -24,14 +24,8 @@ source(file="3-Unpack/load-classifications.R")
 # 2. Gather parameters about the job ahead #
 ############################################
 
-# Where does data come in from?
-data_output_directory <- set_data_subdirectory(data_directory, data_download_date, "output")
-data_purchases_directory <- set_data_subdirectory(data_directory, data_download_date, "purchases")
-data_purchases_directory_regions <- paste0(data_purchases_directory, "regions/")
-
 # Define where outputs should go
-data_agencies_directory <- set_data_subdirectory(data_directory, data_download_date, "agencies")
-data_agencies_directory_regions <- paste0(data_agencies_directory, "regions/")
+data_regions_directory <- set_data_subdirectory(data_directory, data_download_date, "regions")
 
 # Obtain list of regions for which consolidated data is available
 regions_in_database <- list.dirs(paste0(data_directory, data_download_date, "/zakupki-", data_download_date, "-output-data/94fz/"), full.names = F, recursive = F) %>%
@@ -45,7 +39,10 @@ colnames(regions_in_database) <- c("reg_database")
 # region_classification <- region_classification_raw %>%
 #   stringdist_left_join(regions_in_database, by = c(reg_translit_short = "reg_database_short"), max_dist = 2)
 
-# Hand-coded and saved as a csv to import
+# Load the ICSID classification if not done already
+source("3-Unpack/load-other-data.R")
+
+# Hand-coded and saved as a csv to import, loaded here
 region_classification <- read.csv(file = "2-Obtain/data_other/classifications/regions_classification.csv", stringsAsFactors = F)
   rm(region_classification_raw); rm(regions_in_database)
 
@@ -111,8 +108,6 @@ na_count(icsid_filtered)
 summary(icsid_filtered)
 
 
-
-  
 ## Other ideas for regional measures - job is to reproduce typical national-level tests
 # - Turnout interacted with UR vote to get at "mobilisation"?
 # - Corruption cases for bribes by region (careful, also street); from http://crimestat.ru/23 and wrangled in to file "Criminal offenses relating to bribes"
@@ -127,16 +122,12 @@ summary(icsid_filtered)
   ###########################################################
   # 5. Save the dataframes containing measures to new files #
   ###########################################################
-
-  # First specify variables to keep
-  # agency_variables <- c("Year")
-
-  #
-  # save(agencies_all, file = "~/data/zakupki/2015-06-13/zakupki-2015-06-13-agencies-data/all_agencies_2015-06-13_compress.rda", compress = T)
-  # 
-  # rm(agencies_all); rm(agencies); gc()
   
-  
-  
+  suppressWarnings(dir.create(data_regions_directory, recursive=TRUE))
+  filename <- paste0(data_regions_directory, "icsid_filtered_2015-06-13.rda")
+  save(icsid_filtered, file = filename, compress = F)
 
+  rm(icsid_raw); rm(icsid_filtered); rm(zakupki_regions); rm(region_classification); 
+  gc()
+  
 # ENDS

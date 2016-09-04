@@ -12,7 +12,9 @@ library(readxl)       # install.packages('readxl')
 library(openxlsx)     # install.packages('openxlsx')
 library(parallel)     # install.packages('parallel')
 library(lme4)         # install.packages('lme4')
+library(lmerTest) # install.packages("lmerTest")
 library(betareg)      # install.packages('betareg')
+library(devtools)     # install.packages("devtools") # Needed for latest fixes to some packages
 # library(plm)          # install.packages('plm')
 library(diverse)      # install.packages('diverse')
 # library(foreach)      # install.packages('foreach')
@@ -26,13 +28,17 @@ library(zoo)          # install.packages('zoo')
 library(xtable)       # install.packages('xtable')
 library(stargazer)    # install.packages('stargazer')
 library(ggplot2)      # install.packages('ggplot2')
-library(interplot)    # install.packages('interplot')
+# library(interplot)    # install.packages('interplot') # Version on CRAN does not handle mixed effects models
+library(interplot)    # devtools::install_github("sammo3182/interplot")
 library(scales)       # install.packages('scales')
 library(ggthemes)     # install.packages('ggthemes')
 library(tidyr)        # install.packages('tidyr')
 # Always load dplyr last!  
 library(dplyr)        # install.packages('dplyr')
 
+# Helpers for aggregation
+mean_na <- function(x){mean(x, na.rm = T)}
+median_na <- function(x){median(x, na.rm = T)}
 options(digits = 15) # So display of lat/lon isn't truncated
 as.numeric.factor <- function(x) {as.numeric(levels(x))[x]} # To convert factors to underlying numeric values
 na_count <- function(x) sapply(x, function(y) sum(is.na(y)))
@@ -76,6 +82,8 @@ Sys.setlocale("LC_CTYPE", "Russian") # This may not be necessary on Mac/Linux
 # source("4-Construct//pivot-and-merge.R") # Implement what we learned from analyze-before-merge.R
 # source("4-Construct//extract-bidder-information.R") # Pull out number of bidders vs number admitted from protocols
 # source("4-Construct//build-purchase-level-data.R") # Re-build data at purchase level with just the details needed for Chapter 4
+# source("4-Construct//build-agency-level-data.R") # 
+# source("4-Construct//build-regional-level-data.R") 
 # source("4-Construct//construct-measures.R") # Builds measures for the procurement data at agency level
 # source("4-Construct//prove-measures.R") # Explores and tests potential measures for Chapter 3
 
