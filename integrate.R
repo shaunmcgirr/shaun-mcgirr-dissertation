@@ -11,8 +11,8 @@ library(magrittr)     # install.packages('magrittr')
 library(readxl)       # install.packages('readxl')
 library(openxlsx)     # install.packages('openxlsx')
 library(parallel)     # install.packages('parallel')
+library(lmerTest)     # install.packages("lmerTest") # Load this first so lme4 vanilla works first
 library(lme4)         # install.packages('lme4')
-library(lmerTest) # install.packages("lmerTest")
 library(betareg)      # install.packages('betareg')
 library(devtools)     # install.packages("devtools") # Needed for latest fixes to some packages
 # library(plm)          # install.packages('plm')

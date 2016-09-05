@@ -553,13 +553,6 @@ interplot(re_model_disqualifications, var1 = "MedianProductCommonnessLevel4", va
 0.000527064043992/(0.000282967547179+0.000527064043992+0.006050828721820) * 100 # 7.7% GRP
 0.006050828721820/(0.000282967547179+0.000527064043992+0.006050828721820) * 100 # 88% residual
 
-
-## Try a simpler within-region specification interacted with higher-level variable
-se_model_disqualifications <- lmer(MeanDisqualifications ~ MedianAuctionEfficiency + MedianProductCommonnessLevel4 * URNationalVoteShare2011 + (1 + MedianProductCommonnessLevel4 | RegionNameEnglish), data = agencies_in_regions, REML = F)
-summary(se_model_disqualifications)
-interplot(se_model_disqualifications, var1 = "MedianProductCommonnessLevel4", var2 = "URNationalVoteShare2011")
-# This may show that when UR has it locked up, more common -> less corruption, so locking up politics allows free-for all?
-
 # Take all the way back to basics: do it wrong first (model 1 table 4.3 but with regional variables)
 # Then tidy up the variance with HLM
 # lm_model_disqualifications <- lm(MeanDisqualifications ~ log10(TotalAgencySpendInitial) + MedianProductCommonnessLevel4 * MedianAuctionEfficiency + GRPPerCapita + URNationalVoteShare2011 + EfficiencyPublicSpendingIndex + NewspaperCoveragePer1000 + BureaucratWagePremium + TaxCapacityIndex, data = agencies_in_regions)
@@ -573,21 +566,89 @@ summary(lm_model_disqualifications_no_agency)
 # Some of the coefficients go away
 # Looking at them, they're all plausibly correlated with at least one other, so should be in there to avoid OVB
 
-# Now deal with the variance structure issues caused by this wrong pooling
-final_model_disqualifications_base <- lmer(MeanDisqualifications ~ log10(TotalAgencySpendInitial) + MeanListingDuration + MeanBiddersApplied + MeanSupplierFavoritism + MedianProductCommonnessLevel4 * MedianAuctionEfficiency + GRPVolumeIndex + URNationalVoteShare2011 + TaxCapacityIndex + NewspaperCoveragePer1000 + GRPFromMining + BureaucratWagePremium + (1|RegionNameEnglish), data = agencies_in_regions)
-summary(final_model_disqualifications_base)
-interplot(final_model_disqualifications_base, var1 = "MedianProductCommonnessLevel4", var2 = "MedianAuctionEfficiency")
-# When this is just region fixed, effects, get what we expect
-# UR vote share goes away, interestingly, as does media!
 
-# Now, for what variables does the effect of them on corruption vary by region? Move in to random component
-# All the agency-level variables are already scaled to their own context, so only need to worry about regionals
+## Final models for 4.3.2
+# Create separate data frame with best-as-possible labelling of variable names
+agencies_in_regions_simplified <- agencies_in_regions %>%
+  transmute(Region = RegionNameEnglish,
+            Disqualifications = MeanDisqualifications,
+            Revisions = MeanRevisions,
+            Bunching = MeanBinaryBunching,
+            AgencySpendLog = log10(TotalAgencySpendInitial),
+            ListingDuration = MeanListingDuration,
+            BiddersApplied = MeanBiddersApplied,
+            SupplierFavoritism = MeanSupplierFavoritism,
+            Commonness = MedianProductCommonnessLevel4,
+            Efficiency = MedianAuctionEfficiency,
+            GRPConstantPrices = GRPVolumeIndex,
+            PartyDominance = URNationalVoteShare2011,
+            TaxCapacity = TaxCapacityIndex,
+            Newspapers = NewspaperCoveragePer1000,
+            GRPFromMining,
+            BureaucratWages = BureaucratWagePremium)
+# Can I safely restrict to complete cases?
+summary(agencies_in_regions_simplified) # Yes, only 42 agencies missing DV
+agencies_in_regions_simplified <- agencies_in_regions_simplified %>% filter(complete.cases(.))
+
+
+## Reproduce model (3) within mixed framework
+final_model_disqualifications_baseline <- lmer(Disqualifications ~ AgencySpendLog + ListingDuration + BiddersApplied + SupplierFavoritism + Commonness * Efficiency + (1 |Region), data = agencies_in_regions_simplified)
+summary(final_model_disqualifications_baseline)
+interplot(final_model_disqualifications_baseline, var1 = "Commonness", var2 = "Efficiency")
+# This may show that when UR has it locked up, more common -> less corruption, so locking up politics allows free-for all?
+
+## Now make the interaction a random effect
+final_model_disqualifications_random_agency <- lmer(Disqualifications ~ AgencySpendLog + ListingDuration + BiddersApplied + SupplierFavoritism + Commonness * Efficiency + (1 + Commonness * Efficiency|Region), data = agencies_in_regions_simplified)
+summary(final_model_disqualifications_random_agency)
+interplot(final_model_disqualifications_random_agency, var1 = "Commonness", var2 = "Efficiency")
+
+## Now add region-level predictors as fixed effects
+final_model_disqualifications_random_agency_fixed_region <- lmer(Disqualifications ~ AgencySpendLog + ListingDuration + BiddersApplied + SupplierFavoritism + Commonness * Efficiency + GRPConstantPrices + PartyDominance + TaxCapacity + Newspapers + GRPFromMining + BureaucratWages + (1 + Commonness * Efficiency|Region), data = agencies_in_regions_simplified)
+summary(final_model_disqualifications_random_agency_fixed_region)
+interplot(final_model_disqualifications_random_agency_fixed_region, var1 = "Commonness", var2 = "Efficiency")
+
+## Finally make some region-level predictors random effects
+# For what variables does the effect of them on corruption vary by region? Move in to random component
+# All the agency-level controls are already scaled to their own context, so only need to worry about regionals
+  # Unless AgencySpendLog, BiddersApplied have differing effects by region? (neither scaled to region)
 # Looking in particular for things not already scaled to their region, and measuring broader/vaguer concepts
 # GRP, competition make natural sense, maybe TaxCapacityIndex? 
-final_model_disqualifications_full <- lmer(MeanDisqualifications ~ log10(TotalAgencySpendInitial) + MeanListingDuration + MeanBiddersApplied + MeanSupplierFavoritism + MedianProductCommonnessLevel4 * MedianAuctionEfficiency + GRPVolumeIndex + URNationalVoteShare2011 + TaxCapacityIndex + NewspaperCoveragePer1000 + GRPFromMining + BureaucratWagePremium + (1 + GRPVolumeIndex + URNationalVoteShare2011 + MeanBiddersApplied|RegionNameEnglish), data = agencies_in_regions)
-lmerTest::summary(final_model_disqualifications_full)
-interplot(final_model_disqualifications_full, var1 = "MedianProductCommonnessLevel4", var2 = "MedianAuctionEfficiency")
+# GRP because transfers, PartyDom b/c obviously; all others already relative to region
+final_model_disqualifications_random_agency_random_region <- lmer(Disqualifications ~ AgencySpendLog + ListingDuration + BiddersApplied + SupplierFavoritism + Commonness * Efficiency + GRPConstantPrices + PartyDominance + TaxCapacity + Newspapers + GRPFromMining + BureaucratWages + (1 + Commonness * Efficiency + GRPConstantPrices + PartyDominance|Region), data = agencies_in_regions_simplified)
+summary(final_model_disqualifications_random_agency_random_region)
+interplot(final_model_disqualifications_random_agency_random_region, var1 = "Commonness", var2 = "Efficiency")
 
+# Draw graph of last model
+agency_region_corruption_mixed_effects_graph <- interplot(final_model_disqualifications_random_agency_random_region, var1 = "Commonness", var2 = "Efficiency") +
+  theme_bw() +
+  scale_fill_tableau() +
+  # scale_y_continuous(breaks = c(-2, 0, 2, 4, 6, 8, 10)) +
+  labs(title = "Effect of agency-level product commonness on 'disqualifications' corruption proxy\nfor different levels of corruption opportunity, all regions (mixed effects model (4))\n",
+       x = "\nAverage corruption opportunities\n(change in price over course of auction; more negative = less opportunity)",
+       y = "Expected change in agency-level corruption proxy\nmoving from least common to most common good\n")+
+  geom_hline(yintercept = 0, linetype = "dotted")
+print(agency_region_corruption_mixed_effects_graph)
+ggsave(agency_region_corruption_mixed_effects_graph, file = "./6-Present/chapter-four/agency_region_corruption_mixed_effects_graph.pdf", width = 8.5, height = 8)
+
+
+# How much variance explained at regional level?
+v_c_matrix <- as.data.frame(VarCorr(final_model_disqualifications_random_agency_random_region))
+variance_intercept <- filter(v_c_matrix, var1 == "(Intercept)" & is.na(var2)) %>% select(vcov) %>% as.numeric()
+variance_all <- filter(v_c_matrix, is.na(var2)) %>% summarize(variance_all = sum(vcov)) %>% as.numeric()
+percentage_variance_explained_by_region_intercept <- variance_intercept/variance_all * 100
+percentage_variance_explained_by_region_intercept
+
+# And at agency level?
+variance_agencies <- filter(v_c_matrix, var1 %in% c("Commonness", "Efficiency", "Commonness:Efficiency") & is.na(var2)) %>% summarize(variance_all = sum(vcov)) %>% as.numeric()
+percentage_variance_explained_by_agency <- variance_agencies/variance_all * 100
+percentage_variance_explained_by_agency
+
+
+# Output models
+source("6-Present/present-mixed-models.R")
+
+
+# From baseline to final, substantive `product commonness' effect increases 50%
 
 #######
 ## Tests not used
