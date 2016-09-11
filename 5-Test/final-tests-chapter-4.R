@@ -272,6 +272,12 @@ quick_model_3_no_int <- lm(MeanDisqualifications ~ log10(TotalAgencySpendInitial
 summary(quick_model_3_no_int)
 interplot(quick_model_3_no_int, var1 = "MedianProductCommonnessLevel4", var2 = "MedianAuctionEfficiency")
 
+# What about weighted
+quick_model_3_no_int_weighted <- lm(MeanDisqualifications ~ log10(TotalAgencySpendInitial) + MeanListingDuration + MeanBiddersApplied + MeanSupplierFavoritism + MedianProductCommonnessLevel4 + MedianAuctionEfficiency + (MedianProductCommonnessLevel4 * MedianAuctionEfficiency) - 1, data = agencies_moscow, weights = agencies_moscow$NumberOfPurchases)
+summary(quick_model_3_no_int_weighted)
+interplot(quick_model_3_no_int_weighted, var1 = "MedianProductCommonnessLevel4", var2 = "MedianAuctionEfficiency")
+
+
 # Check correlations
 cor(agencies_moscow$MeanListingDuration, agencies_moscow$MeanBiddersApplied, use = "complete")
 cor(agencies_moscow$MeanDisqualifications, agencies_moscow$MeanBiddersApplied, use = "complete")
@@ -411,6 +417,12 @@ quick_model_3_fe <- lm(MeanDisqualifications ~ log10(TotalAgencySpendInitial) + 
 summary(quick_model_3_fe)
 interplot(quick_model_3_fe, var1 = "MedianProductCommonnessLevel4", var2 = "MedianAuctionEfficiency", sims = 200)
 # Do region intercepts from this work?
+
+# Same as above but weight agencies by number of purchases
+quick_model_3_fe_weighted <- lm(MeanDisqualifications ~ log10(TotalAgencySpendInitial) + MeanListingDuration + MeanBiddersApplied + MeanSupplierFavoritism + MedianProductCommonnessLevel4 + MedianAuctionEfficiency + (MedianProductCommonnessLevel4 * MedianAuctionEfficiency) + factor(AgencyRegion) - 1, data = agencies_all_more_than_one_purchase, weights = log(agencies_all_more_than_one_purchase$NumberOfPurchases))
+summary(quick_model_3_fe_weighted)
+interplot(quick_model_3_fe_weighted, var1 = "MedianProductCommonnessLevel4", var2 = "MedianAuctionEfficiency", sims = 200)
+# No substantive difference, although diagnostic plots improve
 
 # Draw marginal effects graph for all regions
 agency_corruption_simple_graph_all <- interplot(quick_model_3_fe, var1 = "MedianProductCommonnessLevel4", var2 = "MedianAuctionEfficiency", sims = 2000) +
@@ -665,3 +677,9 @@ interplot(model_favoritism_simple, var1 = "ProductProbabilityLevel4Scaled", var2
 # Not quite, because even random allocation would yield that
 # Leave out of 4.1, probably better to deploy interacted with specificity later on
 
+# Most common goods purchased by Defense in Moscow (INN: 01731000045)
+defense_products_in_moscow <- purchases_all %>%
+  filter(TenderPostingRegionEnglish == "Moscow" & AgencyID == "01731000045" & !is.na(NotificationLotProductCode)) %>%
+  group_by(NotificationLotProductCode, NotificationLotProductName) %>%
+  summarize(NumberOfPurchases = n(), AmountOfPurchases = sum(NotificationLotCustomerRequirementMaxPrice))
+write.csv(defense_products_in_moscow, file = "~/Downloads/defense_purchases_in_moscow.csv", row.names = F)
