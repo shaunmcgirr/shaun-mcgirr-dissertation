@@ -223,18 +223,22 @@ moscow_ministries <- agencies_moscow %>%
   inner_join(moscow_ministry_names, by = c("AgencyID")) %>%
   transmute(AgencyID = AgencyID,
             `Ministry name` = AgencyNameEnglish,
-            `Disqualifications` = dense_rank(-MeanDisqualifications), 
+            `Disqual.` = dense_rank(-MeanDisqualifications),
+            # `Disqualifications (mean)` = MeanDisqualifications,
             `Revisions` = dense_rank(-MeanRevisions),
-            `Bunching` = dense_rank(-MeanContinuousBunching)) %>%
+            # `Revisions (mean)` = MeanRevisions,
+            `Bunching` = dense_rank(-MeanContinuousBunching),
+            # `Bunching (mean)` = MeanContinuousBunching,
+            `Wage` = AverageWage2012USD) %>%
   rowwise %>%
-    mutate(`Average rank` = mean(c(Disqualifications,
-                                   Revisions,
-                                   Bunching))) %>%
+    mutate(`Average rank` = mean(c(`Disqual.`,
+                                   `Revisions`,
+                                   `Bunching`))) %>%
   arrange(`Average rank`) %>%
   select(-`Average rank`, -AgencyID)
 
 # Output for Latex
-moscow_ministries_output <- xtable(moscow_ministries, caption = "Rankings of federal ministries by various corruption measures")
+moscow_ministries_output <- xtable(moscow_ministries, caption = "Rankings of federal ministries by various corruption measures, and 2012 average monthly wage in USD", align = c("l", "l", "r", "r", "r", "r"))
 print(moscow_ministries_output, include.rownames = F, latex.environments = "center")
 
 # Check DVs and key IVs after aggregation
@@ -270,7 +274,7 @@ interplot(quick_model_3, var1 = "MedianProductCommonnessLevel4", var2 = "MedianA
 # Bidders applied vs admitted: MeanBiddersAdmitted less peaky
 quick_model_3_no_int <- lm(MeanDisqualifications ~ log10(TotalAgencySpendInitial) + MeanListingDuration + MeanBiddersApplied + MeanSupplierFavoritism + MedianProductCommonnessLevel4 + MedianAuctionEfficiency + (MedianProductCommonnessLevel4 * MedianAuctionEfficiency) - 1, data = agencies_moscow)
 summary(quick_model_3_no_int)
-interplot(quick_model_3_no_int, var1 = "MedianProductCommonnessLevel4", var2 = "MedianAuctionEfficiency")
+interplot(quick_model_3_no_int, var1 = "MedianProductCommonnessLevel4", var2 = "MedianAuctionEfficiency", hist = T)
 
 # What about weighted
 quick_model_3_no_int_weighted <- lm(MeanDisqualifications ~ log10(TotalAgencySpendInitial) + MeanListingDuration + MeanBiddersApplied + MeanSupplierFavoritism + MedianProductCommonnessLevel4 + MedianAuctionEfficiency + (MedianProductCommonnessLevel4 * MedianAuctionEfficiency) - 1, data = agencies_moscow, weights = agencies_moscow$NumberOfPurchases)
@@ -285,7 +289,7 @@ cor(agencies_moscow$MeanSupplierFavoritism, agencies_moscow$MedianAuctionEfficie
 cor(agencies_moscow$MeanSupplierFavoritism, agencies_moscow$TotalAgencySpendInitial, use = "complete")
 
 # Draw marginal effects graph for Moscow
-agency_corruption_simple_graph_moscow <- interplot(quick_model_3_no_int, var1 = "MedianProductCommonnessLevel4", var2 = "MedianAuctionEfficiency") +
+agency_corruption_simple_graph_moscow <- interplot(quick_model_3_no_int, var1 = "MedianProductCommonnessLevel4", var2 = "MedianAuctionEfficiency", hist = T) +
   theme_bw() +
   scale_fill_tableau() +
   # scale_y_continuous(breaks = c(-2, 0, 2, 4, 6, 8, 10)) +
@@ -415,17 +419,17 @@ interplot(quick_model_2_fe, var1 = "MedianProductCommonnessLevel4", var2 = "Medi
 
 quick_model_3_fe <- lm(MeanDisqualifications ~ log10(TotalAgencySpendInitial) + MeanListingDuration + MeanBiddersApplied + MeanSupplierFavoritism + MedianProductCommonnessLevel4 + MedianAuctionEfficiency + (MedianProductCommonnessLevel4 * MedianAuctionEfficiency) + factor(AgencyRegion) - 1, data = agencies_all_more_than_one_purchase)
 summary(quick_model_3_fe)
-interplot(quick_model_3_fe, var1 = "MedianProductCommonnessLevel4", var2 = "MedianAuctionEfficiency", sims = 200)
+interplot(quick_model_3_fe, var1 = "MedianProductCommonnessLevel4", var2 = "MedianAuctionEfficiency", sims = 2000, hist = T)
 # Do region intercepts from this work?
 
 # Same as above but weight agencies by number of purchases
 quick_model_3_fe_weighted <- lm(MeanDisqualifications ~ log10(TotalAgencySpendInitial) + MeanListingDuration + MeanBiddersApplied + MeanSupplierFavoritism + MedianProductCommonnessLevel4 + MedianAuctionEfficiency + (MedianProductCommonnessLevel4 * MedianAuctionEfficiency) + factor(AgencyRegion) - 1, data = agencies_all_more_than_one_purchase, weights = log(agencies_all_more_than_one_purchase$NumberOfPurchases))
 summary(quick_model_3_fe_weighted)
-interplot(quick_model_3_fe_weighted, var1 = "MedianProductCommonnessLevel4", var2 = "MedianAuctionEfficiency", sims = 200)
+interplot(quick_model_3_fe_weighted, var1 = "MedianProductCommonnessLevel4", var2 = "MedianAuctionEfficiency", sims = 2000, hist = T)
 # No substantive difference, although diagnostic plots improve
 
 # Draw marginal effects graph for all regions
-agency_corruption_simple_graph_all <- interplot(quick_model_3_fe, var1 = "MedianProductCommonnessLevel4", var2 = "MedianAuctionEfficiency", sims = 2000) +
+agency_corruption_simple_graph_all <- interplot(quick_model_3_fe, var1 = "MedianProductCommonnessLevel4", var2 = "MedianAuctionEfficiency", sims = 2000, hist = T) +
   theme_bw() +
   scale_fill_tableau() +
   # scale_y_continuous(breaks = c(-2, 0, 2, 4, 6, 8, 10)) +
@@ -608,6 +612,11 @@ final_model_disqualifications_baseline <- lmer(Disqualifications ~ AgencySpendLo
 summary(final_model_disqualifications_baseline)
 interplot(final_model_disqualifications_baseline, var1 = "Commonness", var2 = "Efficiency")
 # This may show that when UR has it locked up, more common -> less corruption, so locking up politics allows free-for all?
+# With revisions instead
+final_model_disqualifications_baseline_revisions <- lmer((Revisions) ~ AgencySpendLog + ListingDuration + BiddersApplied + SupplierFavoritism + Commonness * Efficiency + (1 |Region), data = agencies_in_regions_simplified)
+summary(final_model_disqualifications_baseline_revisions)
+interplot(final_model_disqualifications_baseline_revisions, var1 = "Commonness", var2 = "Efficiency")
+
 
 ## Now make the interaction a random effect
 final_model_disqualifications_random_agency <- lmer(Disqualifications ~ AgencySpendLog + ListingDuration + BiddersApplied + SupplierFavoritism + Commonness * Efficiency + (1 + Commonness * Efficiency|Region), data = agencies_in_regions_simplified)
@@ -628,10 +637,15 @@ interplot(final_model_disqualifications_random_agency_fixed_region, var1 = "Comm
 # GRP because transfers, PartyDom b/c obviously; all others already relative to region
 final_model_disqualifications_random_agency_random_region <- lmer(Disqualifications ~ AgencySpendLog + ListingDuration + BiddersApplied + SupplierFavoritism + Commonness * Efficiency + GRPConstantPrices + PartyDominance + TaxCapacity + Newspapers + GRPFromMining + BureaucratWages + (1 + Commonness * Efficiency + GRPConstantPrices + PartyDominance|Region), data = agencies_in_regions_simplified)
 summary(final_model_disqualifications_random_agency_random_region)
-interplot(final_model_disqualifications_random_agency_random_region, var1 = "Commonness", var2 = "Efficiency")
+interplot(final_model_disqualifications_random_agency_random_region, var1 = "Commonness", var2 = "Efficiency", hist = T)
+# With revisions
+final_model_disqualifications_random_agency_random_region_revisions <- lmer(Revisions ~ AgencySpendLog + ListingDuration + BiddersApplied + SupplierFavoritism + Commonness * Efficiency + GRPConstantPrices + PartyDominance + TaxCapacity + Newspapers + GRPFromMining + BureaucratWages + (1 + Commonness * Efficiency + GRPConstantPrices + PartyDominance|Region), data = agencies_in_regions_simplified)
+summary(final_model_disqualifications_random_agency_random_region_revisions)
+interplot(final_model_disqualifications_random_agency_random_region_revisions, var1 = "Commonness", var2 = "Efficiency")
+
 
 # Draw graph of last model
-agency_region_corruption_mixed_effects_graph <- interplot(final_model_disqualifications_random_agency_random_region, var1 = "Commonness", var2 = "Efficiency") +
+agency_region_corruption_mixed_effects_graph <- interplot(final_model_disqualifications_random_agency_random_region, var1 = "Commonness", var2 = "Efficiency", hist = T) +
   theme_bw() +
   scale_fill_tableau() +
   # scale_y_continuous(breaks = c(-2, 0, 2, 4, 6, 8, 10)) +

@@ -1,0 +1,21 @@
+Generating models underlying end of chapter 3
+
+construct-measures.R
+Run for Moscow only, including 'identify-agencies', leave data loaded
+
+calculate-purchasing-specificity.R
+Run to line 88
+
+prove-measures.R
+Run to line 33
+Run 167-187
+
+calculate-purchasing-specificity.R
+Run 90-98
+
+prove-measures.R
+Run 167-190
+
+Output graphs/models
+Run 282-673 (some lines can be skipped but not important)
+Run 813- to generate table

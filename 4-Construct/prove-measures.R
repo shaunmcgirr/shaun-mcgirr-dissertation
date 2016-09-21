@@ -810,6 +810,22 @@ data_output_directory <- set_data_subdirectory(data_directory, data_download_dat
   # % Can go within agency, see proportion of purchases where padding+restriction
   # 
   
+  # Report all the models from the graphs in a stargazer table
+  stargazer(price_increases_model_4, single_supplier_model_2, bunching_model_2, decreases_model_2, repeat_winners_hhi_model_2,
+            title = "Preliminary tests of theory using five `red flag' measures, large* Moscow agencies",
+            # omit = "factor",
+            # omit.labels = "Region fixed effects",
+            dep.var.labels = c("No price decrease", "Single supplier", "Bunching", "Large price decrease", "Winner concentration"),
+            # order = c(5, 6, 7, 1, 2, 3),
+            covariate.labels = c("Purchase specificity", "Corruption opportunities", "Total spent (log)", "\\textbf{Specificity x Opportunities}"),
+            # df = F,
+            omit.stat = c("adj.rsq", "f", "ll", "ser"), # "aic";
+            notes = "Note: these tests are restricted to agencies with at least 100 purchases",
+            # out = "../dissertation-text/tables/chapter_3_models.tex",
+            label = "chapter-3-models",
+            style = "apsr",
+            float.env = "sidewaystable")
+  
   
 # } # Closes control loop over regions_list
 

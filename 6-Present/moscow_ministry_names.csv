@@ -1,22 +1,22 @@
-AgencyID,AgencyNameEnglish
-01482000052,Housing
-01731000001,Finance
-01731000022,Foreign Affairs
-01731000034,Emergency Situations
-01731000037,Education and Science
-01731000045,Defense
-01731000046,Regional Development
-01731000054,Health and Social Development
-01731000064,Agriculture
-01731000075,Communications
-01731000077,Culture
-01731000083,Energy
-01731000086,Economic Development
-01731000095,Industry and Trade
-01731000108,Justice
-01731000113,Natural Resources and Ecology
-01731000125,Internal Affairs
-01731000139,Transport
-01731000144,"Sport, Tourism, and Youth"
-01951000002,Health
-01951000003,Labor and Social Protection
+AgencyID,AgencyNameEnglish,AverageWage2012,AverageWage2012USD
+01482000052,Housing,53022,1767
+01731000001,Finance,66276,2209
+01731000022,Foreign Affairs,56493,1883
+01731000034,Emergency Situations,97132,3238
+01731000037,Education and Science,56883,1896
+01731000045,Defense,50303,1677
+01731000046,Regional Development,66558,2219
+01731000054,Health and Social Development,81196,2707
+01731000064,Agriculture,42394,1413
+01731000075,Communications,49601,1653
+01731000077,Culture,47170,1572
+01731000083,Energy,45497,1517
+01731000086,Economic Development,50383,1679
+01731000095,Industry and Trade,45210,1507
+01731000108,Justice,53976,1799
+01731000113,Natural Resources and Ecology,46641,1555
+01731000125,Internal Affairs,75599,2520
+01731000139,Transport,47431,1581
+01731000144,"Sport, Tourism, and Youth",38806,1294
+01951000002,Health,81196,2707
+01951000003,Labor and Social Protection,54614,1820
