@@ -1,6 +1,6 @@
-# Shaun McGirr's PhD Dissertation: "Deliberate indiscretion: a political theory of corruption in government procurement"
+# Shaun McGirr's PhD Dissertation: "Andrei Drives Bentley, Boris Drives Lada: Why Corrupt States Have Clean Agencies"
 
-This GitHub repository stores all the files and instructions necessary to reconstruct the data and analyses for my PhD dissertation in Political Science at the University of Michigan, defended in 2015.
+This GitHub repository stores all the files and instructions necessary to reconstruct the data and analyses for my PhD dissertation in Political Science at the University of Michigan, defended in 2016 and available here: http://hdl.handle.net/2027.42/135764
 
 The main aim of storing the files and data on GitHub is to maximize the reproducibility of my findings. As the necessary steps cross a few different software tools, it makes sense to store them in a place built for that use case.
 
@@ -20,4 +20,4 @@ The contents of this repository are organised in to folders as follows:
 
 6. Present: collation and tidying of results in to presentable objects (tables, graphs)
 
-7. Publish: integration of results with the text of the dissertation, written in LaTeX
+The final product was compiled using Overleaf's online LaTeX tool: www.overleaf.com 

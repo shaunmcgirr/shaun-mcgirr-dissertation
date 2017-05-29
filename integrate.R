@@ -60,11 +60,6 @@ document_types_list <- as.list(c("contracts", "notifications", "protocols"))
 # Configure number of cores available (will default to 1 on Windows due to non-availability of easy parallelisation via library(parallel))
 number_of_cores <- max(1, detectCores() - 1) # Can change last number to 1 or 2 depending on tolerance for responsiveness of other processes
 
-# Are we running on a Mac/Linux machine, which allows for easy parallelisation (eg mclapply for lapply?)
-# Probably not needed as mclapply can run with mc.cores = 1
-# arch <- "Mac/Linux"
-# arch <- "Windows"
-
 # Set up R to display Russian characters as best it can on Windows (generally no problem on Mac/Linux)
 Sys.setlocale("LC_CTYPE", "Russian") # This may not be necessary on Mac/Linux
 
@@ -86,7 +81,5 @@ Sys.setlocale("LC_CTYPE", "Russian") # This may not be necessary on Mac/Linux
 # source("4-Construct//build-regional-level-data.R") 
 # source("4-Construct//construct-measures.R") # Builds measures for the procurement data at agency level
 # source("4-Construct//prove-measures.R") # Explores and tests potential measures for Chapter 3
-
-# Other
-# source("5-Test//explore-data.R") # Exploratory analysis
-
+# source("5-Test//final-tests-chapter-4.R") # Full tests of the theory across agencies and regions, for Chapter 4
+# source("6-Present//present-mixed-models.R") # Output nice looking tables for mixed effect models in Chapter 4

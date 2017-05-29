@@ -14,4 +14,4 @@ You will need the following software at each stage of my process:
 
 6. Present: R with some packages installed for tidying up results in tables and graphs
 
-7. Publish: a LaTeX engine
+7. Publish: a LaTeX engine (in the end I used www.overleaf.com)
